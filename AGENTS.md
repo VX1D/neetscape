@@ -183,7 +183,9 @@ or `neetscape/boards/` for LinkedIn and the international feeds; see CONTRIBUTIN
 person wants that; otherwise report which boards were missing.
 
 After changing only filters or rank rules, do not crawl again: `neetscape eval` then
-`neetscape report` re-evaluate the stored offers.
+`neetscape report` re-evaluate the stored offers. `eval` also derives the offers' fields (mode, work time,
+contracts, level, job field) again when neetscape's derivation code or language packs changed since the last
+pass, and skips that otherwise; `neetscape eval --rederive` forces it.
 
 ### Two stages: cards, then postings
 

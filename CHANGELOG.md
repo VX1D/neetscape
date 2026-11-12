@@ -24,6 +24,15 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
   `text_exclude` and the blacklist still read it. On a 32k-offer database 295 rocketjobs offers change
   domains (119 lose `it`), and the category's domain is among the title's domains for 82.2% of the offers
   (81.3% before).
+- `neetscape eval` derives the stored offers again only when the derivation changed: schema v8 adds a
+  `meta(key, value)` table holding `derivation`, a fingerprint of everything derivation reads besides the
+  observations (`infer.py`, `model.py`, `pay.py`, `country.py`, the language packs, the country packages'
+  `__init__.py`, `Store.rederive`'s source, the boards' countries, the home country). An unchanged fingerprint
+  skips the full pass (an eval of a 32k-offer database: 28 s before, 11 s now); an edit, or any later schema
+  migration, makes the next eval derive everything. `neetscape eval --rederive` forces it. Storing offers and
+  fetching postings still derive the offers they touch. The full pass writes its updates in one transaction
+  with `executemany`.
+
 - Every language-specific word now lives in its language pack or country package, so a new language is one
   module (`neetscape/lang/<code>.py`) and a new country one package: pay periods, pay words, the thousand
   suffix and range words (`VOCAB["pay"]`, read by `pay.py`); words offering options (`choice`, for
