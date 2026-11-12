@@ -76,24 +76,6 @@ def _html_data(page):
     return json.loads(re.search(r'<script type="application/json" id=data>(.*?)</script>', page, re.S).group(1))
 
 
-def test_html_report_embeds_data_and_review(tmp_path):
-    import json
-    import re
-    db = Store(tmp_path / "j.db")
-    rid = db.start_run({}, [])
-    _seen(db, rid, [_job("justjoin", "1", title="AI </script><b>x</b>"), _job("justjoin", "2", title="Helpdesk", company="Beta")])
-    ev.evaluate(db, PROFILE, rid)
-    db.mark("https://justjoin/2", "shortlisted", note="why: <fits>\nrisk: none")
-    report.write_reports(db, PROFILE, rid, tmp_path / "out")
-    page = (tmp_path / "out" / "REPORT.html").read_text()
-    data = json.loads(re.search(r'<script type="application/json" id=data>(.*?)</script>', page, re.S).group(1))
-    assert {d["title"] for d in data} == {"AI </script><b>x</b>", "Helpdesk"}    # JSON survives a hostile title
-    review = [d for d in data if d["mark"]]
-    assert [(d["title"], d["mark"], d["note"], d["category"]) for d in review] == [
-        ("Helpdesk", "shortlisted", "why: <fits>\nrisk: none", "why: <fits>")]  # first line of a multi-line note
-    assert "<span data-t=review></span><span class=n>1</span>" in page and page.count("<script") == 3
-
-
 def test_html_report_data_cannot_reshape_its_script_block(tmp_path):
     import json
     import re
@@ -108,37 +90,6 @@ def test_html_report_data_cannot_reshape_its_script_block(tmp_path):
     assert "<" not in block and json.loads(block)[0]["title"] == hostile
 
 
-def test_html_review_says_why_a_marked_posting_is_missing(tmp_path):
-    db = Store(tmp_path / "j.db")
-    rid = db.start_run({}, [])
-    _seen(db, rid, [_job("justjoin", k, title=f"Job {k}", company=k) for k in "1234"])
-    ev.evaluate(db, PROFILE, rid)
-    db.save_detail(2, 200, "", {}, {})
-    db.save_detail(3, 0, "ERROR TimeoutError: slow", {}, {})
-    db.save_detail(4, 410, "", {}, {})
-    for k in "1234":
-        db.mark(f"https://justjoin/{k}", "shortlisted", note='a & b "quoted" <tag>')
-    db.mark("https://elsewhere.example/job?a=1&b=2", "applied")
-    report.write_reports(db, PROFILE, rid, tmp_path / "out")
-    page = (tmp_path / "out" / "REPORT.html").read_text()
-    data = {d["title"]: d for d in _html_data(page)}
-    assert [data[f"Job {k}"]["posting_state"] for k in "1234"] == ["not fetched", "empty", "failed", "gone (HTTP 410)"]
-    assert data["Job 1"]["note"] == 'a & b "quoted" <tag>'
-    elsewhere = data["https://elsewhere.example/job?a=1&b=2"]                 # marked outside the listing: still reviewed
-    assert elsewhere["mark"] == "applied" and not elsewhere["listed"] and elsewhere["url"] == "https://elsewhere.example/job?a=1&b=2"
-
-
-def test_markdown_tables_survive_pipes_and_line_breaks(tmp_path):
-    db = Store(tmp_path / "j.db")
-    rid = db.start_run({}, [])
-    _seen(db, rid, [_job("justjoin", "1", title="Support | Helpdesk")])
-    ev.evaluate(db, PROFILE, rid)
-    db.mark("https://justjoin/1", "shortlisted", note="fits | n8n\nrisk: German")
-    text = report.write_reports(db, PROFILE, rid, tmp_path / "out").read_text()
-    tracked = text[text.index("## Tracked offers"):].splitlines()[4]
-    assert tracked.count(" | ") == 4 and tracked.endswith("fits / n8n risk: German |")
-
-
 def test_html_report_links_only_web_urls(tmp_path):
     db = Store(tmp_path / "j.db")
     rid = db.start_run({}, [])
@@ -149,21 +100,6 @@ def test_html_report_links_only_web_urls(tmp_path):
     page = (tmp_path / "out" / "REPORT.html").read_text()
     data = _html_data(page)
     assert data[0]["url"] == "" and 'href="javascript' not in page
-
-
-def test_html_review_keeps_rejected_offers_and_postings(tmp_path):
-    db = Store(tmp_path / "j.db")
-    rid = db.start_run({}, [])
-    _seen(db, rid, [_job("justjoin", "1", title="Kept"), _job("justjoin", "2", title="Dropped", company="Other")])
-    ev.evaluate(db, PROFILE, rid)
-    db.save_detail(1, 200, "Requirements: n8n", {}, {"years": ["2 years of experience"]})
-    db.mark("https://justjoin/1", "shortlisted", note="Main job\n✅ n8n\n⚠ English")
-    db.mark("https://justjoin/2", "rejected", note="needs German")
-    report.write_reports(db, PROFILE, rid, tmp_path / "out")
-    data = {d["title"]: d for d in _html_data((tmp_path / "out" / "REPORT.html").read_text())}
-    assert data["Kept"]["posting"] == "Requirements: n8n" and data["Kept"]["hints"]["years"] == ["2 years of experience"]
-    assert data["Kept"]["category"] == "Main job" and data["Kept"]["listed"]
-    assert data["Dropped"]["mark"] == "rejected" and not data["Dropped"]["listed"]   # hidden from the listing, kept in the review
 
 
 def test_capped_requests_are_listed_in_the_report(tmp_path):

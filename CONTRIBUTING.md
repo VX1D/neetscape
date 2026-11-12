@@ -19,8 +19,7 @@ All of them follow the same rules.
   them down to what the parser needs (≤15 offers).
 - **Unknown stays unknown.** Parsers fill what the board ships and leave the rest `unknown`/empty;
   text inference (`neetscape/infer.py`) fills gaps afterwards.
-- Run `python tests/affected.py` while working; before the PR run `pytest -q` and
-  `python -m pyflakes neetscape tests` (both must be clean).
+- Before the PR run `pytest -q` and `python -m pyflakes neetscape tests` (both must be clean).
 
 ## Add a board
 
@@ -79,10 +78,9 @@ All of them follow the same rules.
    Shared boards use `tests/fixtures/shared/<name>.*`. If the board reads postings itself, add a trimmed
    offer page as `tests/fixtures/<cc>/<name>_posting.html`. `tests/countries/test_countries.py`
    requires a fixture for every board and parses every country board's fixture.
-5. **Write one test file for the board** in `tests/countries/<cc>/` (e.g.
-   `tests/countries/pl/test_gowork.py`) covering the fields it ships, its URL builder and, if any, its
-   posting reader; `tests/affected.py` then runs just that file and the country checks for a board-only
-   change.
+5. **Add the board's row to `COVERAGE`** in `tests/countries/test_countries.py`: the fields its parser
+   fills on its fixture. Write a test file in `tests/countries/<cc>/` only for rules of its own (a split,
+   a quirk of its markup); URLs and per-offer values are checked live with `neetscape probe`.
 6. **Fill in the PR coverage table** from `neetscape probe <name>`:
 
    | field | coverage | source |

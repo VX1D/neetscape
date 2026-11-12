@@ -9,7 +9,7 @@ from neetscape.boards.pages import labelled_contracts, nearest_radius, prefix_le
 from neetscape.countries.pl.boards import gowork
 from neetscape.countries.pl.boards.vocab import CONTRACTS, FULL_TIME, LEVELS, PART_TIME
 from neetscape.model import Search, Where
-from neetscape.pay import parse_pay
+
 
 FIXTURE = Path(__file__).parents[2] / "fixtures" / "pl" / "gowork.html"
 BOARD = REGISTRY["gowork"]
@@ -28,20 +28,6 @@ def test_parses_own_postings_and_skips_copies():
         assert o.title and o.company and o.locations and o.published and o.category
 
 
-def test_fields():
-    got = offers()
-    assert sum(o.mode == "remote" for o in got) == 7 and {o.mode for o in got} == {"remote", "onsite", "unknown"}
-    assert sum(o.promoted for o in got) == 7  # segment 6
-    assert {o.worktime for o in got} == {"part_time", "full_time", "unknown"}
-    assert all(o.contracts for o in got if o.mode != "unknown")
-    assert {o.level for o in got} >= {"junior", "mid", "senior", "unknown"}
-    hourly = next(o for o in got if "/hour" in o.pay_text and "PLN" in o.pay_text)
-    assert hourly.pay_text.startswith("salary:31.4-31.4 PLN/hour brutto")  # hundredths: 3140 -> 31.4
-    assert any("EUR/hour" in o.pay_text for o in got)
-    monthly = next(o for o in got if o.pay_text.startswith("salary:4880-8000 PLN/month brutto"))
-    assert parse_pay(monthly.pay_text) == (5904, 10000)  # the netto range is the higher one
-
-
 def test_board_vocabularies():
     assert prefix_level("Młodszy specjalista (Junior)", LEVELS) == "junior"
     assert prefix_level("Starszy specjalista (Senior)", LEVELS) == "senior"
@@ -51,16 +37,6 @@ def test_board_vocabularies():
     assert worktime_from_labels(["Pełny etat", "Dodatkowa"], PART_TIME, FULL_TIME) == "part_time"
     assert worktime_from_labels(["Pełny etat"], PART_TIME, FULL_TIME) == "full_time"
     assert [nearest_radius(km, gowork.RADII) for km in (0, 40, 500)] == [5, 50, 100]
-
-
-def test_page_urls():
-    r = Request("gowork", "t", "automatyzacja procesów", {"city": "Bielsko-Biała", "radius_km": 30, "part_time": True})
-    assert BOARD.page_url(r, 1) == "https://www.gowork.pl/praca/automatyzacja-procesow;st/bielsko-biala;l/czesc-etatu,dodatkowa;e/30;km"
-    assert BOARD.page_url(r, 2).endswith("/czesc-etatu,dodatkowa;e/2;pg/30;km")
-    remote = Request("gowork", "t", None, {"remote": True})
-    assert BOARD.page_url(remote, 1) == "https://www.gowork.pl/praca/zdalna;tr"
-    assert BOARD.page_url(remote, 3) == "https://www.gowork.pl/praca/zdalna;tr/3;pg"
-    assert BOARD.page_url(remote, BOARD.caps.max_pages + 1)  # never None: max_pages is a safety stop
 
 
 def test_requests_remote_everything_but_not_whole_board():

@@ -44,17 +44,43 @@ def test_board_has_known_country_and_fixture(board):
     assert fixture_for(board), f"{board}: record a page with `neetscape probe {board} --save-fixture tests/fixtures/<cc>/{board}.json`"
 
 
-COUNTRY_BOARDS = sorted(n for n, b in REGISTRY.items() if type(b).__module__.startswith("neetscape.countries."))
+# Every board's parser on its recorded page: the fields it must fill on at least 80% of the offers. A new board
+# is one row; a parser change that loses a field fails here (`neetscape probe BOARD` shows the live coverage).
+COVERAGE = {
+    "arbeitnow": "company published locations contracts level mode category skills",
+    "bulldogjob": "company published contracts level mode worktime category skills",
+    "bundesagentur": "company published locations contracts mode worktime category skills",
+    "gowork": "company published locations contracts mode worktime category",
+    "indeed": "company published locations",
+    "justjoin": "company published locations contracts level mode worktime category skills",
+    "linkedin": "company published locations",
+    "nofluffjobs": "company published pay_text contracts level mode category skills",
+    "olx": "published locations contracts worktime",
+    "pracapl": "published locations level mode worktime",
+    "pracuj": "company published locations contracts level mode worktime",
+    "remoteok": "company published mode skills",
+    "rocketjobs": "company published locations level mode worktime category skills",
+    "solidjobs": "company published locations pay_text contracts level mode worktime category skills",
+    "theprotocol": "company published locations contracts level mode",
+    "useme": "company contracts mode worktime category",
+    "weworkremotely": "company published locations mode worktime category",
+}
 
 
-@pytest.mark.parametrize("board", COUNTRY_BOARDS)
-def test_country_board_parses_its_fixture(board):
-    offers = REGISTRY[board].parse(fixture_for(board).read_text(), Request(board, "t", None))
-    assert len(offers) >= 3
+def test_every_board_has_a_coverage_row():
+    assert set(COVERAGE) == set(REGISTRY)
+
+
+@pytest.mark.parametrize("board", sorted(COVERAGE))
+def test_board_parses_its_fixture(board):
+    offers = REGISTRY[board].parse(fixture_for(board).read_text(), Request(board, "t", None, {}, frozenset()))
+    assert len(offers) >= 3 and len({o.key for o in offers}) == len(offers)
     for o in offers:
         assert o.board == board and o.key and o.url.startswith("http") and o.title
         assert o.mode in ("remote", "hybrid", "onsite", "unknown") and set(o.contracts) <= set(CONTRACTS)
-    assert len({o.key for o in offers}) == len(offers)
+    for f in COVERAGE[board].split():
+        filled = sum(bool(getattr(o, f)) and getattr(o, f) != "unknown" for o in offers)
+        assert filled >= 0.8 * len(offers), f"{board}: {f} on {filled}/{len(offers)} offers"
 
 
 def test_schema_country_enum_matches_registry():

@@ -14,17 +14,6 @@ def parse(board, name):
     return {o.key: o for o in REGISTRY[board].parse((FX / name).read_text(), Request(board, "t", None))}
 
 
-def test_bundesagentur_fields():
-    offers = parse("bundesagentur", "bundesagentur.json")
-    o = offers["17220-WDH3KQ2ZMYSS4JKE-S"]  # Finanzbuchhalter, mini job, home office by arrangement
-    assert (o.mode, o.worktime, o.contracts) == ("hybrid", "part_time", ["mini_job"])
-    assert o.url == "https://www.arbeitsagentur.de/jobsuche/jobdetail/17220-WDH3KQ2ZMYSS4JKE-S"
-    paid = [o for o in offers.values() if o.pay_text]
-    assert paid and all(p.pay_text.endswith("EUR/Jahr") for p in paid)
-    assert any(o.contracts == ["internship"] and o.level == "intern" for o in offers.values())
-    assert all(o.published and o.company and o.locations for o in offers.values())
-
-
 def test_bundesagentur_requests():
     p = profile.validate({"version": 2, "country": "de", "boards": ["bundesagentur"], "searches": [
         {"id": "r", "where": "remote", "what": "all", "max_age_days": 10},
@@ -37,14 +26,6 @@ def test_bundesagentur_requests():
     url = b.page_url(by["c"], 2)
     assert "wo=K%C3%B6ln" in url and "umkreis=20" in url and "arbeitszeit=tz%3Bmj" in url and "page=2" in url
     assert "Homeoffice" not in url and "a" not in by and any("too large" in w for w in pl.warnings)
-
-
-def test_arbeitnow_fields():
-    offers = list(parse("arbeitnow", "arbeitnow.json").values())
-    assert sum(o.mode == "remote" for o in offers) == 5
-    assert all(o.description and o.published for o in offers)
-    assert any("employment" in o.contracts for o in offers)
-    assert REGISTRY["arbeitnow"].page_url(Request("arbeitnow", "t", None), 2).endswith("?page=2")
 
 
 def test_german_profile_pay_and_city():

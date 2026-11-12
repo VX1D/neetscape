@@ -8,17 +8,6 @@ from neetscape.boards import REGISTRY, linkedin
 from neetscape.boards.base import Request
 
 FX = Path(__file__).parents[1] / "fixtures" / "shared"
-FIXTURES = {"linkedin": "linkedin.html", "remoteok": "remoteok.json", "weworkremotely": "weworkremotely.rss"}
-
-
-@pytest.mark.parametrize("board", sorted(FIXTURES))
-def test_board_parses_recorded_page(board):
-    offers = REGISTRY[board].parse((FX / FIXTURES[board]).read_text(), Request(board, "t", None, {}, frozenset()))
-    assert len(offers) >= 3, board
-    for o in offers:
-        assert o.board == board and o.key and o.url.startswith("http") and o.title
-    assert len({o.key for o in offers}) == len(offers)
-    assert REGISTRY[board].caps.country == ("any" if board == "linkedin" else "intl")
 
 
 def test_linkedin_city_as_geo_id(monkeypatch):

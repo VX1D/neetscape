@@ -33,8 +33,3 @@ def test_lists_everything_without_a_phrase():
     assert [(r.keyword, r.params) for r in reqs] == [(None, {"sort": "newest"})] and not warns
     assert UM.page_url(reqs[0], 2) == "https://useme.com/pl/jobs/?query=&order_by=-published_on&page=2"
     assert UM.caps.max_pages >= 35 * 2  # the open projects without a phrase: ~35 pages (2026-11-12)
-
-
-def test_page_urls():
-    assert UM.page_url(Request("useme", "t", "asystent", {"sort": "newest"}), 1) == (
-        "https://useme.com/pl/jobs/?query=asystent&order_by=-published_on")

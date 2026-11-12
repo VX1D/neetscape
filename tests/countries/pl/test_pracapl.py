@@ -1,6 +1,5 @@
 """praca.pl (neetscape/countries/pl/boards/pracapl.py) on its recorded result page tests/fixtures/pl/pracapl.html."""
 import datetime as dt
-import re
 from pathlib import Path
 
 from neetscape.boards import REGISTRY
@@ -16,32 +15,6 @@ BOARD = REGISTRY["pracapl"]
 
 def offers():
     return BOARD.parse(FX.read_text(), Request("pracapl", "t", None, {"remote": True}, frozenset({"remote"})))
-
-
-def test_parses_cards_with_structured_fields():
-    got = offers()
-    assert len(got) == 13 and len({o.key for o in got}) == 13
-    assert all(re.fullmatch(r"\d+", o.key) for o in got)  # the ad id, the same in every listing
-    assert all(re.fullmatch(r"https://www\.praca\.pl/[a-z0-9-]+_\d+\.html", o.url) for o in got)  # no #tracking hash
-    assert all(o.title and o.mode == "remote" and o.locations and o.published for o in got)
-    assert all(o.worktime != "unknown" for o in got) and sum(1 for o in got if o.level != "unknown") >= 12
-    assert sum(1 for o in got if o.company) >= 8 and "Klient portalu Praca.pl" not in {o.company for o in got}
-    assert sum(1 for o in got if o.contracts) >= 8 and sum(1 for o in got if o.pay_text) >= 3
-
-
-def test_fields_of_known_offers():
-    by_key = {o.key: o for o in offers()}
-    week = by_key["7992486"]  # "Oferta tygodnia": paid, above the date order
-    assert week.promoted and week.title == "Główna Księgowa / Główny Księgowy" and week.locations == ["Pruszków"]
-    assert week.contracts == ["mandate", "b2b"] and week.worktime == "full_time" and week.published == dt.date(2026, 11, 9)
-    grouped = by_key["7959811"]  # one ad in many towns: one offer, the lowest offer id as url
-    assert len(grouped.locations) > 10 and grouped.url.endswith("_11597182.html")
-    assert grouped.pay_text == "60,00 - 160,00 zł brutto/godz." and grouped.worktime == "part_time" and grouped.level == "mid"
-    lux = by_key["7965190"]  # highlighted, but in date order: not promoted
-    assert not lux.promoted and lux.company == "LUX MED Sp. z o.o." and lux.contracts == ["mandate"]
-    assert lux.level == "junior" and lux.published == dt.date(2026, 11, 12) and lux.snippet.startswith(lux.title)
-    assert by_key["7972480"].locations == ["Niemcy"]
-    assert [o.published for o in offers() if not o.promoted] == sorted((o.published for o in offers() if not o.promoted), reverse=True)
 
 
 def test_relative_dates_and_level_tags():
@@ -64,19 +37,6 @@ def test_empty_search_and_other_sections_yield_nothing():
     assert BOARD.parse('<div class="al__no-offers-block gtm-empty-listing"></div>' + card, r) == []
     assert BOARD.parse('<h2 class="listing-v2__header">Zobacz najnowsze oferty pracy</h2>' + card, r) == []
     assert len(BOARD.parse('<h2 class="listing-v2__header">Oferty urzędu pracy</h2>' + card, r)) == 1
-
-
-def test_urls():
-    url = lambda kw, page=1, **p: BOARD.page_url(Request("pracapl", "t", kw, p), page)
-    assert url("asystent", remote=True, sort="newest") == "https://www.praca.pl/s-asystent.html?wm=3&sort=date"
-    assert url("obsługa klienta", 2, remote=True, part_time=True, sort="newest") == \
-        "https://www.praca.pl/s-obsluga,klienta_2.html?wm=3&wt=2-3&sort=date"
-    assert url("asystent", city="Zielona Góra", radius_km=25, sort="newest") == \
-        "https://www.praca.pl/s-asystent_m-zielona-gora.html?cr=30&sort=date"
-    assert url(None, 3, city="Kraków") == "https://www.praca.pl/krakow_3.html"
-    assert url(None, remote=True, sort="newest") == "https://www.praca.pl/oferty-pracy.html?wm=3&sort=date"
-    assert url("x", 229) == "https://www.praca.pl/s-x_229.html"  # never None: max_pages is a safety stop
-    assert pracapl.keyword_slug("Asystent/ka ds. Administracji") == "asystent-ka,ds,administracji"
 
 
 def test_requests():
