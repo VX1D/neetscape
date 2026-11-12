@@ -110,7 +110,13 @@ All of them follow the same rules.
    contracts, level, job function and domain, hints; `explicit` for statements that settle a field).
    Check a vocabulary change on a real database rather than with unit tests:
    `python tests/infer_audit.py COPY.db --dump-stored before.json`, change, then `--rederive before.json`
-   lists every changed decision with sample titles.
+   lists every changed decision with sample titles. Build the job function and domain vocabulary from the
+   country's data: on a copy of a database crawled there, `python tests/infer_audit.py COPY.db --suggest` lists,
+   per title language and naming the pack each group belongs to, title words that predict a board category's
+   domain or function, and the most frequent words no pattern reads; curate them into the pack, then
+   `--agreement` (title against category, overall and per language) shows whether the readings improved. The tool
+   is language-neutral; a language whose titles need their own splitting (compounds) defines
+   `TITLE_TOKENS(title) -> list[str]` in its pack (see [docs/testing.md](docs/testing.md#vocabularies-check-on-real-data)).
 3. Add the country to the `country` enum (`$defs/country`) in `neetscape/profile/schema.json` (a test compares it with the registry).
 4. Add at least two boards (see above) under `neetscape/countries/<cc>/boards/` (its `__init__.py`
    imports them and lists them in `__all__`), and presets under
