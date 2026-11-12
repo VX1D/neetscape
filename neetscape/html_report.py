@@ -338,7 +338,6 @@ def write_html(store: Store, profile: Profile, run_id: int, rows: list[dict], pa
             "errors": sum(r["errors"] or 0 for r in store.board_stats(run_id)),
             # listings this run did not fetch to their end (over a result cap, or a board's max_pages; see REPORT.md)
             "cut": len(store.capped(run_id)) + sum(not c["deliberate"] for c in store.page_limited(run_id)),
-            "cut_deliberate": sum(c["deliberate"] for c in store.page_limited(run_id)),
             "searches": {s.id: s.label for s in profile.searches}, "tags": {t["id"]: t["label"] for t in profile.tags}}
     opt = lambda values: "".join(f'<option value="{_e(v)}">{_e(v)}</option>' for v in values)
     path.write_text(_PAGE.format(

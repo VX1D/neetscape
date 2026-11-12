@@ -2,7 +2,7 @@
 from neetscape import evaluate as ev
 from neetscape import profile, report
 from neetscape.model import Offer
-from neetscape.store import Store
+from neetscape.store import PAGE_LIMIT, PAGE_LIMIT_ASKED, Store
 
 PROFILE = profile.validate({"version": 2, "boards": ["justjoin"], "searches": [{"id": "all", "where": "remote", "what": "all"}]})
 
@@ -231,13 +231,12 @@ def test_page_limited_requests_are_listed_in_the_report(tmp_path):
     import json
     import re
     db = Store(tmp_path / "j.db")
-    for argv, label, cut in ((["run"], "the board's max_pages", (1, 0)),
-                             (["run", "--limit-pages", "2"], "--limit-pages (deliberate)", (0, 1))):
-        rid = db.start_run({}, argv)
+    for stop, label, cut in ((PAGE_LIMIT, "the board's max_pages", 1), (PAGE_LIMIT_ASKED, "--limit-pages (deliberate)", 0)):
+        rid = db.start_run({}, [])
         req = db.start_request(rid, "linkedin", "all", "n8n", {"country": "pl"}, ())
-        db.finish_request(req, 2, 50, False, "page limit")
+        db.finish_request(req, 2, 50, False, stop)
         out = tmp_path / f"out{rid}"
         text = report.write_reports(db, PROFILE, rid, out).read_text()
         assert "Page limit (the listing may go on" in text and f'linkedin n8n {{"country": "pl"}}: 2 pages, {label}' in text
         meta = json.loads(re.search(r"id=meta>(.*?)</script>", (out / "REPORT.html").read_text(), re.S).group(1))
-        assert (meta["cut"], meta["cut_deliberate"]) == cut
+        assert meta["cut"] == cut

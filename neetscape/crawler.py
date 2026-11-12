@@ -27,7 +27,7 @@ from .boards.base import Request, accept_language
 from .boards.fetch import BrowserFetch, FetchError, Http, Limiter
 from .log import Progress, log
 from .model import Offer, Search
-from .store import Store
+from .store import PAGE_LIMIT, PAGE_LIMIT_ASKED, Store
 
 
 def transport_for(board, port: int, limiter: Limiter, retries: int):
@@ -162,7 +162,7 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
             if board.caps.whole_listing:  # the response was the whole listing (feeds, solid.jobs divisions)
                 complete, reason = True, "end"
             else:
-                reason = "page limit"
+                reason = PAGE_LIMIT_ASKED if max_pages < board.caps.max_pages else PAGE_LIMIT
     except FetchError as e:
         if e.status == 404 and pages:  # boards answer 404 for the page after the last one
             complete, reason = True, "end"

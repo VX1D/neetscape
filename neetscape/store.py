@@ -77,6 +77,12 @@ _POSTING_OK = "d.http_status = 200 AND d.text != ''"  # a stored posting with te
 
 _EMPTY = (None, "", "unknown", "[]")  # stored values that mean "the board did not say"
 
+# Stop reasons of a request that reached its last allowed page: the board's `max_pages`, or a smaller
+# `--limit-pages N` given to the command that fetched it (a resumed run may get another limit than it started with).
+PAGE_LIMIT = "page limit"
+PAGE_LIMIT_ASKED = "page limit (--limit-pages)"
+_CAPPED = "stop_reason LIKE '%capped:%'"  # a request over the board's result cap that could not be split
+
 # The current state as of run :run, as CTEs ending in `cur(offer_id)`. A board's latest crawl is the latest run
 # <= :run with requests to it. An offer is current when it is not marked gone (by the start of the next run)
 # and that crawl saw it, or that crawl repeated a request that saw it earlier without reaching the request's end
@@ -95,20 +101,6 @@ _CURRENT_CTE = """
 
 def now() -> str:
     return dt.datetime.now().isoformat(timespec="seconds")
-
-
-def _limit_pages(argv_json: str | None) -> int | None:
-    """`--limit-pages N` of a run's stored command line, if it had one."""
-    try:
-        argv = [str(x) for x in json.loads(argv_json or "[]")]
-    except (ValueError, TypeError):
-        return None
-    for i, arg in enumerate(argv):
-        value = argv[i + 1] if arg == "--limit-pages" and i + 1 < len(argv) else (
-            arg.split("=", 1)[1] if arg.startswith("--limit-pages=") else None)
-        if value is not None and value.isdigit():
-            return int(value)
-    return None
 
 
 def request_key(board: str, keyword: str | None, params: dict) -> str:
@@ -346,18 +338,15 @@ class Store:
 
     def page_limited(self, run_id: int) -> list[dict]:
         """Requests of a run that stopped at a page limit, so the board's listing may go on beyond the last page
-        fetched (requests also over a board's result cap are left to `capped`). `deliberate`: the run's own
-        `--limit-pages N` was the limit (the request fetched N pages); otherwise the board's `max_pages` was."""
-        run = self.run(run_id)
-        limit = _limit_pages(run["argv"]) if run else None
-        rows = self.q("SELECT board, keyword, params_json, pages FROM requests WHERE run_id=? AND stop_reason LIKE 'page limit%' "
-                      "AND stop_reason NOT LIKE '%capped:%' ORDER BY id", run_id)
-        return [dict(r) | {"deliberate": limit is not None and r["pages"] >= limit} for r in rows]
+        fetched (requests also over a board's result cap are left to `capped`). `deliberate`: a `--limit-pages N`
+        below the board's `max_pages` was the limit (`PAGE_LIMIT_ASKED`); otherwise the board's `max_pages` was."""
+        rows = self.q(f"SELECT board, keyword, params_json, pages, stop_reason LIKE '{PAGE_LIMIT_ASKED}%' AS deliberate "
+                      f"FROM requests WHERE run_id=? AND stop_reason LIKE '{PAGE_LIMIT}%' AND NOT {_CAPPED} ORDER BY id", run_id)
+        return [dict(r) | {"deliberate": bool(r["deliberate"])} for r in rows]
 
     def capped(self, run_id: int) -> list[sqlite3.Row]:
         """Requests of a run over the board's result cap that could not be split: offers beyond the cap are missing."""
-        return self.q("SELECT board, keyword, params_json, stop_reason FROM requests WHERE run_id=? AND stop_reason LIKE '%capped:%'",
-                      run_id)
+        return self.q(f"SELECT board, keyword, params_json, stop_reason FROM requests WHERE run_id=? AND {_CAPPED}", run_id)
 
     @staticmethod
     def _is_id(ref: str | int) -> bool:
