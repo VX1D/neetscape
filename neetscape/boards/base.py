@@ -29,6 +29,7 @@ class Caps:
     huge_unfiltered: bool = False  # listing everything is too big: needs keywords, a city or the server-side remote filter
     local_all: bool = False      # the whole board is one cheap download: any search can be served by local filtering
     whole_listing: bool = False  # one response holds the request's whole listing (feeds): fetching it completes the request
+    result_cap: int = 0          # most results one query shows (OLX 1000); above it the crawler asks `split()` (0 = none)
     country: str = ""            # "pl", "de", ...; "any" (serves every country, gets `params["country"]`); "intl" (opt-in,
                                  # international). Empty: derived on registration from the module (see `register`)
     transport: str = "http"      # "http" (plain HTTP, GET or POST) or "browser_fetch" (same-origin fetch in a tab)
@@ -119,6 +120,15 @@ class Board:
         ships (company, published, salary, ...). Default: schema.org JobPosting. Boards whose JSON-LD lacks the
         posting body (or that have none) override this to read their embedded data; never return page chrome."""
         return parse_posting(page)
+
+    def total(self, raw: str, r: Request) -> int | None:
+        """Boards with a `result_cap`: how many results the request matches, read from its first page."""
+        return None
+
+    def split(self, raw: str, r: Request) -> list[Request]:
+        """Boards with a `result_cap`: narrower requests that together cover `r` (e.g. one per category listed on
+        its first page), each expected to stay under the cap; [] when the request cannot be narrowed."""
+        return []
 
     def post_body(self, r: Request, page: int) -> str | None:
         """http boards whose search is a POST: the request body for this page (sent as `content_type`)."""

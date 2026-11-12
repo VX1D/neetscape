@@ -132,6 +132,10 @@ def _run_stats(store: Store, run_id: int) -> list[str]:
     errs = store.q("SELECT board, keyword, error FROM requests WHERE run_id=? AND error != ''", run_id)
     if errs:
         out += ["", "Errors:"] + [f"- {e['board']} {e['keyword'] or '*'}: {e['error'][:160]}" for e in errs]
+    capped = store.q("SELECT board, keyword, params_json, stop_reason FROM requests WHERE run_id=? AND stop_reason LIKE '%capped:%'", run_id)
+    if capped:  # the board shows fewer results than the request matches and could not narrow it: offers are missing
+        out += ["", "Capped (offers beyond the board's result limit are missing):"] + [
+            f"- {c['board']} {c['keyword'] or '*'} {c['params_json']}: {c['stop_reason'].split('capped: ')[-1]}" for c in capped]
     return out
 
 

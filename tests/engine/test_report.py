@@ -164,3 +164,12 @@ def test_html_review_keeps_rejected_offers_and_postings(tmp_path):
     assert data["Kept"]["posting"] == "Requirements: n8n" and data["Kept"]["hints"]["years"] == ["2 years of experience"]
     assert data["Kept"]["category"] == "Main job" and data["Kept"]["listed"]
     assert data["Dropped"]["mark"] == "rejected" and not data["Dropped"]["listed"]   # hidden from the listing, kept in the review
+
+
+def test_capped_requests_are_listed_in_the_report(tmp_path):
+    db = Store(tmp_path / "j.db")
+    rid = db.start_run({}, [])
+    req = db.start_request(rid, "olx", "all", None, {"category": "hr"}, ())
+    db.finish_request(req, 25, 1000, False, "page limit; capped: matches 1500, the board shows 1000", "")
+    text = report.write_reports(db, PROFILE, rid, tmp_path / "out").read_text()
+    assert "Capped (offers beyond" in text and 'olx * {"category": "hr"}: matches 1500, the board shows 1000' in text

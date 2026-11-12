@@ -50,6 +50,11 @@ All of them follow the same rules.
    - `Caps(whole_listing=True)`: one response is the request's whole listing (a feed, a whole-category
      download), so fetching it completes the request. Otherwise a request is complete only on an
      empty, short or no-new page or a 404 after the last page; reaching `max_pages` never is;
+   - `Caps(result_cap=N)` with `total(raw, r)` and `split(raw, r)`: the board shows at most N results per
+     search (olx.pl: 1000). `total()` reads the match count from a request's first page; when it is over
+     N, the crawler replaces the request with `split()`'s narrower requests (e.g. one per category the
+     page lists) and fetches each to its end. Build the split from the page, not from a hard-coded list;
+     see `neetscape/countries/pl/boards/olx.py`;
    - `min_interval = {"host": seconds}`: a longer minimum gap for a board that throttles (the
      profile's `politeness.min_interval_s` still overrides it);
    - `posting(page)`: posting fields from the source of an offer page; the default reads schema.org

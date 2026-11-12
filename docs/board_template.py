@@ -40,6 +40,7 @@ class Example(Board):
         huge_unfiltered=False,  # listing everything is too large without keywords, a city or the remote filter
         local_all=False,        # the whole board is one cheap download (serves every search)
         whole_listing=False,    # one response is the request's whole listing (feeds): fetching it completes it
+        result_cap=0,           # most results one search shows (olx.pl: 1000); then implement total() and split()
         transport="http",       # "http" (GET, or POST with `post_body`) or "browser_fetch" (same-origin fetch
         origin="",              # in a tab opened on `origin`, for boards that wall plain clients)
     )

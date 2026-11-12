@@ -206,3 +206,35 @@ def test_incremental_stop_needs_the_same_request_completed_before(fake, tmp_path
     run_crawl(db, r2, fake, [ALL_REMOTE])                               # "all" was never crawled to its end
     req = db.q("SELECT * FROM requests WHERE run_id=? AND keyword IS NULL", r2)[0]
     assert req["pages"] == 3 and req["complete"] and db.offer("https://fake/f")   # page 1 known from the phrase: no stop
+
+
+def test_request_over_the_result_cap_is_split_recursively(fake, tmp_path):
+    import json as _json
+    from dataclasses import replace
+    from neetscape.boards.base import Caps
+    from neetscape.boards.fetch import Http
+    fake.caps = Caps(keywords=True, remote="filter", page_size=3, max_pages=10, result_cap=5, transport="http")
+    totals = {"": 9, "a": 4, "b": 5, "b1": 3, "b2": 2}                 # b reaches the cap (5): split again
+    tree = {"": ["a", "b"], "b": ["b1", "b2"]}
+    fake.total = lambda raw, r: totals[r.params.get("cat", "")]
+    fake.split = lambda raw, r: [replace(r, params={**r.params, "cat": c}) for c in tree.get(r.params.get("cat", ""), [])]
+    fake.page_url = lambda r, page: f"fake://{r.params.get('cat', '')}/{page}"
+
+    async def get(self, url):
+        cat, page = url[len("fake://"):].rsplit("/", 1)
+        n = totals[cat] if cat in ("a", "b1", "b2") else 3            # leaves list their own offers
+        offers = [[f"{cat}{i}", f"Job {cat}{i}", {}] for i in range(n)][(int(page) - 1) * 3:int(page) * 3]
+        return _json.dumps(offers)
+
+    import pytest
+    mp = pytest.MonkeyPatch()
+    mp.setattr(Http, "get", get)
+    db = Store(tmp_path / "j.db")
+    rid = db.start_run({}, [])
+    run_crawl(db, rid, fake, [ALL_REMOTE])
+    mp.undo()
+    reqs = {(_json.loads(r["params_json"]).get("cat", "")): r for r in db.q("SELECT * FROM requests WHERE run_id=?", rid)}
+    assert set(reqs) == {"", "a", "b", "b1", "b2"}
+    assert reqs[""]["stop_reason"].startswith("split into 2") and not reqs[""]["complete"]
+    assert reqs["b"]["stop_reason"].startswith("split into 2") and all(reqs[k]["complete"] for k in ("a", "b1", "b2"))
+    assert {o["key"] for o in db.run_offers(rid)} >= {f"{c}{i}" for c, n in (("a", 4), ("b1", 3), ("b2", 2)) for i in range(n)}
