@@ -1,6 +1,6 @@
 # How it works
 
-[README](../README.md) · [Getting started](getting-started.md) · [Search profile](profile.md) · [How it works](how-it-works.md) · [Boards and countries](boards-and-countries.md) · [Testing](testing.md)
+[README](../README.md) · [Getting started](getting-started.md) · [Search profile](profile.md) · [How it works](how-it-works.md) · [Boards and countries](boards-and-countries.md) · [Reviewing](review.md) · [Testing](testing.md)
 
 The diagram source is [`docs/flow.mmd`](flow.mmd) (rendered: [`docs/flow.png`](flow.png)).
 

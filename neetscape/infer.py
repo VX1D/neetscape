@@ -102,6 +102,7 @@ def hints(text: str, languages=None) -> dict:
         "degree": found("degree"),
         "languages": found("languages"),
         "fixed_term": bool(rx["fixed_term"] and rx["fixed_term"].search(text)),
+        "office": found("office"),
     }
 
 

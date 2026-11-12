@@ -53,10 +53,12 @@ VOCAB = {
         "languages": [r"\bdeutsch(?:kenntniss\w*)?\b", r"fließend\w* deutsch", r"\benglisch(?:kenntniss\w*)?\b",
                       r"\b(?:französisch|polnisch|niederländisch|italienisch|spanisch)\w*\b"],
         "fixed_term": [r"(?<![a-zäöü])befristet", r"zeitlich begrenzt"],
+        "office": [r"kundenbesuch\w*", r"vor ort beim kunden", r"dienstreise\w*", r"reisebereitschaft", r"umzug"],
     },
 }
 
 EXAMPLES = [
+    ("100% Homeoffice, gelegentliche Kundenbesuche", "office", ["kundenbesuche"]),
     ("Homeoffice möglich", "mode", "hybrid"),
     ("Teilweise Homeoffice, Standort München", "mode", "hybrid"),
     ("Mobiles Arbeiten nach Absprache", "mode", "hybrid"),

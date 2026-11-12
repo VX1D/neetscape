@@ -9,7 +9,7 @@ VOCAB = {
         ],
     },
     "mode": {
-        "remote": [r"praca zdalna", r"\bzdalnie\b", r"z domu"],
+        "remote": [r"praca zdalna", r"\bzdalnie\b", r"z domu", r"\bprac\w* zdaln\w*", r"\btryb\w* zdaln\w*"],
         "hybrid": [r"(?<!chmury )(?<!chmurze )hybryd(?!\w*\s+(?:chmur|aplikac|środowisk|infrastruktur))"],
         "onsite": [r"stacjonarn", r"w biurze"],
     },
@@ -33,16 +33,25 @@ VOCAB = {
         "mid": [r"specjalist"],
     },
     "hints": {
-        "fully_remote": [r"100% ?zdaln", r"w pełni zdaln", r"całkowicie zdaln", r"cała polska \(praca zdalna\)"],
+        "fully_remote": [r"100\s*% ?zdaln", r"100\s*% pracy zdaln", r"w pełni zdaln", r"całkowicie zdaln", r"wyłącznie zdaln",
+                         r"z dowolnego miejsca", r"cała polska \(praca zdalna\)"],
         "hybrid": [r"hybryd\w*", r"\d+ dni (?:w tygodniu )?w biurze"],
         "years": [r"\d\+?\s*(?:-\s*\d+\s*)?(?:lat[a]?|rok)\s*(?:komercyjn\w* )?doświadczeni\w*"],
         "degree": [r"wykształceni\w* wyższ\w*", r"status\w* studenta"],
         "languages": [r"\b(?:niemieck\w*|francusk\w*|niderlandzk\w*|włosk\w*|hiszpańsk\w*|czesk\w*)\b"],
         "fixed_term": [r"na czas określony", r"na zastępstwo"],
+        "office": [r"wizyt\w* u klient\w*", r"spotkani\w* u klient\w*", r"wyjazd\w* (?:służbow\w*|do klient\w*)", r"delegacj\w*",
+                   r"(?:raz|dwa razy|kilka razy) w (?:miesiącu|tygodniu|kwartale) w biurze", r"w biurze (?:raz|dwa razy|kilka razy) w",
+                   r"przeprowadzk\w*", r"szkoleni\w* stacjonarn\w*", r"wdrożeni\w* stacjonarn\w*"],
     },
 }
 
 EXAMPLES = [
+    ("Pracujesz w 100% zdalnie, z dowolnego miejsca w Polsce", "fully_remote", True),
+    ("Praca zdalna, spotkania u klientów kilka razy w miesiącu", "office", ["spotkania u klientów"]),
+    ("Zdalnie, ale raz w miesiącu w biurze w Poznaniu", "office", ["raz w miesiącu w biurze"]),
+    ("Będziesz przeprowadzać testy aplikacji, pracując w trybie zdalnym", "office", []),
+    ("Oferujemy pracę zdalną w godzinach 8-16", "mode", "remote"),
     ("Praca zdalna, pełny etat", "mode", "remote"),
     ("Hybrydowo, 2 dni w biurze", "mode", "hybrid"),
     ("Praca hybrydowa, 2 dni zdalnie", "mode", "hybrid"),

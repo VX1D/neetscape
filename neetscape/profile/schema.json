@@ -246,6 +246,10 @@
         },
         "boost": {
           "type": "integer"
+        },
+        "remote_proof": {
+          "type": "boolean",
+          "description": "remote searches: an offer passes only when its fetched posting describes remote work (fully remote, or plain remote wording) and mentions no hybrid model or required presence (client visits, business travel, office days, relocation); before the posting is fetched the field counts as unknown (see `unknown`)"
         }
       },
       "additionalProperties": false,
@@ -465,6 +469,10 @@
           },
           "boost": {
             "type": "integer"
+          },
+          "remote_proof": {
+            "type": "boolean",
+            "description": "remote searches: an offer passes only when its fetched posting describes remote work (fully remote, or plain remote wording) and mentions no hybrid model or required presence (client visits, business travel, office days, relocation); before the posting is fetched the field counts as unknown (see `unknown`)"
           }
         },
         "additionalProperties": false
