@@ -1,4 +1,5 @@
 """test_details.py: posting fetches with fake transports (no browser)."""
+import json
 import asyncio
 
 import pytest
@@ -117,18 +118,27 @@ def test_no_selector_no_rendering(db, monkeypatch):
     assert {r["text"] for r in db.q("SELECT * FROM details")} == {""} and FakeRender.opened == 0
 
 
-def test_posting_settles_unknown_fields_from_strong_signals_only():
+def _posting(text, meta=None, title="Junior SAP Consultant", facts=None):
     from neetscape import infer
-    langs = ("pl", "en")
-    row = {"mode": "unknown", "worktime": "unknown", "contracts": ""}
+    return infer.derive(title=title, card=title, facts=facts or {}, posting=text,
+                        posting_remote=bool((meta or {}).get("remote")), languages=("pl", "en"))
+
+
+def test_posting_settles_unknown_fields_from_strong_signals_only():
     vague = "Wsparcie użytkowników zdalnie i na miejscu. Umowa o pracę, pełny etat."
-    got = details._from_posting(row, vague, {}, infer.hints(vague, langs), langs)
-    assert got == {"worktime": "full_time", "contracts": "employment"}          # "zdalnie" alone is not a work mode
-    full = "Praca w 100% zdalna."
-    assert details._from_posting(row, full, {}, infer.hints(full, langs), langs)["mode"] == "remote"
-    assert details._from_posting(row, "x", {"remote": True}, {}, langs)["mode"] == "remote"   # JSON-LD TELECOMMUTE
-    known = {"mode": "onsite", "worktime": "part_time", "contracts": "b2b"}
-    assert details._from_posting(known, full + " Pełny etat, UoP", {}, infer.hints(full, langs), langs) == {}  # cards win
+    got = _posting(vague)
+    assert (got["mode"], got["worktime"], got["contracts"]) == ("unknown", "full_time", "employment")  # "zdalnie" alone
+    assert _posting("Praca w 100% zdalna.")["mode"] == "remote"
+    assert _posting("x", {"remote": True})["mode"] == "remote"   # JSON-LD TELECOMMUTE
+    known = {"mode": "onsite", "worktime": "part_time", "contracts": ["b2b"]}
+    got = _posting("Praca w 100% zdalna. Pełny etat, UoP", facts=known)
+    assert (got["mode"], got["worktime"], got["contracts"]) == ("onsite", "part_time", "b2b")  # board data wins
+
+
+def test_a_fetched_posting_is_derived_into_the_offer(db):
+    details._save(db, db.offer(1), 200, "Praca w 100% zdalna. Umowa zlecenie.", {})
+    o = db.offer(1)
+    assert o["mode"] == "remote" and json.loads(o["evidence"])["mode"][0] in ("posting", "board", "request", "card")
 
 
 def test_top_picks_skip_jobs_whose_posting_is_stored(db):
@@ -201,11 +211,8 @@ def test_first_publication_date_from_the_posting_replaces_a_refresh_date(db, mon
 
 
 def test_internship_from_a_posting_only_when_named_in_the_title_or_a_field():
-    langs = ("pl", "en")
-    row = {"mode": "remote", "worktime": "full_time", "contracts": "", "title": "Junior SAP Consultant"}
     text = "Firma z 37-letnim stażem. Doświadczenie z pracy lub staży mile widziane. Umowa o pracę."
-    assert details._from_posting(row, text, {}, {}, langs) == {"contracts": "employment"}
-    linkedin = "Seniority level: Internship\nEmployment type: Internship"
-    assert details._from_posting(row, linkedin, {}, {}, langs)["contracts"] == "internship"
-    titled = {**row, "title": "Stażysta w dziale IT"}
-    assert details._from_posting(titled, "Oferujemy płatny staż.", {}, {}, langs)["contracts"] == "internship"
+    assert _posting(text)["contracts"] == "employment"
+    assert _posting("Seniority level: Internship\nEmployment type: Internship")["contracts"] == "internship"
+    assert _posting("Oferujemy płatny staż.", title="Stażysta w dziale IT")["contracts"] == "internship"
+

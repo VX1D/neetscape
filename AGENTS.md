@@ -75,6 +75,7 @@ it passes any search. `defaults` are merged into every search. Full schema:
 | `worktime` | allowed: `full_time`, `part_time`, `flexible`, `unknown` |
 | `contracts` | allowed: `employment` (`uop` is an old alias), `b2b`, `mandate`, `specific_task`, `internship`, `freelance`, `mini_job`, `working_student`, `temp_agency`, `other`. With `worktime`, either one may match |
 | `levels_exclude` | `intern`, `junior`, `mid`, `senior`, `lead`, `manager`, `unknown` |
+| `fields`, `fields_exclude` | job fields read from the title (then the board's category): `ai_automation`, `security`, `qa`, `devops_cloud`, `data`, `erp_crm`, `it_support`, `it_admin`, `software_dev`, `product_project`, `design`, `ecommerce`, `customer_service`, `sales`, `marketing`, `hr`, `finance`, `legal`, `retail`, `admin_office`, `logistics`, `engineering`, `manufacturing`, `healthcare`, `education`, `hospitality`, `other`. Prefer these to title regexes for a person's field, e.g. `"fields": ["ai_automation", "it_support", "qa"]` |
 | `pay` | `{"min": 9000, "per": "month"}` or `{"min": 45, "per": "hour"}`; in the profile country's currency (PLN, EUR), compared with the top of the offer's range. `"required": true` drops offers without pay |
 | `max_age_days` | ignore older postings, e.g. `30` |
 | `title_include` | regexes; at least one must match the title: `["support\|helpdesk\|automat"]` |

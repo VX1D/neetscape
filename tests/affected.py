@@ -37,7 +37,6 @@ RULES: list[tuple[str, list[str]]] = [  # path regex -> test paths (first match 
     (r"^neetscape/(report|details|cli)\.py$", ["tests/engine/test_store.py", "tests/engine/test_cli.py"]),
     (r"^neetscape/browser\.py$", ["tests/engine/test_browser.py"]),
     (r"^neetscape/(log|__init__|__main__)\.py$", []),
-    (r"^tests/core/snapshot_pl\.json$", ["tests/core"]),
     (r"^(README|AGENTS|CLAUDE|CONTRIBUTING)\.md$|^docs/|^LICENSE$|^\.github/", []),
     (r"^tests/(core|boards|engine|countries)/(\w+/)*test_\w+\.py$", ["{path}"]),
     (r"^tests/live/", []),  # live tests run only on demand: pytest -m live

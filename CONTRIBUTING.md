@@ -102,9 +102,10 @@ All of them follow the same rules.
    and `default_boards` (usually `("<cc>",)`, the group of the country's boards plus LinkedIn).
    This module must not import boards.
 2. Add a language pack `neetscape/lang/<code>.py` if the language is new: `VOCAB` (mode, work time,
-   contracts, level, hints; `first` for phrases another language's generic word would misread)
-   and an `EXAMPLES` table. Contributors extend `EXAMPLES` rows rather than writing tests;
-   `tests/core/test_lang.py` checks every row.
+   contracts, level, job function and domain, hints; `explicit` for statements that settle a field).
+   Check a vocabulary change on a real database rather than with unit tests:
+   `python tests/infer_audit.py COPY.db --dump-stored before.json`, change, then `--rederive before.json`
+   lists every changed decision with sample titles.
 3. Add the country to the `country` enums in `neetscape/profile/schema.json` (a test compares them).
 4. Add at least two boards (see above) under `neetscape/countries/<cc>/boards/` (its `__init__.py`
    imports them and lists them in `__all__`), and presets under

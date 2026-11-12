@@ -62,8 +62,8 @@ A country is a package `neetscape/countries/<cc>/`: `__init__.py` defines a `Cou
 exchange rates, languages, hours per month, LinkedIn location, city aliases such as
 München/Munich, legal-form words for de-duplication, contract words, default boards), `boards/`
 holds its adapters (registered with that country) and `presets/` its profile presets. Free text
-is read with the language packs `neetscape/lang/<code>.py` (vocabularies plus an `EXAMPLES` table
-that the tests check); English is always added.
+is read with the language packs `neetscape/lang/<code>.py` (vocabularies; `neetscape/infer.py` decides
+between their matches); English is always added.
 
 One database holds one country's offers, because pay is stored in that country's currency:
 `neetscape run` refuses a profile of another country than the previous runs in the same `--out`.

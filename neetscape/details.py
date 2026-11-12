@@ -17,7 +17,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
-import re
 import urllib.parse
 from collections import defaultdict
 
@@ -41,33 +40,6 @@ def _languages(board: str, home: str) -> tuple:
     return countries.languages(countries.text_country(b.caps.country if b else "", home))
 
 
-def _from_posting(row, text: str, meta: dict, hints: dict, languages) -> dict:
-    """Fields the listing card left unknown, read from the posting. The mode only from strong signals (JSON-LD
-    TELECOMMUTE, "fully remote" phrases, hybrid words): a long posting mentions "remote" for many reasons."""
-    if not text or text.startswith("ERROR"):
-        return {}
-    mode = "remote" if meta.get("remote") or hints.get("fully_remote") else "hybrid" if hints.get("hybrid") else "unknown"
-    found = {"mode": mode, "worktime": infer.worktime_from_text(text, languages)}
-    out = {k: v for k, v in found.items() if row[k] == "unknown" and v != "unknown"}
-    if not row["contracts"] and (cs := _posting_contracts(row, text, languages)):
-        out["contracts"] = ",".join(cs)
-    return out
-
-
-_INTERNSHIP_FIELD = re.compile(r"employment type:\s*internship|rodzaj (?:umowy|zatrudnienia):\s*sta[żz]", re.I)
-
-
-def _posting_contracts(row, text: str, languages) -> list[str]:
-    """Contract types named in the posting. An internship only when the title says so or a labelled field does
-    (LinkedIn's "Employment type: Internship"): free text mentions "staż" and "internships" for other reasons
-    (a company's 37 years of "stażu", "experience from internships", an internship programme as a benefit)."""
-    found = infer.contracts_from_text(text, languages)
-    if "internship" in found and not (_INTERNSHIP_FIELD.search(text)
-                                      or "internship" in infer.contracts_from_text(row["title"] or "", languages)):
-        found.remove("internship")
-    return found
-
-
 def _is_earlier_first_publication(row, meta: dict) -> bool:
     """The posting's date is the first publication (`Board.posting_date_is_first`) and earlier than the stored
     one, which the listing card gave as the last refresh."""
@@ -82,7 +54,7 @@ def _save(store: Store, row, status: int, text: str, meta: dict, home: str = "pl
     tick()
     if (meta.get("company") or "").strip().lower() in PLACEHOLDER_COMPANIES:
         meta = {**meta, "company": ""}
-    updates = {k: meta[k] for k in ("company", "published") if meta.get(k) and not row[k]} | _from_posting(row, text, meta, hints, languages)
+    updates = {k: meta[k] for k in ("company", "published") if meta.get(k) and not row[k]}
     if _is_earlier_first_publication(row, meta):
         updates["published"] = meta["published"]
     if updates.get("published") and not parse_date(updates["published"]):
@@ -90,6 +62,7 @@ def _save(store: Store, row, status: int, text: str, meta: dict, home: str = "pl
     if updates:
         store.db.execute(f"UPDATE offers SET {', '.join(f'{k}=?' for k in updates)} WHERE id=?", (*updates.values(), row["id"]))
         store.db.commit()
+    store.rederive([row["id"]])  # the posting is a new observation: mode, work time, contracts
 
 
 async def _posting(fetch, row, render) -> tuple[int, str, dict]:

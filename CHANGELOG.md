@@ -4,6 +4,19 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
 
 ## Unreleased
 
+- Derived fields are re-derived from stored observations: offers keep the adapter's structured values
+  (`facts`), the requests that found them and the fetched posting apart from mode, work time, contracts,
+  level and job field, which `neetscape eval` derives again (a vocabulary change needs no crawl).
+  `neetscape show ID` prints where each value came from (`evidence`: board data, the board's remote
+  filter, JSON-LD, title, card text, category, posting). One module, `neetscape/infer.py`; vocabularies are
+  checked on real data with `tests/infer_audit.py` instead of per-pattern examples (the Polish snapshot and
+  the packs' `EXAMPLES` tables are gone).
+- Job fields: every offer gets a `job_field` (26 fields such as `ai_automation`, `it_support`, `qa`, `hr`,
+  `finance`, `retail`, or `other`), read as function x domain from the title, then the board's category
+  ("Logistics Support Specialist" is logistics, "Technical Support Engineer" IT support, "HR Automation
+  Specialist" AI and automation; a qualifier such as "(GenAI)" counts less than the title's head). Columns
+  `job_field`, `job_function`, `job_domain`; search filters `fields` and `fields_exclude`; a `field` column
+  in listing.tsv; REPORT.html shows the field and groups by it.
 - docs/review.md: a cheap, high-precision review workflow for large crawls (narrow with the profile and `eval`,
   pick by title, let posting rules drop what they can, read only the survivors; when to use subagents).
 - Search option `remote_proof`: a remote search passes an offer only when its fetched posting describes remote

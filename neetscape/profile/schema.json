@@ -250,6 +250,76 @@
         "remote_proof": {
           "type": "boolean",
           "description": "remote searches: an offer passes only when its fetched posting describes remote work (fully remote, or plain remote wording) and mentions no hybrid model or required presence (client visits, business travel, office days, relocation); before the posting is fetched the field counts as unknown (see `unknown`)"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "ai_automation",
+              "security",
+              "qa",
+              "devops_cloud",
+              "data",
+              "erp_crm",
+              "it_support",
+              "it_admin",
+              "software_dev",
+              "product_project",
+              "design",
+              "ecommerce",
+              "customer_service",
+              "sales",
+              "marketing",
+              "hr",
+              "finance",
+              "legal",
+              "retail",
+              "admin_office",
+              "logistics",
+              "engineering",
+              "manufacturing",
+              "healthcare",
+              "education",
+              "hospitality",
+              "other"
+            ]
+          },
+          "description": "allowed job fields, read from the title (then the board's category); 'other' when none matches"
+        },
+        "fields_exclude": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "ai_automation",
+              "security",
+              "qa",
+              "devops_cloud",
+              "data",
+              "erp_crm",
+              "it_support",
+              "it_admin",
+              "software_dev",
+              "product_project",
+              "design",
+              "ecommerce",
+              "customer_service",
+              "sales",
+              "marketing",
+              "hr",
+              "finance",
+              "legal",
+              "retail",
+              "admin_office",
+              "logistics",
+              "engineering",
+              "manufacturing",
+              "healthcare",
+              "education",
+              "hospitality",
+              "other"
+            ]
+          },
+          "description": "job fields to drop"
         }
       },
       "additionalProperties": false,
@@ -473,6 +543,76 @@
           "remote_proof": {
             "type": "boolean",
             "description": "remote searches: an offer passes only when its fetched posting describes remote work (fully remote, or plain remote wording) and mentions no hybrid model or required presence (client visits, business travel, office days, relocation); before the posting is fetched the field counts as unknown (see `unknown`)"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "ai_automation",
+                "security",
+                "qa",
+                "devops_cloud",
+                "data",
+                "erp_crm",
+                "it_support",
+                "it_admin",
+                "software_dev",
+                "product_project",
+                "design",
+                "ecommerce",
+                "customer_service",
+                "sales",
+                "marketing",
+                "hr",
+                "finance",
+                "legal",
+                "retail",
+                "admin_office",
+                "logistics",
+                "engineering",
+                "manufacturing",
+                "healthcare",
+                "education",
+                "hospitality",
+                "other"
+              ]
+            },
+            "description": "allowed job fields, read from the title (then the board's category); 'other' when none matches"
+          },
+          "fields_exclude": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "ai_automation",
+                "security",
+                "qa",
+                "devops_cloud",
+                "data",
+                "erp_crm",
+                "it_support",
+                "it_admin",
+                "software_dev",
+                "product_project",
+                "design",
+                "ecommerce",
+                "customer_service",
+                "sales",
+                "marketing",
+                "hr",
+                "finance",
+                "legal",
+                "retail",
+                "admin_office",
+                "logistics",
+                "engineering",
+                "manufacturing",
+                "healthcare",
+                "education",
+                "hospitality",
+                "other"
+              ]
+            },
+            "description": "job fields to drop"
           }
         },
         "additionalProperties": false

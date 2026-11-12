@@ -154,3 +154,10 @@ def test_remote_proof_reads_the_posting():
     visits = row(posting="100% zdalnie, spotkania u klientów raz w miesiącu.")
     assert ev.check(R(visits), search)[1][0].startswith("posting requires presence: spotkania u klient")
     assert ev.check(R(visits), s(where="remote"))[0]                                   # only when asked for
+
+
+def test_job_field_filters():
+    assert ev.check(R(row(job_field="ai_automation")), s(fields=["ai_automation", "it_support"]))[0]
+    assert ev.check(R(row(job_field="hr")), s(fields=["ai_automation"]))[1] == ["field hr"]
+    assert ev.check(R(row(job_field="sales")), s(fields_exclude=["sales", "hr"]))[1] == ["field sales"]
+    assert ev.check(R(row()), s(fields_exclude=["hr"]))[0]                      # no field stored: "other"

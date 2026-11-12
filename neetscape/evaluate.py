@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import datetime as dt
 import json
-import re
 
 from . import country as countries
 from . import infer
@@ -105,33 +104,8 @@ def _check_remote_proof(o, s: Search, v: _Verdict) -> None:
     if not text or text.startswith("ERROR"):
         v.unknown("remote proof")
         return
-    languages = countries.languages(s.where.country)
-    h = infer.hints(text, languages)
-    presence = _required_presence(text, languages) + h["office"]
-    if presence:
-        v.fail("posting requires presence: " + ", ".join(presence[:2]))
-    elif not (h["fully_remote"] or infer.mode_from_text(text, languages) == "remote"):
-        v.fail("posting does not mention remote work")
-
-
-_SENTENCES = re.compile(r"(?<=[.!?;])\s+|\n+|\s+[•▪·]\s+")
-_CHOICE = re.compile(r"\b(?:lub|albo|bądź|or|either)\b|\s/\s|zdalnie/|/hybryd|remote/|/hybrid", re.I)
-
-
-def _required_presence(text: str, languages) -> list[str]:
-    """Hybrid wording that the posting requires. A sentence offering remote work as one of the options ("hybrid or
-    100% remote", "remote for people outside the city, hybrid in Gdańsk or fully remote") is a choice, not a
-    requirement, and is left out."""
-    found: list[str] = []
-    for sentence in _SENTENCES.split(text):
-        hybrid = infer.hints(sentence, languages)["hybrid"]
-        if not hybrid:
-            continue
-        offers_remote = infer.hints(sentence, languages)["fully_remote"] or infer.mode_from_text(
-            re.sub(r"(?i)hybry\w*|hybrid\w*", "", sentence), languages) == "remote"
-        if not (offers_remote and _CHOICE.search(sentence)):
-            found += [w for w in hybrid if w not in found]
-    return found
+    if reason := infer.remote_proof(text, countries.languages(s.where.country)):
+        v.fail(reason)
 
 
 def _check_keywords(o, s: Search, v: _Verdict) -> None:
@@ -207,6 +181,9 @@ def check(o, s: Search, today: dt.date | None = None, hours_per_month: int = HOU
         _check_remote_proof(o, s, v)
     _check_keywords(o, s, v)
     _check_worktime(o, s, v)
+    field = (o["job_field"] if "job_field" in o.keys() else "") or "other"
+    if (s.fields and field not in s.fields) or field in s.fields_exclude:
+        v.fail(f"field {field}")
     if o["level"] in s.levels_exclude:
         v.fail(f"level {o['level']}")
     _check_pay(o, s, v, hours_per_month)
@@ -246,6 +223,7 @@ def evaluate(store: Store, profile: Profile, run_id: int) -> dict[str, int]:
     earlier verdicts). Returns passed counts per search."""
     passed, rejected, counts = [], [], {s.id: 0 for s in profile.searches}
     hours = profile.country.hours_per_month
+    store.rederive()  # derived fields follow the current vocabularies and policies without a new crawl
     for o in store.current_offers(run_id):
         black, drop = _blacklist_verdict(o, profile)
         for s in profile.searches:

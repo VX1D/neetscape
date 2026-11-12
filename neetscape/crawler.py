@@ -83,10 +83,8 @@ def _partial_stop(organic: list[Offer], known: set[str], incremental: bool, max_
     return ""
 
 
-def _apply_pushed(o: Offer, r: Request) -> None:
-    """What the board filtered for us is evidence about the offer."""
-    if "remote" in r.pushed and o.mode == "unknown":
-        o.mode = "remote"
+def _locate_by_request(o: Offer, r: Request) -> None:
+    """An offer the board found with its city filter is in that city when the card names no place."""
     if "city" in r.pushed and not o.locations:
         o.locations = [r.params["city"]]
 
@@ -201,7 +199,8 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
     # requests (other phrases, other searches) say nothing about what lies deeper in this one
     incremental = incremental and store.completed_before(r.key, run_id)
     max_pages = min(board.caps.max_pages, limit_pages or board.caps.max_pages)
-    text_kw = fill_kwargs(text_country(board, r, search)) | {"base": base, "hours": hours, "days": days}
+    code = text_country(board, r, search)
+    text_kw = fill_kwargs(code) | {"country": code, "base": base, "hours": hours, "days": days}
 
     async def fetch(page: int, url: str) -> tuple[str, list[Offer], int, set]:
         nonlocal pages, found
@@ -220,8 +219,8 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
         if progress:
             progress.active(r.board, f"p{page}")
         for o in offers:
-            _apply_pushed(o, r)
-            infer.fill_from_text(o, fx, **text_kw)
+            _locate_by_request(o, r)
+            infer.fill(o, fx, request_remote="remote" in r.pushed, **text_kw)
         new, known = store.ingest(offers, run_id, req_id, page, board.posting_date_is_first)
         found += new
         if progress:

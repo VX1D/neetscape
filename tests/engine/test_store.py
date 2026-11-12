@@ -1,4 +1,5 @@
 """test_store.py"""
+import json
 import pytest
 
 from neetscape import evaluate as ev
@@ -281,3 +282,15 @@ def test_migration_merges_existing_qualified_duplicates(tmp_path):
     db.db.execute("ALTER TABLE clusters DROP COLUMN company")
     st._cluster_columns(db.db)
     assert len({row[0] for row in db.db.execute("SELECT cluster_id FROM offers")}) == 1
+
+
+def test_job_fields_are_derived_from_the_title_and_the_category(tmp_path):
+    db = Store(tmp_path / "j.db")
+    r = db.start_run({}, [])
+    req = db.start_request(r, "olx", "s", None, {"category": "obsluga-klienta"}, ())
+    offers = [Offer(board="olx", key="1", url="u1", title="Technical Support Engineer", company="X"),
+              Offer(board="olx", key="2", url="u2", title="Support Associate", company="Y")]
+    db.ingest(offers, r, req, 1)
+    assert db.offer("u1")["job_field"] == "it_support"
+    assert db.offer("u2")["job_field"] == "customer_service"  # the title's function, the request category's domain
+    assert json.loads(db.offer("u2")["evidence"])["job_field"][0] == "category"

@@ -34,7 +34,7 @@ from pathlib import Path
 from .. import country as countries
 from ..boards import REGISTRY, expand
 from ..country import Country
-from ..model import CONTRACT_ALIASES, CONTRACTS, LEVELS, WORKTIMES, Search, Where
+from ..model import CONTRACT_ALIASES, CONTRACTS, FIELDS, LEVELS, WORKTIMES, Search, Where
 
 PRESETS = ("focused", "broad", "local", "side")  # shared presets; a country may add or override some
 SORT_KEYS = ("score", "new", "pay", "published")
@@ -126,6 +126,8 @@ def build_search(d: dict, defaults: dict, n: int, home: Country | None = None) -
         worktime=_choice(at + ".worktime", s.get("worktime"), WORKTIMES),
         contracts=_choice(at + ".contracts", s.get("contracts"), CONTRACTS, {**home.contract_aliases, **CONTRACT_ALIASES}),
         levels_exclude=_choice(at + ".levels_exclude", s.get("levels_exclude"), LEVELS),
+        fields=_choice(at + ".fields", s.get("fields"), FIELDS),
+        fields_exclude=_choice(at + ".fields_exclude", s.get("fields_exclude"), FIELDS),
         pay_min=pay.get("min"), pay_period=pay.get("per", "month"), require_pay=bool(pay.get("required")),
         max_age_days=s.get("max_age_days"),
         title_include=_rx(at + ".title_include", s.get("title_include")),

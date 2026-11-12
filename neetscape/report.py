@@ -93,7 +93,7 @@ def pay_column(currency: str = "PLN") -> str:
 
 
 def columns(currency: str = "PLN") -> list[str]:
-    return ["id", "new", "score", "title", "company", pay_column(currency), "mode", "worktime", "contracts", "level", "age",
+    return ["id", "new", "score", "title", "field", "company", pay_column(currency), "mode", "worktime", "contracts", "level", "age",
             "boards", "searches", "tags", "mark", "url"]
 
 
@@ -102,7 +102,8 @@ def _md_columns(currency: str) -> list[str]:
 
 
 def row_values(d: dict, currency: str = "PLN") -> dict:
-    return {"id": d["id"], "new": "🆕" if d["is_new"] else "", "score": d["score"], "title": d["title"], "company": d["company"],
+    return {"id": d["id"], "new": "🆕" if d["is_new"] else "", "score": d["score"], "title": d["title"],
+            "field": d.get("job_field") or "other", "company": d["company"],
             pay_column(currency): pay_label(d), "mode": d["mode"], "worktime": d["worktime"], "contracts": d["contracts"],
             "level": d["level"], "age": age_label(d["published"]), "boards": d["boards"] or d["board"], "searches": ",".join(d["searches"]),
             "tags": ",".join(d["tags"]), "mark": d["mark"] or "", "url": d["url"]}

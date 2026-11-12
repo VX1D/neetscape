@@ -1,12 +1,17 @@
 """Polish."""
 
 VOCAB = {
-    "first": {
-        "mode": [
-            ("remote", r"100\s*% ?zdaln|w pełni zdaln|całkowicie zdaln|wyłącznie zdaln|tylko zdaln"),
-            ("remote", r"zdaln\w*\s*(?:/|,|lub|albo)\s*(?:praca\s+)?hybryd|hybryd\w*\s*(?:/|,|lub|albo)\s*(?:praca\s+)?zdaln"),  # a choice: remote is offered
-            ("remote", r"miejsce pracy:[^:]{0,80}?praca zdalna"),  # OLX lists the offered work places
-        ],
+    "explicit": {
+        "contract": {
+            "internship": [r"rodzaj (?:umowy|zatrudnienia):\s*sta[żz]"],  # a labelled field; free text says "staż"/"internship" for other reasons
+        },
+        "mode": {
+            "remote": [
+                r"100\s*% ?zdaln|w pełni zdaln|całkowicie zdaln|wyłącznie zdaln|tylko zdaln",
+                r"zdaln\w*\s*(?:/|,|lub|albo)\s*(?:praca\s+)?hybryd|hybryd\w*\s*(?:/|,|lub|albo)\s*(?:praca\s+)?zdaln",  # a choice: remote is offered
+                r"miejsce pracy:[^:]{0,80}?praca zdalna",  # OLX lists the offered work places
+            ],
+        },
     },
     "mode": {
         "remote": [r"praca zdalna", r"\bzdalnie\b", r"z domu", r"\bprac\w* zdaln\w*", r"\btryb\w* zdaln\w*"],
@@ -35,6 +40,66 @@ VOCAB = {
         "manager": [r"kierownik", r"dyrektor"],
         "mid": [r"specjalist"],
     },
+    "function": {
+        "test": [r"tester|testow\w*|\bqa\b"],
+        "shop": [r"kasjer|sprzedawc|ekspedient|asystent\w* (?:sprzedaży|kas|sklep)|pracownik sklepu|merchandiser"],
+        "assist": [r"asystent|sekretar|recepcj|pracownik\w* biurow|pomoc\w* biurow|wprowadza\w* danych|archiwi"],
+        "serve": [r"obsług\w* klient|konsultant\w* (?:telefon|infolini|ds\.? klient|call)|infolini|call ?cent|reklamac|"
+                  r"obsług\w* telefoniczn|telefoniczn\w* obsług|biur\w* obsługi"],
+        "sell": [r"sprzedaż|handlow|przedstawiciel|akwizyt|doradc\w* (?:klienta|handlow|finansow)"],
+        "people": [r"rekrut|kadr|\bpłac|personaln"],
+        "teach": [r"nauczyciel|lektor|korepetyt|wykładowc|\btrener|instruktor|wychowaw"],
+        "care": [r"pielęgniar|opiekun|lekarz|ratownik|fizjoterap|farmaceut|stomatolog|terapeut|położn"],
+        "manage_project": [r"kierownik\w* projekt|koordynator\w* projekt|menedżer\w* projekt|analityk\w* (?:biznesow|systemow)|"
+                           r"właściciel produktu"],
+        "automate": [r"automatyzac\w*|automatyzow\w*|automatyzuj\w*"],
+        "develop": [r"programist|deweloper"],
+        "design": [r"grafik|projektant\w* (?:graficz|ux|ui|stron)"],
+        "market": [r"marketing|social media|copywrit|reklam|pozycjonow"],
+        "account": [r"księgow|ksiegow|kontroler\w* finans|audytor|biegł\w* rewident|fakturzyst"],
+        "law": [r"prawnik|radc\w* prawn|adwokat|aplikant|notariusz"],
+        "transport": [r"kierowc|kurier|spedytor|magazynier|logistyk|dyspozytor|wózk\w* widłow|kompletuj|komisjon"],
+        "cook_clean": [r"kelner|kucharz|barista|barman|pomoc\w* kuchenn|sprząta|pokojow|zmywak|pracownik restauracji"],
+        "operate": [r"operator|monter|spawacz|ślusarz|tokarz|frezer|pakowacz|pracownik\w* produkcji|pracownik\w* fizyczn|"
+                    r"pracownik\w* linii"],
+        "build": [r"elektryk|mechanik|hydraulik|stolarz|murarz|budowlan|instalator|serwisant(?! komputer)|elektromonter|"
+                  r"automatyk|technolog|konstruktor"],
+        "administer": [r"administrator"],
+        "support": [r"wsparci\w*|pomoc\w* techniczn|serwisant komputer"],
+        "analyse": [r"analityk"],
+        "consult": [r"konsultant|doradc"],
+        "engineer": [r"inżynier|\btechnik\b|architekt"],
+        "manage": [r"kierownik|menedżer|dyrektor|koordynator|lider"],
+        "specialist": [r"specjalist|ekspert|referent"],
+    },
+    "domain": {
+        "ai": [r"sztuczn\w* inteligencj|\bsi\b|uczeni\w* maszynow"],
+        "security": [r"cyberbezpiecz|bezpieczeństw\w* (?:it|informac|sieci|system)"],
+        "erp": [r"optima|enova|comarch|symfonia|subiekt|wdrożeniow"],
+        "data": [r"danych|hurtowni"],
+        "cloud": [r"chmur"],
+        "software": [r"oprogramowani|aplikacj|stron\w* internetow"],
+        "it": [r"informaty|wsparci\w* techniczn|pomoc\w* techniczn|sieci komputer|komputer"],
+        "tech": [r"techniczn|system\w*|sprzęt\w*|serwer\w*|integrac\w*"],
+        "ecommerce": [r"allegro|sklep\w* internetow|baselinker"],
+        "industrial": [r"utrzymani\w* ruchu|automatyk|przemysł|elektr|mechani"],
+        "construction": [r"budow|budowl|konstrukc"],
+        "manufacturing": [r"produkc|zakład|fabryk"],
+        "logistics": [r"logisty|spedyc|transport|magazyn|dostaw|zakup|zaopatrz"],
+        "hr": [r"kadr|\bpłac|rekrut|personal"],
+        "finance": [r"finans|księg|ksieg|bank|ubezpiecz|podatk|kredyt|rachunk|płatnoś|windyk"],
+        "legal": [r"prawn|kancelari|zgodnoś|\brodo\b"],
+        "health": [r"medyczn|zdrow|szpital|klinik|aptek|pacjent|stomatolog|farmac"],
+        "education": [r"szkoł|edukac|przedszkol|nauczan"],
+        "hospitality": [r"hotel|restaurac|gastronom|kuchni|catering"],
+        "retail": [r"sklep(?!\w* internetow)|salon\w*|drogeri|supermarket|hipermarket"],
+        "customer": [r"klient"],
+        "sales": [r"sprzeda|handlow"],
+        "marketing": [r"marketing|reklam"],
+        "office": [r"biur|administracyjn|sekretariat"],
+        "design": [r"graficz"],
+        "product": [r"produktu|projektów|projektami"],
+    },
     "hints": {
         "fully_remote": [r"100\s*% ?zdaln", r"100\s*% pracy zdaln", r"w pełni zdaln", r"całkowicie zdaln", r"wyłącznie zdaln",
                          r"z dowolnego miejsca", r"cała polska \(praca zdalna\)"],
@@ -48,36 +113,3 @@ VOCAB = {
                    r"przeprowadzk\w*", r"szkoleni\w* stacjonarn\w*", r"wdrożeni\w* stacjonarn\w*"],
     },
 }
-
-EXAMPLES = [
-    ("Pracujesz w 100% zdalnie, z dowolnego miejsca w Polsce", "fully_remote", True),
-    ("Praca zdalna, spotkania u klientów kilka razy w miesiącu", "office", ["spotkania u klientów"]),
-    ("Zdalnie, ale raz w miesiącu w biurze w Poznaniu", "office", ["raz w miesiącu w biurze"]),
-    ("Będziesz przeprowadzać testy aplikacji, pracując w trybie zdalnym", "office", []),
-    ("Oferujemy pracę zdalną w godzinach 8-16", "mode", "remote"),
-    ("Praca zdalna, pełny etat", "mode", "remote"),
-    ("Hybrydowo, 2 dni w biurze", "mode", "hybrid"),
-    ("Praca hybrydowa, 2 dni zdalnie", "mode", "hybrid"),
-    ("Model hybrydowy (praca zdalnie 3 dni w tygodniu)", "mode", "hybrid"),
-    ("Praca zdalna lub hybrydowa", "mode", "remote"),
-    ("Miejsce pracy: Praca hybrydowa, Praca zdalna", "mode", "remote"),
-    ("Miejsce pracy: Praca hybrydowa, W siedzibie firmy, Praca zdalna", "mode", "remote"),
-    ("Miejsce pracy: Praca hybrydowa Odświeżono dnia 09 listopada", "mode", "hybrid"),
-    ("100% zdalnie, raz w kwartale spotkanie w biurze", "mode", "remote"),
-    ("Administrator chmury hybrydowej, praca zdalna", "mode", "remote"),
-    ("Praca stacjonarna w Krakowie", "mode", "onsite"),
-    ("Praca dodatkowa, pół etatu", "worktime", "part_time"),
-    ("Umowa o pracę lub B2B", "contract", ["employment", "b2b"]),
-    ("Umowa zlecenie", "contract", ["mandate"]),
-    ("Umowa na okres próbny", "contract", ["employment"]),
-    ("Umowa na czas określony", "contract", ["employment"]),
-    ("Umowa o dzieło", "contract", ["specific_task"]),
-    ("Wymagamy 2 lat stażu pracy na podobnym stanowisku", "contract", []),
-    ("Znajomość dobrych praktyk QA i ITIL", "contract", []),
-    ("Oferujemy płatny staż w dziale IT", "contract", ["internship"]),
-    ("Praktyki studenckie w zespole wsparcia", "contract", ["internship"]),
-    ("Młodszy specjalista ds. obsługi klienta", "level", "junior"),
-    ("Kierownik sklepu", "level", "manager"),
-    ("3 lata doświadczenia komercyjnego", "years", True),
-    ("Umowa na czas określony", "fixed_term", True),
-]

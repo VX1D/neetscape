@@ -20,6 +20,7 @@ import re
 import sqlite3
 from pathlib import Path
 
+from .infer import board_facts
 from .model import Offer, canonical_contract, norm, norm_company, parse_date
 
 
@@ -75,6 +76,24 @@ def _cluster_columns(db: sqlite3.Connection) -> None:
                 clusters.remove(d)
 
 
+def _observation_columns(db: sqlite3.Connection) -> None:
+    """v6: offers keep their observations apart from the derived fields: `facts` (the adapter's structured values),
+    `country` (the language of the text; '' = the board's, else the database's) and `evidence` (derived column ->
+    [source, phrase]); the job field and its two axes are new derived columns. Offers stored earlier did not separate the two: their stored values become their facts."""
+    db.execute("ALTER TABLE offers ADD COLUMN facts TEXT DEFAULT '{}'")
+    db.execute("ALTER TABLE offers ADD COLUMN evidence TEXT DEFAULT '{}'")
+    db.execute("ALTER TABLE offers ADD COLUMN country TEXT DEFAULT ''")
+    for col in ("job_field", "job_function", "job_domain"):  # derived by `rederive` (infer.fields)
+        db.execute(f"ALTER TABLE offers ADD COLUMN {col} TEXT DEFAULT '{'other' if col == 'job_field' else 'unknown'}'")
+    db.execute("CREATE INDEX offers_field ON offers(job_field)")
+    for oid, mode, worktime, contracts, level in db.execute(
+            "SELECT id, mode, worktime, contracts, level FROM offers").fetchall():
+        facts = {k: v for k, v in (("mode", mode), ("worktime", worktime), ("level", level)) if v not in _EMPTY}
+        if contracts:
+            facts["contracts"] = contracts.split(",")
+        db.execute("UPDATE offers SET facts=? WHERE id=?", (json.dumps(facts, sort_keys=True), oid))
+
+
 MIGRATIONS = [
     """
     CREATE TABLE runs(id INTEGER PRIMARY KEY, started_at TEXT, finished_at TEXT, status TEXT,
@@ -113,6 +132,7 @@ MIGRATIONS = [
     CREATE INDEX offers_key ON offers(key);
     """,
     _cluster_columns,
+    _observation_columns,
 ]
 
 MARK_STATUSES = ("shortlisted", "applied", "interview", "offer", "rejected", "ignored")
@@ -121,7 +141,7 @@ GONE = (404, 410)  # HTTP statuses of a posting that mark its offer gone
 _POSTING_OK = "d.http_status = 200 AND d.text != ''"  # a stored posting with text (failures keep status 0 / 4xx)
 
 
-_EMPTY = (None, "", "unknown", "[]")  # stored values that mean "the board did not say"
+_EMPTY = (None, "", "unknown", "[]", "{}")  # stored values that mean "the board did not say"
 
 # Stop reasons of a request that reached its last allowed page: the board's `max_pages`, or a smaller
 # `--limit-pages N` given to the command that fetched it (a resumed run may get another limit than it started with).
@@ -286,7 +306,9 @@ class Store:
                     contracts=",".join(sorted({canonical_contract(c) for c in o.contracts})), level=o.level,
                     category=o.category, skills=", ".join(o.skills), pay_text=o.pay_text, pay_period=o.pay_period,
                     pay_min=o.pay_min, pay_max=o.pay_max, published=o.published.isoformat() if o.published else None,
-                    promoted=int(o.promoted), snippet=o.snippet[:1000], description=o.description)
+                    promoted=int(o.promoted), snippet=o.snippet[:1000], description=o.description,
+                    facts=json.dumps(board_facts(o) if o.facts is None else o.facts, ensure_ascii=False, sort_keys=True),
+                    country=o.country)
 
     def _posting_set_published(self, cur: sqlite3.Row, card_published: str | None) -> bool:
         """The stored `published` came from the offer's posting and is earlier than the card's date."""
@@ -316,18 +338,53 @@ class Store:
             (o.board, o.key, *values.values(), self._cluster(o, run_id), run_id, run_id)).lastrowid
         return offer_id, False
 
+    def rederive(self, offer_ids=None) -> int:
+        """Derive the inferred fields (infer.derive) of some offers, or of all, again from their observations: the
+        adapter's facts, the title and card text, the requests that found them and the fetched posting. Returns
+        how many offers changed."""
+        from . import country as countries, infer
+        from .boards import REGISTRY
+        if offer_ids is not None and not offer_ids:
+            return 0
+        home = self.run_country() or "pl"
+        where = f"WHERE o.id IN ({','.join('?' * len(offer_ids))})" if offer_ids is not None else ""
+        rows = self.db.execute(f"""
+            SELECT o.*, d.text AS posting, d.jsonld AS posting_meta,
+                   (SELECT GROUP_CONCAT(DISTINCT json_extract(r.params_json, '$.category')) FROM sightings s
+                    JOIN requests r ON r.id = s.request_id WHERE s.offer_id = o.id) AS request_category,
+                   EXISTS (SELECT 1 FROM sightings s JOIN requests r ON r.id = s.request_id
+                           WHERE s.offer_id = o.id AND instr(r.pushed, 'remote') > 0) AS request_remote
+            FROM offers o LEFT JOIN details d ON d.offer_id = o.id {where}""", tuple(offer_ids or ())).fetchall()
+        changed = 0
+        for r in rows:
+            board = REGISTRY.get(r["board"])
+            code = r["country"] or countries.text_country(board.caps.country if board else "", home)
+            meta = json.loads(r["posting_meta"] or "{}")
+            cols = infer.derive(title=r["title"] or "", card=infer.card_text(r), facts=json.loads(r["facts"] or "{}"),
+                                request_remote=bool(r["request_remote"]), posting=r["posting"] or "",
+                                posting_remote=bool(meta.get("remote")),
+                                category=" ".join(filter(None, (r["category"], r["request_category"]))),
+                                languages=countries.languages(code))
+            if any(r[k] != v for k, v in cols.items()):
+                self.db.execute(f"UPDATE offers SET {', '.join(f'{k}=?' for k in cols)} WHERE id=?", (*cols.values(), r["id"]))
+                changed += 1
+        self.db.commit()
+        return changed
+
     def ingest(self, offers: list[Offer], run_id: int, request_id: int, page: int,
                posting_date_is_first: bool = False) -> tuple[int, set[str]]:
         """Upsert offers and record the sighting. Returns (offers new to this request, keys of the offers
         known from earlier runs). `posting_date_is_first`: the board's flag (see `_upsert`)."""
-        new_in_request, known = 0, set()
+        new_in_request, known, ids = 0, set(), []
         for o in offers:
             offer_id, seen_before = self._upsert(o, run_id, posting_date_is_first)
             if seen_before:
                 known.add(o.key)
             new_in_request += self.db.execute("INSERT OR IGNORE INTO sightings(offer_id, request_id, page) VALUES (?,?,?)",
                                               (offer_id, request_id, page)).rowcount
+            ids.append(offer_id)
         self.db.commit()
+        self.rederive(ids)
         return new_in_request, known
 
     def mark_gone(self, run_id: int) -> int:

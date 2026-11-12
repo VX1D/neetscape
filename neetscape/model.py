@@ -74,6 +74,9 @@ def norm_company(s: str) -> str:
     return norm(_legal().sub("", fold(s)))[:16]
 
 
+FIELDS = ('ai_automation', 'security', 'qa', 'devops_cloud', 'data', 'erp_crm', 'it_support', 'it_admin', 'software_dev', 'product_project', 'design', 'ecommerce', 'customer_service', 'sales', 'marketing', 'hr', 'finance', 'legal', 'retail', 'admin_office', 'logistics', 'engineering', 'manufacturing', 'healthcare', 'education', 'hospitality')  # job fields (lang ORDER["field"]); "other" when none matches
+
+
 @dataclass
 class Offer:
     """One offer as found on one board. `key` is stable per board (canonical URL or board id)."""
@@ -97,6 +100,9 @@ class Offer:
     promoted: bool = False        # sponsored listings float above newer ones; ignored by incremental stops
     snippet: str = ""             # card text from the result page
     description: str = ""         # full text when the source ships it (feeds)
+    facts: dict | None = None     # the adapter's structured values (infer.board_facts); None: its current values
+    evidence: dict = field(default_factory=dict)  # derived column -> [source, phrase] (infer.derive)
+    country: str = ""             # the country the offer's text is in (its language)
 
     @property
     def title_norm(self) -> str:
@@ -132,6 +138,8 @@ class Search:
     worktime: frozenset = frozenset()           # allowed worktimes; empty = any
     contracts: frozenset = frozenset()          # allowed contracts; empty = any (matches if worktime OR contract fits)
     levels_exclude: frozenset = frozenset()
+    fields: frozenset = frozenset()             # allowed job fields (FIELDS); empty = any
+    fields_exclude: frozenset = frozenset()
     pay_min: int | None = None                  # profile currency, in `pay_period` units
     pay_period: str = "month"                   # "month" or "hour"
     require_pay: bool = False

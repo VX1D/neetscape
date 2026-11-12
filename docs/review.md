@@ -33,16 +33,17 @@ remove what they would never apply to. For example, for someone who wants remote
 
 ```json
 {"id": "main", "where": "remote", "what": "all", "remote_proof": true,
- "title_include": ["\\bai\\b|automat|integrat|support|helpdesk|service desk|administrator|\\bqa\\b|tester|erp|analyst"],
+ "fields": ["ai_automation", "it_support", "it_admin", "qa", "erp_crm", "data"],
  "title_exclude": ["senior|\\blead\\b|principal|architect|head of|manager",
-                   "\\bhr\\b|payroll|accounting|marketing|sales|recruit",
                    "java\\b|\\.net\\b|c#|golang|react|angular|php"],
  "text_exclude": ["\\b(german|dutch|french)\\b.{0,40}(c1|b2|fluent|native|required)"],
  "levels_exclude": ["senior", "lead", "manager"], "pay": {"min": 6000, "per": "month"}}
 ```
 
-- `title_include` is the person's field, from the CV; `title_exclude` removes fields and seniority they
-  rule out; `text_exclude` removes hard blockers that show on cards (other languages).
+- `fields` is the person's job fields, from the CV (`neetscape sql "SELECT job_field, COUNT(*) FROM offers GROUP BY 1"`
+  shows what the crawl holds); `title_exclude` removes seniority and stacks they rule out; `text_exclude`
+  removes hard blockers that show on cards (other languages). Group the listing by field in REPORT.html to
+  see what each field holds.
 - `remote_proof: true` (remote searches) requires the fetched posting to describe remote work and to
   mention no hybrid model or required presence (client visits, business trips, office days,
   relocation). Before a posting is fetched it counts as unknown, so stage 1 is not affected.

@@ -379,7 +379,12 @@ def cmd_show(a) -> None:
     o = store.offer(a.args[0])
     if not o:
         sys.exit("no such offer")
-    print(json.dumps({k: o[k] for k in o.keys() if k not in ("description", "snippet")}, ensure_ascii=False, indent=1))
+    print(json.dumps({k: o[k] for k in o.keys() if k not in ("description", "snippet", "evidence")}, ensure_ascii=False, indent=1))
+    evidence = json.loads(o["evidence"] or "{}")
+    if evidence:
+        print("\nwhy (field: value <- source \"phrase\"):")
+        for col, (source, phrase) in sorted(evidence.items()):
+            print(f"  {col}: {o[col]} <- {source} \"{phrase}\"")
     print("", *_verdict_lines(store, profile, o["id"], rid), sep="\n")
     flagged = ev.flagged(store, profile, o["id"], rid)
     if flagged:

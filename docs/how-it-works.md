@@ -113,6 +113,18 @@ rendered page. The whole page is never used, so menus, cookie banners and "simil
 reach filters or hints. A 404/410 marks the offer gone; a 401/403/429 answer (a block or login wall) is
 stored with its status and the page is not rendered as a fallback.
 
+### Derived fields
+
+Mode, work time, contracts, level and job field are derived, never stored as crawled. An offer keeps its
+observations: the values its board's adapter read from structured data (`facts`), the requests that found
+it (a board's remote filter is evidence of remote work), its title, card text and category, and its posting
+once fetched. `neetscape/infer.py` takes, per field, the strongest statement: board data, then the request,
+then the posting's JSON-LD, the title, the card, the category and the posting text; within one source an
+explicit statement ("100% zdalnie") beats a plain word ("zdalnie"). A posting's text sets the mode only with
+a full-remote statement or hybrid words, and an internship only from a labelled field. The job field reads
+the title as function x domain (`infer.FUNCTIONS`, `DOMAINS`, `MATRIX`), then the board's category.
+`neetscape eval` derives every offer again; `neetscape show ID` prints each value's source and phrase.
+
 ### Requests, completeness and politeness
 
 Incremental crawling: on boards sorted newest-first a request stops at a full page of offers
