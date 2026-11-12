@@ -20,6 +20,18 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
   leading "praca" is dropped and an empty phrase is skipped with a warning. The posting's first publication
   date replaces the listing's refresh date (`Board.posting_date_is_first`).
 - useme: a search without phrases lists every open project (~35 pages) instead of being skipped as too large.
+- LinkedIn: a keyword-less remote search is sent as the searched country's remote phrases (Poland: remote,
+  zdalnie, praca zdalna, home office; others: remote, home office) instead of the whole country's listing,
+  which was mostly on-site offers. At least 3 s between requests.
+- Result caps without a total (LinkedIn: 1000, start=990 is the last page): right after page 1 the crawler
+  probes the cap's last page; offers there mean the cap is reached and the request is split at once (LinkedIn:
+  into the regions on its cards, a region into its main cities). A request that cannot be split is narrowed to
+  the newest window instead (LinkedIn: last 7 days, then 24 hours); a windowed request is partial by design and
+  never marks offers gone.
+- Transient failures (connection errors, timeouts, HTTP 5xx/429, a bot-wall page on a board that parsed before)
+  are retried after 20 s and 60 s; this is the crawl's only retry policy (at most 1 + `retries` attempts per
+  page). A 429 holds the host in the rate limiter. Boards with flaky empty pages (LinkedIn) fetch an empty page
+  again before taking it as the end.
 - Result caps: a board that shows at most N results per search declares `result_cap`; when a request
   matches more, the crawler splits it into narrower requests built from its first page (recursively) and
   fetches each to its end; requests that cannot be narrowed are listed as "Capped" in `REPORT.md`.

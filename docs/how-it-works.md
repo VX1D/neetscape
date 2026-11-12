@@ -124,14 +124,24 @@ gone only after a complete request with the same parameters no longer returns th
 posting returns 404/410. `run --resume` continues an interrupted run, skipping requests that
 already finished.
 
-Result caps: some boards show at most a fixed number of results per search (olx.pl: 1000), however
-many it matches. Such a board declares `result_cap` and reads the match count from the first page
-(`total()`). When a request matches more, the crawler asks the board to `split()` it into narrower
-requests built from that page (olx.pl: one per subcategory in the page's category tree, read live)
-and fetches each to its own end, splitting again if one is still over the cap (up to three levels).
-A request that cannot be narrowed is fetched up to the cap and listed under "Capped" in `REPORT.md`,
-so missing offers are visible rather than silent. Incremental stops and "gone" marks work per
-narrowed request.
+Result caps: some boards show at most a fixed number of results per search (olx.pl: 1000,
+justjoin.it/rocketjobs.pl: 10 000, LinkedIn: 1000), however many it matches. Such a board declares
+`result_cap`. If it reports a match count, `total()` reads it from the first page; if not (LinkedIn),
+the crawler probes the cap's last page right after page 1, and offers there mean the cap is reached.
+A capped request is replaced by the board's `split()`: narrower requests built from the page (olx.pl:
+one per subcategory in the page's category tree; justjoin.it: experience levels, then categories;
+LinkedIn: the regions on its cards, then their main cities), each fetched to its own end and split
+again if still capped (up to three levels). When a request cannot be split, a board may narrow it to
+the newest offers instead (`newest()`; LinkedIn: the last 7 days, then 24 hours); such a request is
+partial by design and never marks offers gone, and runs a few days apart cover the listing over
+time. Anything still cut is listed under "Capped" in `REPORT.md`, so missing offers are visible
+rather than silent. Incremental stops and "gone" marks work per narrowed request.
+
+Transient failures (connection errors, timeouts, HTTP 5xx and 429, a bot-wall page on a board whose
+pages parsed before) are retried after 20 s and 60 s before a request ends with an error; this is the
+crawl's only retry policy (at most 1 + `politeness.retries` attempts per page, default 2). A 429 holds
+the host in the rate limiter. Boards that return empty pages at random (LinkedIn) fetch an empty page
+again before taking it as the end.
 
 Requests to one host are spaced by at least ~1.5 s with jitter, shared by crawling and posting
 fetches, with growing back-off on errors (longer on HTTP 429). A board that throttles harder

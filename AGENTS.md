@@ -131,9 +131,12 @@ too large without phrases). `or_remote` in a city search crawls both the city li
 `neetscape boards` shows current capabilities; `neetscape boards --country de` only the boards serving
 one country (its own plus LinkedIn).
 
-LinkedIn's public search ignores its remote, job-type, distance and sort filters, so LinkedIn
-offers arrive with an unknown work mode: with `unknown: keep` they stay in remote searches until
-their posting is fetched (stage 2, below) and settles the mode; with `unknown: drop` they are left out.
+LinkedIn's public search ignores its remote, job-type, distance and sort filters. A remote search
+with `what: "all"` is therefore sent as remote phrases ("remote", "zdalnie", "praca zdalna", "home
+office" for Poland). Results lean remote, but the work mode stays unknown until the posting is
+fetched: with `unknown: keep` these offers stay in remote searches until stage 2 settles the mode;
+with `unknown: drop` they are left out. Each phrase hits LinkedIn's 1000-result cap; such requests
+are narrowed to the newest week (or day) and marked "Capped" in the report, so run every few days.
 
 Board quirks worth knowing when reading results: Indeed shows only one public page (15 offers) per
 request, and its "Zdalnie" tag is often hybrid in the posting; gowork lists only its own postings

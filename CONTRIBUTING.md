@@ -54,7 +54,13 @@ All of them follow the same rules.
      search (olx.pl: 1000). `total()` reads the match count from a request's first page; when it is over
      N, the crawler replaces the request with `split()`'s narrower requests (e.g. one per category the
      page lists) and fetches each to its end. Build the split from the page, not from a hard-coded list;
-     see `neetscape/countries/pl/boards/olx.py`;
+     see `neetscape/countries/pl/boards/olx.py`. Without `total()` the crawler probes the cap's last page
+     (`max_pages`, or `result_cap / page_size`) right after page 1, and `split(raw, r, seen=...)` gets the
+     cards of page 1 and of the probe (see `neetscape/boards/linkedin.py`). Optionally `newest(r)` returns
+     `(request, label)` narrowed to the newest window, used when `split()` returns []; such requests are
+     never complete;
+   - `Caps(empty_retries=N)`: for a board that sometimes returns an empty page mid-listing, the crawler
+     fetches it again N times before treating it as the end;
    - `min_interval = {"host": seconds}`: a longer minimum gap for a board that throttles (the
      profile's `politeness.min_interval_s` still overrides it);
    - `posting(page)`: posting fields from the source of an offer page; the default reads schema.org
