@@ -1,4 +1,6 @@
-"""test_browser.py: process lifecycle with fake processes (nothing is started)."""
+"""The private browser: process lifecycle and navigation, with fake processes and a fake tab (nothing is started)."""
+import asyncio
+
 import pytest
 
 from neetscape import browser
@@ -13,13 +15,12 @@ class Proc:
 
 
 def test_failed_browser_start_stops_xvfb(monkeypatch, tmp_path):
-    spawned, killed = [], []
+    killed = []
 
     def popen(args, **kw):
         if args[0] != "Xvfb":
             raise FileNotFoundError(args[0])
-        spawned.append(Proc(4242))
-        return spawned[-1]
+        return Proc(4242)
     monkeypatch.setattr(browser.subprocess, "Popen", popen)
     monkeypatch.setattr(browser.shutil, "which", lambda name: "/usr/bin/" + name)
     monkeypatch.setattr(browser.os, "killpg", lambda pid, sig: killed.append(pid))
@@ -33,10 +34,7 @@ def test_failed_browser_start_stops_xvfb(monkeypatch, tmp_path):
 
 
 def test_stuck_navigation_is_retried_once():
-    import asyncio
-    from neetscape.browser import Tab
-    tab = Tab.__new__(Tab)
-    calls = []
+    tab, calls = browser.Tab.__new__(browser.Tab), []
 
     async def call(method, params, timeout=180):
         calls.append(method)

@@ -83,11 +83,11 @@ All of them follow the same rules.
    neetscape probe <name> --save-fixture tests/fixtures/<cc>/<name>.json
    ```
    Shared boards use `tests/fixtures/shared/<name>.*`. If the board reads postings itself, add a trimmed
-   offer page as `tests/fixtures/<cc>/<name>_posting.html`. `tests/countries/test_countries.py`
-   requires a fixture for every board and parses every country board's fixture.
-5. **Add the board's row to `COVERAGE`** in `tests/countries/test_countries.py`: the fields its parser
-   fills on its fixture. Write a test file in `tests/countries/<cc>/` only for rules of its own (a split,
-   a quirk of its markup); URLs and per-offer values are checked live with `neetscape probe`.
+   offer page as `tests/fixtures/<cc>/<name>_posting.html`. `tests/test_boards.py` requires a
+   fixture for every board and parses every board's fixture.
+5. **Add the board's row to `COVERAGE`** in `tests/test_boards.py`: the fields its parser fills on its
+   fixture. Add tests to the board's section of that file only for rules of its own (a split, a quirk of
+   its markup); URLs and per-offer values are checked live with `neetscape probe`.
 6. **Fill in the PR coverage table** from `neetscape probe <name>`:
 
    | field | coverage | source |
