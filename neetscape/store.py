@@ -14,9 +14,12 @@ matched rules, tags), `rejections` (v3) the ones that fail it with their reasons
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
+import inspect
 import json
 import re
 import sqlite3
+from importlib import resources
 from pathlib import Path
 
 from . import country as countries
@@ -112,6 +115,30 @@ def _domains_column(db: sqlite3.Connection) -> None:
     db.execute("ALTER TABLE offers ADD COLUMN job_domains TEXT DEFAULT ''")
 
 
+def _meta_table(db: sqlite3.Connection) -> None:
+    """v8: `meta(key, value)`, facts about the database itself; `derivation` is the fingerprint of the
+    derivation the stored derived fields follow (`derivation_fingerprint`, written by `rederive`)."""
+    db.execute("CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT)")
+
+
+# What derivation reads besides an offer's observations: `infer.py` with the `model.py` and `pay.py` it uses,
+# the language packs and the country code that picks them (`country.py`, each country's `__init__.py`);
+# `derivation_fingerprint` adds `rederive`'s own source and each board's country.
+_DERIVATION_SOURCES = ("infer.py", "model.py", "pay.py", "country.py", "lang/*.py", "countries/*/__init__.py")
+
+
+def derivation_fingerprint(home: str) -> str:
+    """A hash of everything the derived fields depend on besides the stored observations (see
+    `_DERIVATION_SOURCES`) and of the database's home country; any edit to those files changes it."""
+    h = hashlib.sha256(home.encode() + b"\0")
+    root = Path(str(resources.files("neetscape")))
+    for path in sorted({f for pattern in _DERIVATION_SOURCES for f in root.glob(pattern)}):
+        h.update(path.relative_to(root).as_posix().encode() + b"\0" + path.read_bytes() + b"\0")
+    h.update(inspect.getsource(Store.rederive).encode())
+    h.update(json.dumps(sorted((n, b.caps.country) for n, b in REGISTRY.items())).encode())
+    return h.hexdigest()[:16]
+
+
 MIGRATIONS = [
     """
     CREATE TABLE runs(id INTEGER PRIMARY KEY, started_at TEXT, finished_at TEXT, status TEXT,
@@ -152,6 +179,7 @@ MIGRATIONS = [
     _cluster_columns,
     _observation_columns,
     _domains_column,
+    _meta_table,
 ]
 
 # The current state as of run :run, as CTEs ending in `cur(offer_id)`. A board's latest crawl is the latest run
@@ -221,6 +249,8 @@ class Store:
             else:
                 self.db.executescript(step)
             self.db.execute(f"PRAGMA user_version={i}")
+        if version < len(MIGRATIONS):  # a migration may add a derived column: the next full rederive fills it
+            self.db.execute("DELETE FROM meta WHERE key = 'derivation'")
         self.db.commit()
 
     def close(self) -> None:
@@ -353,13 +383,18 @@ class Store:
             (o.board, o.key, *values.values(), self._cluster(o, run_id), run_id, run_id)).lastrowid
         return offer_id, False
 
-    def rederive(self, offer_ids=None) -> int:
+    def rederive(self, offer_ids=None, force: bool = False) -> int:
         """Derive the inferred fields (infer.derive) of some offers, or of all, again from their observations: the
         adapter's facts, the title and card text, the requests that found them and the fetched posting. Returns
-        how many offers changed."""
+        how many offers changed. Given offers are always derived; all offers only when the derivation changed
+        since the last full pass (`derivation_fingerprint` against `meta.derivation`, which the full pass
+        stores) or with `force`."""
         if offer_ids is not None and not offer_ids:
             return 0
         home = self.run_country() or "pl"
+        fingerprint = derivation_fingerprint(home) if offer_ids is None else None
+        if fingerprint and not force and self.meta("derivation") == fingerprint:
+            return 0
         where = f"WHERE o.id IN ({','.join('?' * len(offer_ids))})" if offer_ids is not None else ""
         rows = self.db.execute(f"""
             SELECT o.*, d.text AS posting, d.jsonld AS posting_meta,
@@ -368,7 +403,7 @@ class Store:
                    EXISTS (SELECT 1 FROM sightings s JOIN requests r ON r.id = s.request_id
                            WHERE s.offer_id = o.id AND instr(r.pushed, 'remote') > 0) AS request_remote
             FROM offers o LEFT JOIN details d ON d.offer_id = o.id {where}""", tuple(offer_ids or ())).fetchall()
-        changed = 0
+        changed, updates = 0, {}
         for r in rows:
             board = REGISTRY.get(r["board"])
             code = r["country"] or countries.text_country(board.caps.country if board else "", home)
@@ -379,10 +414,19 @@ class Store:
                                 category=" ".join(filter(None, (r["category"], r["request_category"]))),
                                 languages=countries.languages(code))
             if any(r[k] != v for k, v in cols.items()):
-                self.update_offer(r["id"], cols)
+                updates.setdefault(tuple(cols), []).append((*cols.values(), r["id"]))
                 changed += 1
-        self.db.commit()
+        with self.db:  # one transaction: the updates and the fingerprint they bring up to date
+            for keys, values in updates.items():
+                self.db.executemany(f"UPDATE offers SET {', '.join(f'{k}=?' for k in keys)} WHERE id=?", values)
+            if fingerprint:
+                self.db.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('derivation', ?)", (fingerprint,))
         return changed
+
+    def meta(self, key: str) -> str | None:
+        """A value of the `meta` table, or None."""
+        row = self.db.execute("SELECT value FROM meta WHERE key = ?", (key,)).fetchone()
+        return row[0] if row else None
 
     def ingest(self, offers: list[Offer], run_id: int, request_id: int, page: int,
                posting_date_is_first: bool = False) -> tuple[int, set[str]]:

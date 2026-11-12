@@ -257,12 +257,13 @@ def rank(o, profile: Profile, s: Search) -> tuple[int, list[str], list[str]]:
     return sum(r["weight"] for r in hits) + s.boost, why, tags
 
 
-def evaluate(store: Store, profile: Profile, run_id: int) -> dict[str, int]:
+def evaluate(store: Store, profile: Profile, run_id: int, rederive: bool = False) -> dict[str, int]:
     """Store the verdict of every search on every offer of the current state as of the run (replacing the run's
-    earlier verdicts). Returns passed counts per search."""
+    earlier verdicts). Returns passed counts per search. `rederive` derives every offer again even when the
+    derivation is unchanged (`Store.rederive`'s `force`)."""
     passed, rejected, counts = [], [], {s.id: 0 for s in profile.searches}
     hours = profile.country.hours_per_month
-    store.rederive()  # derived fields follow the current vocabularies and policies without a new crawl
+    store.rederive(force=rederive)  # derived fields follow the current vocabularies and policies (skipped when unchanged)
     for o in store.current_offers(run_id):
         black, drop = _blacklist_verdict(o, profile)
         for s in profile.searches:

@@ -123,7 +123,15 @@ then the posting's JSON-LD, the title, the card, the category and the posting te
 explicit statement ("100% zdalnie") beats a plain word ("zdalnie"). A posting's text sets the mode only with
 a full-remote statement or hybrid words, and an internship only from a labelled field. The job field reads
 the title as function x domain (`infer.FUNCTIONS`, `DOMAINS`, `MATRIX`), then the board's category.
-`neetscape eval` derives every offer again; `neetscape show ID` prints each value's source and phrase.
+`neetscape show ID` prints each value's source and phrase.
+
+Storing and fetching derive the offers they touch. `neetscape eval` derives every offer again, but only when
+the derivation changed: the database keeps a fingerprint of what derivation reads besides the observations
+(a hash of `infer.py`, `model.py`, `pay.py`, `country.py`, the language packs `lang/*.py`, each country's
+`__init__.py`, `Store.rederive`'s source, each board's country and the database's home country) in
+`meta.derivation`. An edit to any of those files, or a schema migration, changes or clears it, and the next
+`eval` derives everything (about 15 s on 32k offers) and stores the new one; otherwise the pass is skipped.
+`neetscape eval --rederive` forces it.
 
 ### Requests, completeness and politeness
 
@@ -175,6 +183,7 @@ Everything lives in `runs/neetscape.db` (SQLite, schema versioned with `PRAGMA u
 | `rejections` | offers that fail a search in a run, with the reasons joined by `; ` (also shown by `neetscape show ID`) |
 | `details` | fetched posting text, HTTP status, posting fields with their `source`, and hints (fully remote, hybrid, years, degree, languages) |
 | `marks` | append-only decisions; view `tracked` holds the latest per URL |
+| `meta` | facts about the database: `derivation`, the fingerprint of the derivation the derived fields follow |
 
 Each run also writes `runs/<date>-run<N>/` with `REPORT.md` (board stats, top offers per search,
 tracked offers, opened postings), `REPORT.html`, `listing.tsv` and `offers.csv`.

@@ -317,7 +317,7 @@ def _yes(value) -> str:
 # ---------------------------------------------------------------- steps and review commands
 def cmd_eval(a) -> None:
     store, profile, rid = _open(a)
-    print(ev.evaluate(store, profile, rid))
+    print(ev.evaluate(store, profile, rid, rederive=a.rederive))
 
 
 def _warn_unevaluated(store: Store, run_id: int) -> None:
@@ -484,7 +484,9 @@ def _parser() -> argparse.ArgumentParser:
         p.add_argument("--limit-pages", type=int, help="at most this many pages per request")
         p.add_argument("--record", help="save raw pages to this directory")
 
-    command("eval", cmd_eval, "judge the stored offers again", boards, run)
+    command("eval", cmd_eval, "judge the stored offers again", boards, run).add_argument(
+        "--rederive", action="store_true",
+        help="derive every offer's fields again even when the derivation (infer.py, lang packs) is unchanged")
     command("report", cmd_report, "write the reports again", boards, run)
 
     p = command("list", cmd_list, "the passing offers", boards, run)

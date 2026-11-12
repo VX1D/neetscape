@@ -139,6 +139,53 @@ def test_migration_adds_job_domains_and_eval_fills_them(tmp_path):
     assert s.offer("u1")["job_domains"] == "ai,product"
 
 
+def _stale(db, url):
+    """Overwrite a derived field as an older derivation might have left it; returns the offer id."""
+    db.db.execute("UPDATE offers SET job_field = 'stale' WHERE url = ?", (url,))
+    db.db.commit()
+    return db.offer(url)["id"]
+
+
+def test_full_rederive_is_skipped_while_the_derivation_is_unchanged(db, monkeypatch):
+    ingest(db, job("olx", "1", "Technical Support Engineer"))
+    db.rederive()                                                          # stores the fingerprint
+    assert db.meta("derivation") == store.derivation_fingerprint("pl")
+    _stale(db, "https://olx/1")
+    assert db.rederive() == 0 and db.offer("https://olx/1")["job_field"] == "stale"      # skipped
+    assert db.rederive(force=True) == 1 and db.offer("https://olx/1")["job_field"] == "it_support"
+    _stale(db, "https://olx/1")
+    monkeypatch.setattr(store, "derivation_fingerprint", lambda home: "changed")      # e.g. a lang pack edited
+    assert db.rederive() == 1 and db.offer("https://olx/1")["job_field"] == "it_support"
+    assert db.meta("derivation") == "changed" and db.rederive() == 0
+
+
+def test_per_offer_rederive_always_derives(db):
+    ingest(db, job("olx", "1", "Technical Support Engineer"), job("olx", "2", "Support Associate"))
+    db.rederive()
+    fingerprint = db.meta("derivation")
+    one = _stale(db, "https://olx/1")
+    _stale(db, "https://olx/2")
+    assert db.rederive([one]) == 1 and db.offer("https://olx/1")["job_field"] == "it_support"
+    assert db.offer("https://olx/2")["job_field"] == "stale" and db.meta("derivation") == fingerprint
+
+
+def test_the_fingerprint_follows_the_derivation_sources(monkeypatch):
+    before = store.derivation_fingerprint("pl")
+    assert before == store.derivation_fingerprint("pl") != store.derivation_fingerprint("de")
+    monkeypatch.setattr(store, "_DERIVATION_SOURCES", store._DERIVATION_SOURCES[:-1])   # one input fewer
+    assert store.derivation_fingerprint("pl") != before
+
+
+def test_a_migration_forgets_the_fingerprint(tmp_path, monkeypatch):
+    """A later migration may add a derived column, which only a full pass fills."""
+    s = Store(tmp_path / "n.db")
+    s.rederive()
+    s.close()
+    assert Store(tmp_path / "n.db").meta("derivation")                     # no migration: kept
+    monkeypatch.setattr(store, "MIGRATIONS", MIGRATIONS + [lambda db: None])
+    assert Store(tmp_path / "n.db").meta("derivation") is None
+
+
 def test_job_domains_are_read_in_each_offers_language(db):
     ingest(db, job("arbeitnow", "1", "Sachbearbeiter (m/w/d) Buchhaltung"),          # a German board
            job("justjoin", "2", "Sachbearbeiter Buchhaltung"),                         # a Polish board: not Polish words
