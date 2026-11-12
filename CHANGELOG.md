@@ -10,7 +10,17 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
   the column; `neetscape eval` fills it. `job_field`, `job_function` and `job_domain` are unchanged. New search
   filters `domains` (any of the offer's domains), `functions` and `functions_exclude`; a `domains` column in
   listing.tsv / offers.csv after `field`, and among the facts in REPORT.html; `neetscape show` lists each
-  domain's source and phrase.
+  domain's source and phrase. A title naming no domain takes the one its function implies (`infer.IMPLIED_DOMAIN`:
+  "Automation Engineer" is `ai`, a developer `software`, a tester `software`); a gender pair ("Konsultant /
+  Konsultantka", "Kierowca/Kierowczyni") reads as one job name, not as the end of the title's head.
+- Vocabularies extended from `tests/infer_audit.py --suggest` (Polish education, logistics, hospitality,
+  retail, manufacturing, health; English full stack/backend/frontend, identity, reliability; integrations, Jira,
+  Atlassian and system analysts as IT; "network" as IT only in network roles). On a 32k-offer database the
+  category's domain is among the title's domains for 81.2% of the offers (78.1% before), and 22.9% of current
+  offers have no domain in the title (30.7%).
+- `tests/infer_audit.py --agreement` and `--suggest`: vocabulary maintenance from the boards' own categories,
+  per language, with the target pack of each suggestion; a pack may declare a `TITLE_TOKENS` hook.
+- OLX offers carry the ad's own category ("Sprzedaż - Przedstawiciel handlowy").
 - A missing job field, domain or function is unknown, not a failure: an include filter (`fields`, `domains`,
   `functions`) follows the search's `unknown` policy for an offer with field `other`, no domain or no function
   (before, `fields` dropped `other` always); exclude filters never drop it. Set `"unknown": {"field": "drop"}`

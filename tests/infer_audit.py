@@ -162,8 +162,7 @@ def target(code: str) -> str:
 
 def _read(fld: str, title: str, category: str, langs) -> tuple[str, str]:
     """(`fld` read from the title alone, from the category alone), as `infer.derive` reads each."""
-    m = infer._QUALIFIER.search(title)
-    head, qual = (title[:m.start()], title[m.start():]) if m and m.start() > 0 else (title, "")
+    head, qual = infer.title_parts(title, langs)
     t = infer._decide(fld, infer._scan(fld, head, langs, "title") + infer._scan(fld, qual, langs, "qualifier"))[0]
     c = infer._decide(fld, infer._scan(fld, category.replace("-", " "), langs, "category"))[0]
     return t, c
@@ -188,6 +187,9 @@ def readings(store) -> list[dict]:
         rec = {"title": title, "category": category, "current": bool(r["current"]), "langs": lang.with_english(langs)}
         for fld in ("function", "domain"):
             rec[fld], rec["cat_" + fld] = _read(fld, title, category, langs)
+        head, qual = infer.title_parts(title, langs)
+        rec["domains"] = set(infer._domains(infer._scan("domain", head, langs, "title")
+                                            + infer._scan("domain", qual, langs, "qualifier")))
         out.append(rec)
     assign_languages(out)
     return out
@@ -207,7 +209,9 @@ def agreement(recs: list[dict]) -> dict:
         else:
             pairs[(r["domain"], r["cat_domain"])].append(r["title"])
     agree, current = sum(tp.values()), [r for r in recs if r["current"]]
+    covered = sum(r["cat_domain"] in r["domains"] for r in both)  # a job names several domains: is the category's among them?
     return {
+        "covered": covered, "coverage": covered / len(both) if both else 0.0,
         "with_category": sum(bool(r["category"]) for r in recs),
         "category_domain": sum(r["cat_domain"] != "unknown" for r in recs),
         "both": len(both), "agree": agree, "agreement": agree / len(both) if both else 0.0,
@@ -227,7 +231,8 @@ def agreement(recs: list[dict]) -> dict:
 def print_agreement(a: dict) -> None:
     print(f"offers with a category: {a['with_category']}; the category gives a domain: {a['category_domain']}; "
           f"the title too: {a['both']}")
-    print(f"agreement: {a['agree']}/{a['both']} = {100 * a['agreement']:.1f}%")
+    print(f"agreement: {a['agree']}/{a['both']} = {100 * a['agreement']:.1f}% (the title's leading domain)")
+    print(f"category's domain among the title's domains: {a['covered']}/{a['both']} = {100 * a['coverage']:.1f}%")
     print(f"\n{'domain':14} {'title':>6} {'categ':>6} {'agree':>6} {'prec':>6} {'recall':>6}")
     for d, x in a["domains"].items():
         print(f"{d:14} {x['title']:6} {x['category']:6} {x['agree']:6} {100 * x['precision']:5.0f}% {100 * x['recall']:5.0f}%")

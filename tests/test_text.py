@@ -118,6 +118,10 @@ def test_hints():
     ("Konsultant", "", ("pl", "en"), set(), "consult"),
     ("Sachbearbeiter Buchhaltung", "", ("de", "en"), {"finance"}, "account"),
     ("Sachbearbeiter (m/w/d) Buchhaltung", "", ("de", "en"), {"finance"}, "account"),  # a gender marker is no qualifier
+    ("Automation Engineer", "", ("en",), {"ai"}, "automate"),                 # implied by the function when none named
+    ("PLC Automation Engineer", "", ("en",), {"industrial"}, "automate"),     # ...not when the title names one
+    ("Konsultant / Konsultantka ds. Automatyzacji Procesów", "", ("pl", "en"), {"ai"}, "automate"),  # a gender pair
+    ("Supply Network Planning Assistant", "", ("en",), set(), "assist"),      # "network" alone is not IT
 ])
 def test_job_domains_from_title_and_category(title, category, languages, domains, function):
     got = infer.derive(title=title, category=category, languages=languages)

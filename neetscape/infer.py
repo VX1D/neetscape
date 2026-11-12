@@ -73,6 +73,8 @@ DOMAINS = {
     "hospitality": "hospitality", "retail": "retail", "customer": "customer_service", "sales": "sales",
     "marketing": "marketing", "office": "admin_office", "design": "design", "product": "product_project",
 }
+# the domain a function implies when the title and the category name none ("Automation Engineer", "Manual Tester")
+IMPLIED_DOMAIN = {"automate": "ai", "develop": "software", "test": "software"}
 MATRIX = {
     ("administer", "it"): "it_admin", ("administer", "tech"): "it_admin", ("administer", "cloud"): "it_admin",
     ("engineer", "it"): "it_admin", ("support", "tech"): "it_support",
@@ -263,6 +265,25 @@ def _domains(matches: list[tuple]) -> dict:
     return out
 
 
+# "Konsultant / Konsultantka", "Kierowca/Kierowczyni", "Mitarbeiter/in": one job name in two grammatical genders,
+# not the end of the title's head; recognised by the shared start of the two words, in any language
+_GENDER_PAIR = re.compile(r"(\w+)\s*/\s*(\w+)")
+
+
+def _same_word(a: str, b: str) -> bool:
+    a, b = a.casefold(), b.casefold()
+    return len(a) >= 4 and b.startswith(a[:5] if len(a) >= 5 else a)
+
+
+def title_parts(title: str, languages=None) -> tuple[str, str]:
+    """(head, qualifiers) of a job title, gender markers removed: "Sachbearbeiter (m/w/d) Buchhaltung" ->
+    ("Sachbearbeiter Buchhaltung", ""), "Senior .NET Developer (GenAI)" -> ("Senior .NET Developer ", "(GenAI)")."""
+    lexicon = _lexicon(_langs(languages))
+    plain = _GENDER_PAIR.sub(lambda m: m[0] if not _same_word(m[1], m[2]) else m[1], lexicon["gender"].sub(" ", title or ""))
+    m = lexicon["qualifier"].search(plain)
+    return (plain[:m.start()], plain[m.start():]) if m and m.start() > 0 else (plain, "")
+
+
 def derive(*, title: str = "", card: str = "", facts: dict | None = None, request_remote: bool = False,
            posting: str = "", posting_remote: bool = False, category: str = "", languages=None) -> dict:
     """Derived offer columns (mode, worktime, contracts, level, job_function, job_domain, job_field, job_domains)
@@ -284,10 +305,7 @@ def derive(*, title: str = "", card: str = "", facts: dict | None = None, reques
     if posting_remote:
         ms.append(("mode", "remote", "posting_struct", True, "JSON-LD TELECOMMUTE"))
     ms += _scan("level", title, languages, "title")
-    lexicon = _lexicon(_langs(languages))
-    plain = lexicon["gender"].sub(" ", title)
-    m = lexicon["qualifier"].search(plain)
-    head, qualifiers = (plain[:m.start()], plain[m.start():]) if m and m.start() > 0 else (plain, "")
+    head, qualifiers = title_parts(title, languages)
     for fld in ("function", "domain"):
         ms += (_scan(fld, head, languages, "title") + _scan(fld, qualifiers, languages, "qualifier")
                + _scan(fld, category.replace("-", " "), languages, "category"))
@@ -320,6 +338,9 @@ def derive(*, title: str = "", card: str = "", facts: dict | None = None, reques
     if source:
         evidence["job_field"] = [source, " + ".join(x[2] for x in (tf, td, cf, cd) if x[2])]
     domains = _domains(in_title + in_category)
+    function = decided["job_function"]
+    if not domains and function[0] in IMPLIED_DOMAIN:  # "Automation Engineer": the function says what it is about
+        domains = {IMPLIED_DOMAIN[function[0]]: (function[1], function[2])}
     out["job_domains"] = ",".join(sorted(domains))
     if domains:
         evidence["job_domains"] = {d: [src, phrase] for d, (src, phrase) in sorted(domains.items())}
