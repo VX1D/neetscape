@@ -16,8 +16,9 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
   stored as blocked and not rendered.
 - Profile `blacklist`: your own `companies` / `urls` / `text` regexes, `action` `drop` (default) or `flag`
   (kept, tagged `!blacklist`). No built-in list.
-- `REPORT.html` next to `REPORT.md`: the review (marks, notes, postings) on top, then a filterable,
-  sortable table of every passing offer.
+- `REPORT.html` next to `REPORT.md`: a list / detail review (tabs Review and All) in English, German or
+  Polish; the posting formatted for reading with its red flags; grouping, sorting and filters behind one
+  View button; keyboard navigation; decisions on the page copied as one block of `neetscape mark` commands.
 - Mode inference: hybrid wording beats a generic "remote"; explicit full remote and "remote or hybrid"
   choices read as remote; "hybrid cloud" and similar no longer read as hybrid. More Polish contract words.
 - Politeness: boards can declare a minimum interval per host (theprotocol.it: 4 s); the profile's

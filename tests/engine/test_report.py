@@ -70,6 +70,12 @@ def test_rejections_are_stored_with_reasons(tmp_path):
     assert db.verdicts(rid, db.offer("https://justjoin/1")["id"])["all"] == []
 
 
+def _html_data(page):
+    import json
+    import re
+    return json.loads(re.search(r'<script type="application/json" id=data>(.*?)</script>', page, re.S).group(1))
+
+
 def test_html_report_embeds_data_and_review(tmp_path):
     import json
     import re
@@ -82,8 +88,10 @@ def test_html_report_embeds_data_and_review(tmp_path):
     page = (tmp_path / "out" / "REPORT.html").read_text()
     data = json.loads(re.search(r'<script type="application/json" id=data>(.*?)</script>', page, re.S).group(1))
     assert {d["title"] for d in data} == {"AI </script><b>x</b>", "Helpdesk"}    # JSON survives a hostile title
-    assert "why: &lt;fits&gt;" in page and "shortlisted (1)" in page               # the review, escaped
-    assert page.count("<script") == 2
+    review = [d for d in data if d["mark"]]
+    assert [(d["title"], d["mark"], d["note"], d["category"]) for d in review] == [
+        ("Helpdesk", "shortlisted", "why: <fits>\nrisk: none", "why: <fits>")]  # first line of a multi-line note
+    assert "<span data-t=review></span><span class=n>1</span>" in page and page.count("<script") == 3
 
 
 def test_html_report_data_cannot_reshape_its_script_block(tmp_path):
@@ -113,8 +121,11 @@ def test_html_review_says_why_a_marked_posting_is_missing(tmp_path):
     db.mark("https://elsewhere.example/job?a=1&b=2", "applied")
     report.write_reports(db, PROFILE, rid, tmp_path / "out")
     page = (tmp_path / "out" / "REPORT.html").read_text()
-    assert all(f"posting {why}" in page for why in ("not fetched", "empty", "failed", "gone (HTTP 410)"))
-    assert 'a &amp; b &quot;quoted&quot; &lt;tag&gt;' in page and "job?a=1&amp;b=2" in page
+    data = {d["title"]: d for d in _html_data(page)}
+    assert [data[f"Job {k}"]["posting_state"] for k in "1234"] == ["not fetched", "empty", "failed", "gone (HTTP 410)"]
+    assert data["Job 1"]["note"] == 'a & b "quoted" <tag>'
+    elsewhere = data["https://elsewhere.example/job?a=1&b=2"]                 # marked outside the listing: still reviewed
+    assert elsewhere["mark"] == "applied" and not elsewhere["listed"] and elsewhere["url"] == "https://elsewhere.example/job?a=1&b=2"
 
 
 def test_markdown_tables_survive_pipes_and_line_breaks(tmp_path):
@@ -129,8 +140,6 @@ def test_markdown_tables_survive_pipes_and_line_breaks(tmp_path):
 
 
 def test_html_report_links_only_web_urls(tmp_path):
-    import json
-    import re
     db = Store(tmp_path / "j.db")
     rid = db.start_run({}, [])
     _seen(db, rid, [Offer(board="justjoin", key="1", url="javascript:alert(1)", title="Job", mode="remote")])
@@ -138,5 +147,20 @@ def test_html_report_links_only_web_urls(tmp_path):
     db.mark("javascript:alert(1)", "shortlisted")
     report.write_reports(db, PROFILE, rid, tmp_path / "out")
     page = (tmp_path / "out" / "REPORT.html").read_text()
-    data = json.loads(re.search(r'<script type="application/json" id=data>(.*?)</script>', page, re.S).group(1))
+    data = _html_data(page)
     assert data[0]["url"] == "" and 'href="javascript' not in page
+
+
+def test_html_review_keeps_rejected_offers_and_postings(tmp_path):
+    db = Store(tmp_path / "j.db")
+    rid = db.start_run({}, [])
+    _seen(db, rid, [_job("justjoin", "1", title="Kept"), _job("justjoin", "2", title="Dropped", company="Other")])
+    ev.evaluate(db, PROFILE, rid)
+    db.save_detail(1, 200, "Requirements: n8n", {}, {"years": ["2 years of experience"]})
+    db.mark("https://justjoin/1", "shortlisted", note="Main job\n✅ n8n\n⚠ English")
+    db.mark("https://justjoin/2", "rejected", note="needs German")
+    report.write_reports(db, PROFILE, rid, tmp_path / "out")
+    data = {d["title"]: d for d in _html_data((tmp_path / "out" / "REPORT.html").read_text())}
+    assert data["Kept"]["posting"] == "Requirements: n8n" and data["Kept"]["hints"]["years"] == ["2 years of experience"]
+    assert data["Kept"]["category"] == "Main job" and data["Kept"]["listed"]
+    assert data["Dropped"]["mark"] == "rejected" and not data["Dropped"]["listed"]   # hidden from the listing, kept in the review

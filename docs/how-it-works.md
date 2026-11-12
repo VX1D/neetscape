@@ -148,11 +148,20 @@ Everything lives in `runs/neetscape.db` (SQLite, schema versioned with `PRAGMA u
 Each run also writes `runs/<date>-run<N>/` with `REPORT.md` (board stats, top offers per search,
 tracked offers, opened postings), `REPORT.html`, `listing.tsv` and `offers.csv`.
 
-`REPORT.html` is one self-contained page (no external assets). On top is the review: the latest
-mark per offer, grouped by status, with its note, key facts and the stored posting (collapsed), or
-a hint to run `neetscape details --marked` when the posting is not fetched. Below is a board table
-and every passing offer in a table that filters (text, search, mode, new only, hide marked) and
-sorts by any column in the browser. `neetscape report` rewrites it, e.g. after `neetscape mark`.
+`REPORT.html` is one self-contained page (no external assets) laid out like a mail client: a quiet
+list on the left (title, company, pay, age, a work-mode dot, the number of red flags) and the selected
+offer on the right: pay next to the title, its facts on one line, the posting's red flags (years of
+experience, degree, languages, hybrid wording), the review note (lines starting with ✅ or ⚠ coloured)
+and the posting, formatted into headings and lists for reading. Tabs switch between **Review** (every
+marked offer, including rejected ones and URLs marked from elsewhere) and **All** (every passing offer).
+Everything else sits behind one **View** button: grouping (note category, i.e. the first line of a
+multi-line note; status, tag, search, board, work mode), sorting (score, pay, newest, company), filters
+(remote only, work mode, board, new, with posting, undecided) and the language (English, Deutsch,
+Polski; the default follows the profile's country, `?lang=de` in the URL picks one). Keys: `j`/`k` or
+arrows move, `o` opens the offer, `/` searches; `s`/`a`/`r`/`i` decide (shortlisted, applied,
+rejected, ignored), `u` undoes, `n` edits the note. Decisions made on the page are kept in the browser
+and copied as one block of `neetscape mark` commands (plus `neetscape report`) to paste in a terminal.
+`#review` / `#all` in the URL pick the tab. `neetscape report` rewrites the page, e.g. after `neetscape mark`.
 
 `neetscape list` prints the same listing (one row per job, duplicates across boards merged) with
 filters: `--search ID`, `--new`, `--where "o.pay_max > 10000"` (an SQL condition on `offers o`),

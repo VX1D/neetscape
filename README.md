@@ -23,8 +23,8 @@ CV, writes the profile, runs the crawl, reads the postings and gives you a short
 - **Postings only for matches**: listing cards are filtered first; full postings are fetched only
   for matching offers (once per job), and then settle unknown work mode, hours and contracts.
 - **Your own blacklist**: companies, links or phrases to drop or flag.
-- **Review you can share**: decisions recorded with `neetscape mark` appear on top of `REPORT.html`,
-  above a filterable, sortable table of every match.
+- **Comfortable review**: `REPORT.html` is a list / detail view: group, sort and filter the list, read the
+  selected offer with its red flags (years, degree, languages) and full posting, move with `j`/`k`.
 - **Local and polite**: your data stays on your machine; public pages only, no logins, rate-limited
   per host.
 
