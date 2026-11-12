@@ -36,11 +36,10 @@ from __future__ import annotations
 import json
 import re
 import urllib.parse
-from dataclasses import replace
 
 from .... import infer
 from ....model import Offer
-from ....boards.base import Board, Caps, Request, register
+from ....boards.base import Board, Caps, Request, narrowed, register
 from ....boards.pages import epoch_or_iso_date, pay_range, slug
 
 WORKTIME_ALIASES = {"internship": "practice_internship"}  # rocketjobs "Praktyka / Staż" -> infer.worktime
@@ -152,9 +151,9 @@ class _JustJoinEngine(Board):
         category the page links to."""
         data = page_data(raw)
         if not r.params.get("level"):
-            return [replace(r, params={**r.params, "level": lv["value"]}) for lv in data.get("levels") or []]
+            return narrowed(r, "level", [lv["value"] for lv in data.get("levels") or []])
         if not r.params.get("category"):
-            return [replace(r, params={**r.params, "category": c}) for c in data.get("categories") or []]
+            return narrowed(r, "category", data.get("categories") or [])
         return []
 
     def parse(self, raw: str, r: Request) -> list[Offer]:

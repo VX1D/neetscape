@@ -53,6 +53,13 @@ def _from_posting(row, text: str, meta: dict, hints: dict, languages) -> dict:
     return out
 
 
+def _is_earlier_first_publication(row, meta: dict) -> bool:
+    """The posting's date is the first publication (`Board.posting_date_is_first`) and earlier than the stored
+    one, which the listing card gave as the last refresh."""
+    board, first, stored = REGISTRY.get(row["board"]), parse_date(meta.get("published")), parse_date(row["published"])
+    return bool(first and board and board.posting_date_is_first and (not stored or first < stored))
+
+
 def _save(store: Store, row, status: int, text: str, meta: dict, home: str = "pl") -> None:
     languages = _languages(row["board"], home)
     hints = infer.hints(text, languages)
@@ -61,10 +68,8 @@ def _save(store: Store, row, status: int, text: str, meta: dict, home: str = "pl
     if (meta.get("company") or "").strip().lower() in PLACEHOLDER_COMPANIES:
         meta = {**meta, "company": ""}
     updates = {k: meta[k] for k in ("company", "published") if meta.get(k) and not row[k]} | _from_posting(row, text, meta, hints, languages)
-    first = parse_date(meta.get("published"))
-    board = REGISTRY.get(row["board"])
-    if first and board and board.posting_date_is_first and (not parse_date(row["published"]) or first < parse_date(row["published"])):
-        updates["published"] = meta["published"]  # the listing showed the last refresh; the posting the first publication
+    if _is_earlier_first_publication(row, meta):
+        updates["published"] = meta["published"]
     if updates.get("published") and not parse_date(updates["published"]):
         del updates["published"]
     if updates:
