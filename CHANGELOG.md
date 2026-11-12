@@ -4,6 +4,79 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
 
 ## Unreleased
 
+- Facts are what boards ship: adapters no longer infer a level from the title (olx, useme, indeed, praca.pl,
+  arbeitnow, bundesagentur), the title is read by `derive` like every board's. Schema v10 marks the facts
+  schema v6 copied from inferences (LinkedIn's mode/work time/contracts/level, nofluffjobs' and theprotocol's
+  work time, a few boards' level: `store._INFERRED_IN_V6`) as `_stored`, the weakest source, so the posting's
+  criteria and the current vocabularies win; an offer's next sighting replaces its facts with the adapter's
+  own, also when they are empty. On a 32k-offer database 161 values change, all on LinkedIn.
+- Rank rules on `any` and `category_include` also read the board's `industry`.
+- Vocabulary regression gate: `tests/test_vocab.py` reads every board fixture's titles against the boards'
+  categories with `infer_audit --agreement`'s measure (now shared: `reading`, `agreement`) and fails, listing the
+  titles, when the category's domain is among the title's domains for less than 78% of offers (81.9% today) or
+  more than 21% of titles give no domain (18.1%). `--agreement --json` also lists the disagreeing titles.
+- LinkedIn's job criteria are structured evidence: the posting reader keeps them as `meta["criteria"]` and
+  `Board.posting_facts(meta)` maps them to level, work time and contract (source `posting_struct`, above the
+  title, card and posting text, below board facts and the request; evidence "LinkedIn: Employment type
+  Full-time"). Entry level → junior, Internship → intern, Director/Executive → manager; Full-time, Part-time;
+  Contract and Temporary → flexible work time without a contract type; employment type Internship → contract
+  and level intern. Associate, Mid-Senior level, Not Applicable, Volunteer, Other and unlisted labels stay
+  unknown. Postings stored earlier are read from their text's criteria lines; `neetscape eval` applies it.
+
+- Board categories have a meaning: `category` is the role or job category, and a new `industry` field holds
+  the employer's industry as the board names it. Only the category gives domains, so "Account Manager" in
+  rocketjobs' "sales it i telekomunikacja" is `sales`, not `it, sales`. rocketjobs' `sales` and `support`
+  categories are split into role and industry (`split_category`); every other board's categories are roles.
+  Schema v8 adds `industry` and splits the stored rocketjobs categories; `neetscape show` prints it and
+  `text_exclude` and the blacklist still read it. On a 32k-offer database 295 rocketjobs offers change
+  domains (119 lose `it`), and the category's domain is among the title's domains for 82.2% of the offers
+  (81.3% before).
+- `neetscape eval` derives the stored offers again only when the derivation changed: schema v8 adds a
+  `meta(key, value)` table holding `derivation`, a fingerprint of everything derivation reads besides the
+  observations (`infer.py`, `model.py`, `pay.py`, `country.py`, the language packs, the country packages'
+  `__init__.py`, `Store.rederive`'s source, the boards' countries, the home country). An unchanged fingerprint
+  skips the full pass (an eval of a 32k-offer database: 28 s before, 11 s now); an edit, or any later schema
+  migration, makes the next eval derive everything. `neetscape eval --rederive` forces it. Storing offers and
+  fetching postings still derive the offers they touch. The full pass writes its updates in one transaction
+  with `executemany`.
+
+- Every language-specific word now lives in its language pack or country package, so a new language is one
+  module (`neetscape/lang/<code>.py`) and a new country one package: pay periods, pay words, the thousand
+  suffix and range words (`VOCAB["pay"]`, read by `pay.py`); words offering options (`choice`, for
+  `remote_proof`); placeholder employer names (`placeholder_companies`); LinkedIn's remote phrases
+  (`Country.linkedin_remote_phrases`); solid.jobs' "staż" level in its adapter; the Polish presets in
+  `countries/pl/presets/`, with language-neutral shared presets. Text of an unknown country is read in
+  English only (`lang.DEFAULT`). `model.fold` transliterates every letter Unicode does not decompose
+  (ø, đ, æ, œ, þ, ß, ł); boards map currency symbols with `pay.CURRENCIES`. On a 32k-offer database every
+  derived value, pay range and remote-proof verdict is unchanged.
+- Job domains: every offer gets `job_domains`, the set of domains its title (head and qualifier) and the
+  board's category name, read in the offer's own languages ("AI Gateway Product Owner": `ai, product`;
+  "Sachbearbeiter (m/w/d) Buchhaltung": `finance`); the weak `tech` domain counts only alone. Schema v7 adds
+  the column; `neetscape eval` fills it. `job_field`, `job_function` and `job_domain` are unchanged. New search
+  filters `domains` (any of the offer's domains), `functions` and `functions_exclude`; a `domains` column in
+  listing.tsv / offers.csv after `field`, and among the facts in REPORT.html; `neetscape show` lists each
+  domain's source and phrase. A title naming no domain takes the one its function implies (`infer.IMPLIED_DOMAIN`:
+  "Automation Engineer" is `ai`, a developer `software`, a tester `software`); a gender pair ("Konsultant /
+  Konsultantka", "Kierowca/Kierowczyni") reads as one job name, not as the end of the title's head.
+- Vocabularies extended from `tests/infer_audit.py --suggest` (Polish education, logistics, hospitality,
+  retail, manufacturing, health; English full stack/backend/frontend, identity, reliability; integrations, Jira,
+  Atlassian and system analysts as IT; "network" as IT only in network roles). On a 32k-offer database the
+  category's domain is among the title's domains for 81.2% of the offers (78.1% before), and 22.9% of current
+  offers have no domain in the title (30.7%).
+- `tests/infer_audit.py --agreement` and `--suggest`: vocabulary maintenance from the boards' own categories,
+  per language, with the target pack of each suggestion; a pack may declare a `TITLE_TOKENS` hook.
+- OLX offers carry the ad's own category ("Sprzedaż - Przedstawiciel handlowy").
+- A missing job field, domain or function is unknown, not a failure: an include filter (`fields`, `domains`,
+  `functions`) follows the search's `unknown` policy for an offer with field `other`, no domain or no function
+  (before, `fields` dropped `other` always); exclude filters never drop it. Set `"unknown": {"field": "drop"}`
+  to keep the old behaviour.
+- `unknown` per dimension: a search's `unknown` may be a mapping, e.g. `{"default": "keep", "domain": "drop"}`,
+  over the dimensions `location`, `mode`, `remote_proof`, `worktime`, `pay`, `date`, `field`, `domain`,
+  `function`. `defaults` and a search merge per dimension (a string is `{"default": ...}`).
+- Language packs may declare `qualifier` (words that open a title's qualifier: "with", "z", "mit") and
+  `gender` (gender markers in words: "all genders"); `infer.py` keeps only punctuation. Bracketed gender
+  markers made of letters ("(m/w/d)", "(k/m)", "(f/m/x)") no longer end a title's head in any language.
+
 - Derived fields are re-derived from stored observations: offers keep the adapter's structured values
   (`facts`), the requests that found them and the fetched posting apart from mode, work time, contracts,
   level and job field, which `neetscape eval` derives again (a vocabulary change needs no crawl).
@@ -17,7 +90,7 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
   Specialist" AI and automation; a qualifier such as "(GenAI)" counts less than the title's head). Columns
   `job_field`, `job_function`, `job_domain`; search filters `fields` and `fields_exclude`; a `field` column
   in listing.tsv; REPORT.html shows the field and groups by it.
-- Tests: every board's parser is checked by one table (`COVERAGE` in `tests/countries/test_countries.py`:
+- Tests: every board's parser is checked by one table (`COVERAGE` in `tests/test_boards.py`:
   the fields it must fill on its recorded page); per-board files keep only the board's own rules. Exact
   URLs and per-offer values are no longer pinned (`neetscape probe` checks a board live); a few report
   formatting tests and `tests/affected.py` are removed.

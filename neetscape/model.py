@@ -18,6 +18,12 @@ FIELDS = ("ai_automation", "security", "qa", "devops_cloud", "data", "erp_crm", 
           "product_project", "design", "ecommerce", "customer_service", "sales", "marketing", "hr", "finance", "legal",
           "retail", "admin_office", "logistics", "engineering", "manufacturing", "healthcare", "education", "hospitality")
 
+# what a search's `unknown` policy may name per dimension: the fields a filter needs and an offer may lack
+# (location, mode: `where`; remote_proof: no fetched posting; field/domain/function: nothing read from the title or
+# category). "default" applies to every dimension not named.
+UNKNOWN_DIMENSIONS = ("location", "mode", "remote_proof", "worktime", "pay", "date", "field", "domain", "function")
+UNKNOWN_POLICIES = ("keep", "drop")
+
 
 def canonical_contract(value: str) -> str:
     """The current name of a contract type (`uop` -> `employment`)."""
@@ -44,9 +50,15 @@ def age_label(value) -> str:
     return "?" if n is None else f"{n}d"
 
 
+# letters Unicode does not decompose into a base letter and a mark (NFKD keeps them whole), any language
+_UNDECOMPOSED = str.maketrans({"ł": "l", "Ł": "L", "ß": "ss", "ẞ": "SS", "ø": "o", "Ø": "O", "đ": "d", "Đ": "D",
+                               "ħ": "h", "Ħ": "H", "ı": "i", "æ": "ae", "Æ": "AE", "œ": "oe", "Œ": "OE", "þ": "th",
+                               "Þ": "Th", "ð": "d", "Ð": "D"})
+
+
 def fold(s: str) -> str:
-    """Lowercase ASCII fold: 'Kraków' -> 'krakow'. Used for city and company matching."""
-    s = unicodedata.normalize("NFKD", (s or "").replace("ł", "l").replace("Ł", "L").replace("ß", "ss"))
+    """Lowercase ASCII fold: 'Kraków' -> 'krakow', 'Øresund' -> 'oresund'. Used for city and company matching."""
+    s = unicodedata.normalize("NFKD", (s or "").translate(_UNDECOMPOSED))
     return "".join(c for c in s if not unicodedata.combining(c)).lower()
 
 
@@ -86,7 +98,8 @@ class Offer:
     worktime: str = "unknown"
     contracts: list[str] = field(default_factory=list)
     level: str = "unknown"
-    category: str = ""            # the board's own category, verbatim
+    category: str = ""            # the board's own role or job category, verbatim
+    industry: str = ""            # the employer's industry as the board names it, verbatim: context, never a domain
     skills: list[str] = field(default_factory=list)
     pay_text: str = ""            # as published
     pay_period: str = ""          # "project" when the amount is per project (not normalised)
@@ -97,7 +110,7 @@ class Offer:
     snippet: str = ""             # card text from the result page
     description: str = ""         # full text when the source ships it (feeds)
     facts: dict | None = None     # the adapter's structured values (infer.board_facts); None: its current values
-    evidence: dict = field(default_factory=dict)  # derived column -> [source, phrase] (infer.derive)
+    evidence: dict = field(default_factory=dict)  # derived column -> [source, phrase]; job_domains -> {domain: [...]}
     country: str = ""             # the country the offer's text is in (its language)
 
     @property
@@ -106,8 +119,8 @@ class Offer:
 
     def text(self) -> str:
         """Everything a filter may look at besides the title."""
-        return " ".join([self.title, self.company, self.category, " ".join(self.skills), self.pay_text, self.snippet,
-                         " ".join(self.locations)])
+        return " ".join([self.title, self.company, self.category, self.industry, " ".join(self.skills), self.pay_text,
+                         self.snippet, " ".join(self.locations)])
 
 
 @dataclass(frozen=True)
@@ -138,6 +151,9 @@ class Search:
     levels_exclude: frozenset = frozenset()
     fields: frozenset = frozenset()             # allowed job fields (FIELDS); empty = any
     fields_exclude: frozenset = frozenset()
+    domains: frozenset = frozenset()            # job domains (infer.DOMAINS); passes when any of the offer's matches
+    functions: frozenset = frozenset()          # allowed job functions (infer.FUNCTIONS); empty = any
+    functions_exclude: frozenset = frozenset()
     pay_min: int | None = None                  # profile currency, in `pay_period` units
     pay_period: str = "month"                   # "month" or "hour"
     require_pay: bool = False
@@ -146,9 +162,14 @@ class Search:
     title_exclude: tuple = ()
     text_exclude: tuple = ()
     category_include: tuple = ()
-    unknown: str = "keep"                       # keep or drop offers whose filtered field is unknown
+    unknown: str = "keep"                       # keep or drop offers whose filtered field is unknown (the default)
+    unknown_for: tuple = ()                     # ((dimension, policy), ...): UNKNOWN_DIMENSIONS overriding `unknown`
     boost: int = 0
     remote_proof: bool = False                  # the fetched posting must state fully remote work, with no hybrid or required presence
+
+    def unknown_policy(self, dimension: str) -> str:
+        """"keep" or "drop" for an offer lacking the field of `dimension` (UNKNOWN_DIMENSIONS)."""
+        return dict(self.unknown_for).get(dimension, self.unknown)
 
     def keywords_on(self, board: str) -> tuple[str, ...] | None:
         """The phrases sent to `board` (its `keywords_for` override, else `keywords`); None = everything."""

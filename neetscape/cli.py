@@ -317,7 +317,7 @@ def _yes(value) -> str:
 # ---------------------------------------------------------------- steps and review commands
 def cmd_eval(a) -> None:
     store, profile, rid = _open(a)
-    print(ev.evaluate(store, profile, rid))
+    print(ev.evaluate(store, profile, rid, rederive=a.rederive))
 
 
 def _warn_unevaluated(store: Store, run_id: int) -> None:
@@ -387,8 +387,11 @@ def cmd_show(a) -> None:
     evidence = json.loads(o["evidence"] or "{}")
     if evidence:
         print("\nwhy (field: value <- source \"phrase\"):")
-        for col, (source, phrase) in sorted(evidence.items()):
-            print(f"  {col}: {o[col]} <- {source} \"{phrase}\"")
+        for col, why in sorted(evidence.items()):
+            if isinstance(why, dict):  # a set of values (job_domains): value -> [source, phrase]
+                print(f"  {col}: {o[col]} <- " + ", ".join(f"{v}: {s} \"{p}\"" for v, (s, p) in why.items()))
+            else:
+                print(f"  {col}: {o[col]} <- {why[0]} \"{why[1]}\"")
     print("", *_verdict_lines(store, profile, o["id"], rid), sep="\n")
     flagged = ev.flagged(store, profile, o["id"], rid)
     if flagged:
@@ -481,7 +484,9 @@ def _parser() -> argparse.ArgumentParser:
         p.add_argument("--limit-pages", type=int, help="at most this many pages per request")
         p.add_argument("--record", help="save raw pages to this directory")
 
-    command("eval", cmd_eval, "judge the stored offers again", boards, run)
+    command("eval", cmd_eval, "judge the stored offers again", boards, run).add_argument(
+        "--rederive", action="store_true",
+        help="derive every offer's fields again even when the derivation (infer.py, lang packs) is unchanged")
     command("report", cmd_report, "write the reports again", boards, run)
 
     p = command("list", cmd_list, "the passing offers", boards, run)

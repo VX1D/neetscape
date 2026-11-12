@@ -22,16 +22,17 @@ from .pay import HOURS_PER_MONTH
 from .profile import Profile
 from .store import Store
 
-_TEXT_FIELDS = ("title", "company", "category", "skills", "pay_text", "snippet")   # what rank rules on `any` read
+_TEXT_FIELDS = ("title", "company", "category", "industry", "skills", "pay_text", "snippet")  # rank rules on `any`
 _CARD_FIELDS = (*_TEXT_FIELDS, "locations")
 
 
 def _text(o, fields=_TEXT_FIELDS) -> str:
-    return " ".join(str(o[k] or "") for k in fields)
+    return " ".join(str(_optional(o, k)) for k in fields)
 
 
 def _optional(o, key: str) -> str:
-    """A column only some offer queries select (`posting`, `areas`, `keywords`, `job_field`); "" when absent."""
+    """A column only some offer queries select (`posting`, `areas`, `keywords`, the derived job columns); "" when
+    absent."""
     return (o[key] if key in o.keys() else "") or ""
 
 
@@ -46,8 +47,12 @@ def _filter_text(o) -> str:
     return _text(o, _CARD_FIELDS) + " " + _posting(o)
 
 
+# how a dimension (model.UNKNOWN_DIMENSIONS) reads in a rejection reason: "work time unknown"
+_UNKNOWN_LABEL = {"remote_proof": "remote proof", "worktime": "work time"}
+
+
 class _Verdict:
-    """Collects failing reasons; `unknown` applies the search's policy for a field the offer lacks."""
+    """Collects failing reasons; `unknown` applies the search's policy for the dimension of a field the offer lacks."""
 
     def __init__(self, s: Search):
         self.search, self.reasons = s, []
@@ -55,9 +60,9 @@ class _Verdict:
     def fail(self, reason: str) -> None:
         self.reasons.append(reason)
 
-    def unknown(self, what: str) -> None:
-        if self.search.unknown == "drop":
-            self.fail(f"{what} unknown")
+    def unknown(self, dimension: str) -> None:
+        if self.search.unknown_policy(dimension) == "drop":
+            self.fail(f"{_UNKNOWN_LABEL.get(dimension, dimension)} unknown")
 
 
 def _city_in(city: str, country: str, hay: str) -> bool:
@@ -107,7 +112,7 @@ def _check_remote_proof(o, s: Search, v: _Verdict) -> None:
     with client visits" fails. Without a fetched posting the proof is unknown and follows the `unknown` policy."""
     text = _posting(o)
     if not text:
-        v.unknown("remote proof")
+        v.unknown("remote_proof")
         return
     if reason := infer.remote_proof(text, countries.languages(s.where.country)):
         v.fail(reason)
@@ -132,15 +137,40 @@ def _check_worktime(o, s: Search, v: _Verdict) -> None:
     if o["worktime"] in s.worktime or contracts & s.contracts:
         return
     if (s.worktime and o["worktime"] == "unknown") or (s.contracts and not contracts):
-        v.unknown("work time")
+        v.unknown("worktime")
     else:
         v.fail(f"work time {o['worktime']} / contracts {','.join(sorted(contracts)) or '-'}")
 
 
-def _check_field_level(o, s: Search, v: _Verdict) -> None:
+def _include(v: _Verdict, dimension: str, values: set, allowed: frozenset, label: str) -> None:
+    """An include filter: passes when any of the offer's values is allowed; an offer with none is unknown."""
+    if not allowed or values & allowed:
+        return
+    if values:
+        v.fail(f"{dimension} {label}")
+    else:
+        v.unknown(dimension)
+
+
+def _check_job(o, s: Search, v: _Verdict) -> None:
+    """Job field, domains and function. An offer the title and category say nothing about (field "other", no
+    domain, function "unknown") is unknown to an include filter (the `unknown` policy decides) and passes every
+    exclude filter."""
     field = _optional(o, "job_field") or "other"
-    if (s.fields and field not in s.fields) or field in s.fields_exclude:
+    if field in s.fields_exclude:
         v.fail(f"field {field}")
+    _include(v, "field", set() if field == "other" else {field}, s.fields, field)
+    domains = {d for d in _optional(o, "job_domains").split(",") if d}
+    _include(v, "domain", domains, s.domains, ",".join(sorted(domains)))
+    function = _optional(o, "job_function") or "unknown"
+    found = set() if function == "unknown" else {function}
+    _include(v, "function", found, s.functions, function)
+    if function in s.functions_exclude:
+        v.fail(f"function {function}")
+
+
+def _check_field_level(o, s: Search, v: _Verdict) -> None:
+    _check_job(o, s, v)
     if o["level"] in s.levels_exclude:
         v.fail(f"level {o['level']}")
 
@@ -180,7 +210,7 @@ def _check_patterns(o, s: Search, v: _Verdict) -> None:
         text = _filter_text(o)
         if any(rx.search(text) for rx in s.text_exclude):
             v.fail("text excluded")
-    if s.category_include and not any(rx.search(o["category"] or "") for rx in s.category_include):
+    if s.category_include and not any(rx.search(_text(o, ("category", "industry"))) for rx in s.category_include):
         v.fail("category not included")
 
 
@@ -227,12 +257,13 @@ def rank(o, profile: Profile, s: Search) -> tuple[int, list[str], list[str]]:
     return sum(r["weight"] for r in hits) + s.boost, why, tags
 
 
-def evaluate(store: Store, profile: Profile, run_id: int) -> dict[str, int]:
+def evaluate(store: Store, profile: Profile, run_id: int, rederive: bool = False) -> dict[str, int]:
     """Store the verdict of every search on every offer of the current state as of the run (replacing the run's
-    earlier verdicts). Returns passed counts per search."""
+    earlier verdicts). Returns passed counts per search. `rederive` derives every offer again even when the
+    derivation is unchanged (`Store.rederive`'s `force`)."""
     passed, rejected, counts = [], [], {s.id: 0 for s in profile.searches}
     hours = profile.country.hours_per_month
-    store.rederive()  # derived fields follow the current vocabularies and policies without a new crawl
+    store.rederive(force=rederive)  # derived fields follow the current vocabularies and policies (skipped when unchanged)
     for o in store.current_offers(run_id):
         black, drop = _blacklist_verdict(o, profile)
         for s in profile.searches:

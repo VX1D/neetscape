@@ -1,4 +1,6 @@
 """Reading text: pay, the offer's fields from its card and posting (infer, lang packs), JSON-LD postings, hints."""
+import json
+
 import pytest
 
 from conftest import FIXTURES
@@ -7,6 +9,7 @@ from neetscape.model import Offer
 from neetscape.pay import DEFAULT_FX, parse_pay
 from neetscape.posting import parse_posting
 
+PL = ("pl", "en")  # Polish boards read Polish and English (country.languages("pl"))
 DE_FX = {"EUR": 1.0, "PLN": 0.233, "USD": 0.93}
 DE = dict(fx=DE_FX, base="EUR", hours=173)
 EUR = dict(fx=DE_FX, base="EUR")
@@ -64,15 +67,15 @@ def test_lang_packs_are_per_country():
 def test_fill_reads_text_where_the_board_says_nothing():
     o = Offer(board="olx", key="k", url="k", title="Junior asystent (praca zdalna)", pay_text="4 800 - 5 800 zł / mies.",
               snippet="Praca dodatkowa Umowa zlecenie", worktime="unknown")
-    infer.fill(o, DEFAULT_FX)
+    infer.fill(o, DEFAULT_FX, languages=PL)
     assert (o.mode, o.worktime, o.level, o.pay_min, o.pay_max) == ("remote", "part_time", "junior", 4800, 5800)
     assert "mandate" in o.contracts and o.evidence["mode"][0] == "card"
     board_data = Offer(board="justjoin", key="k", url="k", title="Junior (remote)", mode="hybrid")
-    infer.fill(board_data, DEFAULT_FX)
+    infer.fill(board_data, DEFAULT_FX, languages=PL)
     assert board_data.mode == "hybrid" and board_data.facts == {"mode": "hybrid"}  # board data wins over text
     assert board_data.evidence["mode"] == ["board", "board data"]
     found_remote = Offer(board="pracuj", key="k", url="k", title="Asystent", snippet="hybrydowo")
-    infer.fill(found_remote, DEFAULT_FX, request_remote=True)
+    infer.fill(found_remote, DEFAULT_FX, request_remote=True, languages=PL)
     assert found_remote.mode == "remote"  # the board's own remote filter beats card words
 
 
@@ -101,5 +104,51 @@ def test_jsonld_posting():
 
 
 def test_hints():
-    h = infer.hints("Praca w 100% zdalna. Wymagamy 3+ lata doświadczenia, bachelor degree. German C1. hybrid possible")
+    h = infer.hints("Praca w 100% zdalna. Wymagamy 3+ lata doświadczenia, bachelor degree. German C1. hybrid possible", PL)
     assert h["fully_remote"] and h["years"] and "degree" in h["degree"] and h["languages"] == ["german"] and h["hybrid"]
+
+
+@pytest.mark.parametrize("title,category,languages,domains,function", [
+    ("AI Gateway Product Owner", "", ("pl", "en"), {"ai", "product"}, "manage_project"),   # AI in any role
+    ("AI Content Creator", "", ("en",), {"ai", "marketing"}, "market"),
+    ("Logistics Support Specialist", "", ("pl", "en"), {"logistics"}, "support"),
+    ("System Administrator", "", ("en",), {"tech"}, "administer"),             # the weak domain when alone
+    ("IT System Administrator", "", ("en",), {"it"}, "administer"),            # ...and not beside another one
+    ("Support Specialist", "IT support", ("en",), {"it"}, "support"),          # the board's category
+    ("Engineer (AI/ML)", "", ("en",), {"ai"}, "engineer"),                     # the qualifier
+    ("Konsultant", "", ("pl", "en"), set(), "consult"),
+    ("Sachbearbeiter Buchhaltung", "", ("de", "en"), {"finance"}, "account"),
+    ("Sachbearbeiter (m/w/d) Buchhaltung", "", ("de", "en"), {"finance"}, "account"),  # a gender marker is no qualifier
+    ("Automation Engineer", "", ("en",), {"ai"}, "automate"),                 # implied by the function when none named
+    ("PLC Automation Engineer", "", ("en",), {"industrial"}, "automate"),     # ...not when the title names one
+    ("Konsultant / Konsultantka ds. Automatyzacji Procesów", "", ("pl", "en"), {"ai"}, "automate"),  # a gender pair
+    ("Supply Network Planning Assistant", "", ("en",), set(), "assist"),      # "network" alone is not IT
+    ("Sales/Salesforce Administrator", "", ("en",), {"erp", "sales"}, "sell"),  # a shared start keeps both words
+])
+def test_job_domains_from_title_and_category(title, category, languages, domains, function):
+    got = infer.derive(title=title, category=category, languages=languages)
+    assert set(filter(None, got["job_domains"].split(","))) == domains and got["job_function"] == function
+    evidence = json.loads(got["evidence"]).get("job_domains", {})
+    assert set(evidence) == domains and all(len(why) == 2 for why in evidence.values())
+
+
+def test_industry_is_context_not_a_domain():
+    o = Offer(board="rocketjobs", key="1", url="u", title="Account Manager", category="sales", industry="IT i telekomunikacja")
+    infer.fill(o, DEFAULT_FX, languages=("pl", "en"))
+    assert set(o.evidence["job_domains"]) == {"sales"}
+    as_category = infer.derive(title="Account Manager", category="sales IT i telekomunikacja", languages=("pl", "en"))
+    assert as_category["job_domains"] == "it,sales"
+
+
+def test_job_domains_ignore_the_posting_and_keep_the_single_field():
+    got = infer.derive(title="AI Gateway Product Owner", posting="We build logistics software for retail.", languages=("en",))
+    assert got["job_domains"] == "ai,product"
+    assert (got["job_function"], got["job_domain"], got["job_field"]) == ("manage_project", "ai", "product_project")
+
+
+def test_gender_markers_are_generic_and_qualifier_words_come_from_the_packs():
+    def domains(title, langs):
+        return json.loads(infer.derive(title=title, languages=langs)["evidence"])["job_domains"]
+    assert domains("Specjalista (k/m) ds. IT", ("pl",)) == {"it": ["title", "IT"]}          # letters: any language
+    assert domains("Data Engineer (all genders)", ("en",)) == {"data": ["title", "Data"]}   # English words
+    assert domains("Support Specialist with AI", ("en",)) == {"ai": ["qualifier", "AI"]}   # "with" opens a qualifier

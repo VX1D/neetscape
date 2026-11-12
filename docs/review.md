@@ -33,17 +33,24 @@ remove what they would never apply to. For example, for someone who wants remote
 
 ```json
 {"id": "main", "where": "remote", "what": "all", "remote_proof": true,
- "fields": ["ai_automation", "it_support", "it_admin", "qa", "erp_crm", "data"],
+ "domains": ["ai", "it", "data", "erp", "security", "cloud"],
+ "functions_exclude": ["sell", "market", "people", "account", "shop", "cook_clean", "operate", "transport",
+                       "care", "teach"],
+ "unknown": {"default": "keep", "domain": "drop"},
  "title_exclude": ["senior|\\blead\\b|principal|architect|head of|manager",
                    "java\\b|\\.net\\b|c#|golang|react|angular|php"],
  "text_exclude": ["\\b(german|dutch|french)\\b.{0,40}(c1|b2|fluent|native|required)"],
  "levels_exclude": ["senior", "lead", "manager"], "pay": {"min": 6000, "per": "month"}}
 ```
 
-- `fields` is the person's job fields, from the CV (`neetscape sql "SELECT job_field, COUNT(*) FROM offers GROUP BY 1"`
-  shows what the crawl holds); `title_exclude` removes seniority and stacks they rule out; `text_exclude`
-  removes hard blockers that show on cards (other languages). Group the listing by field in REPORT.html to
-  see what each field holds.
+- `domains` is what the person's work is about, from the CV, in any role ("AI Gateway Product Owner" has
+  `ai`); `functions_exclude` removes the roles they rule out (selling, marketing, recruiting, accounting...).
+  `neetscape sql "SELECT job_domains, COUNT(*) FROM offers GROUP BY 1 ORDER BY 2 DESC LIMIT 30"` shows what the
+  crawl holds. Generic titles name no domain ("Support Associate", "Asystent"); `"domain": "drop"` leaves them
+  out, `keep` (the default) lets them through for reading by title. Use `fields` instead when the person names a
+  role rather than a subject (docs/profile.md, "Fields, domains or functions").
+- `title_exclude` removes seniority and stacks they rule out; `text_exclude` removes hard blockers that show
+  on cards (other languages). Group the listing by field in REPORT.html to see what each field holds.
 - `remote_proof: true` (remote searches) requires the fetched posting to describe remote work and to
   mention no hybrid model or required presence (client visits, business trips, office days,
   relocation). Before a posting is fetched it counts as unknown, so stage 1 is not affected.

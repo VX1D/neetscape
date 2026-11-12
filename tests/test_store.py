@@ -131,6 +131,129 @@ def test_migration_merges_existing_qualified_duplicates(tmp_path):
     assert len({row[0] for row in s.q("SELECT cluster_id FROM offers")}) == 1
 
 
+def test_migration_adds_job_domains_and_eval_fills_them(tmp_path):
+    s = Store(old_database(tmp_path / "old.db", MIGRATIONS.index(store._domains_column), [
+        "INSERT INTO offers(board, key, url, title, cluster_id) VALUES ('x', '1', 'u1', 'AI Gateway Product Owner', 1)"]))
+    assert s.q("PRAGMA user_version")[0][0] == len(MIGRATIONS) and s.offer("u1")["job_domains"] == ""
+    s.rederive()
+    assert s.offer("u1")["job_domains"] == "ai,product"
+
+
+LI_POSTING = "Location: Kraków\nSeniority level: {}\nEmployment type: {}\n\nWe offer flexible hours and a B2B contract."
+
+
+@pytest.mark.parametrize("title,facts,criteria,want", [
+    ("Support Specialist", None, ("Entry level", "Internship"),                       # the criteria fill the unknowns (B2B: text)
+     {"level": "junior", "worktime": "flexible", "contracts": "internship"}),  # the text: flexible
+    ("Senior Support Specialist, full time", None, ("Internship", "Part-time"),       # ...and outrank title and card
+     {"level": "intern", "worktime": "part_time", "contracts": "b2b"}),
+    ("Support Specialist", {"worktime": "full_time", "level": "lead"}, ("Director", "Part-time"),  # board facts win
+     {"level": "lead", "worktime": "full_time", "contracts": "b2b"}),
+    ("Senior Support Specialist", None, ("Mid-Senior level", "Volunteer"),           # unlisted: the other sources
+     {"level": "senior", "worktime": "flexible", "contracts": "b2b"}),
+])
+def test_rederive_reads_the_postings_structured_criteria(db, title, facts, criteria, want):
+    ingest(db, job("linkedin", "1", title, facts=facts), board="linkedin")
+    text = LI_POSTING.format(*criteria)
+    db.save_detail(1, 200, text, {"description": text, "source": "api",
+                                  "criteria": {"seniority": criteria[0], "employment_type": criteria[1]}}, {})
+    db.rederive()
+    o = db.offer("https://linkedin/1")
+    assert {k: o[k] for k in want} == want
+    evidence = json.loads(o["evidence"])
+    if not facts and criteria[0] == "Entry level":
+        assert evidence["level"] == ["posting_struct", "LinkedIn: Seniority level Entry level"]
+        assert evidence["contracts"] == ["posting_struct", "LinkedIn: Employment type Internship"]
+def test_inferred_v6_facts_rank_below_every_source(tmp_path):
+    """v6 stored old inferences as facts (LinkedIn has no structured mode/level); v10 marks them, so the current
+    reading wins, while a board's own data stays board data; the next sighting replaces the facts."""
+    facts = json.dumps({"level": "senior", "mode": "onsite"})
+    s = Store(old_database(tmp_path / "old.db", MIGRATIONS.index(store._stored_facts), [
+        "INSERT INTO offers(board, key, url, title, facts, cluster_id, first_seen_run) VALUES "
+        f"('linkedin', '1', 'https://linkedin/1', 'Junior Data Analyst (remote)', '{facts}', 1, 1), "
+        f"('justjoin', '2', 'https://justjoin/2', 'Junior Data Analyst (remote)', '{facts}', 2, 1)"]))
+    s.rederive()
+    li, jj = s.offer("https://linkedin/1"), s.offer("https://justjoin/2")
+    assert (li["level"], li["mode"]) == ("junior", "remote")      # the title, not the old guess
+    assert (jj["level"], jj["mode"]) == ("senior", "onsite")      # justjoin's own data
+    assert json.loads(li["facts"])["_stored"] == ["level", "mode"]
+    ingest(s, job("linkedin", "1", "Junior Data Analyst (remote)"), board="linkedin")   # sighted again
+    assert json.loads(s.offer("https://linkedin/1")["facts"]) == {}
+
+
+def test_migration_splits_mixed_categories_into_industry(tmp_path):
+    s = Store(old_database(tmp_path / "old.db", MIGRATIONS.index(store._industry_column), [
+        "INSERT INTO offers(board, key, url, title, category, cluster_id) VALUES "
+        "('rocketjobs', '1', 'u1', 'Account Manager', 'sales it i telekomunikacja', 1), "
+        "('rocketjobs', '2', 'u2', 'SEO Specialist', 'marketing seo', 2), ('justjoin', '3', 'u3', 'Agent', 'support', 3)"]))
+    assert [tuple(r) for r in s.q("SELECT category, industry FROM offers ORDER BY key")] == [
+        ("sales", "it i telekomunikacja"), ("marketing seo", ""), ("support", "")]
+    s.rederive()
+    assert s.offer("u1")["job_domains"] == "sales"  # a salesperson at an IT company is not in IT
+
+
+def test_industry_is_stored_and_names_no_domain(db):
+    ingest(db, job("rocketjobs", "1", "Account Manager", category="sales", industry="it i telekomunikacja"),
+           job("rocketjobs", "2", "Account Manager", category="sales it"))
+    o = db.offer("https://rocketjobs/1")
+    assert o["industry"] == "it i telekomunikacja" and o["job_domains"] == "sales"
+    assert db.offer("https://rocketjobs/2")["job_domains"] == "it,sales"  # the same words as a category do
+def _stale(db, url):
+    """Overwrite a derived field as an older derivation might have left it; returns the offer id."""
+    db.db.execute("UPDATE offers SET job_field = 'stale' WHERE url = ?", (url,))
+    db.db.commit()
+    return db.offer(url)["id"]
+
+
+def test_full_rederive_is_skipped_while_the_derivation_is_unchanged(db, monkeypatch):
+    ingest(db, job("olx", "1", "Technical Support Engineer"))
+    db.rederive()                                                          # stores the fingerprint
+    assert db.meta("derivation") == store.derivation_fingerprint("pl")
+    _stale(db, "https://olx/1")
+    assert db.rederive() == 0 and db.offer("https://olx/1")["job_field"] == "stale"      # skipped
+    assert db.rederive(force=True) == 1 and db.offer("https://olx/1")["job_field"] == "it_support"
+    _stale(db, "https://olx/1")
+    monkeypatch.setattr(store, "derivation_fingerprint", lambda home: "changed")      # e.g. a lang pack edited
+    assert db.rederive() == 1 and db.offer("https://olx/1")["job_field"] == "it_support"
+    assert db.meta("derivation") == "changed" and db.rederive() == 0
+
+
+def test_per_offer_rederive_always_derives(db):
+    ingest(db, job("olx", "1", "Technical Support Engineer"), job("olx", "2", "Support Associate"))
+    db.rederive()
+    fingerprint = db.meta("derivation")
+    one = _stale(db, "https://olx/1")
+    _stale(db, "https://olx/2")
+    assert db.rederive([one]) == 1 and db.offer("https://olx/1")["job_field"] == "it_support"
+    assert db.offer("https://olx/2")["job_field"] == "stale" and db.meta("derivation") == fingerprint
+
+
+def test_the_fingerprint_follows_the_derivation_sources(monkeypatch):
+    before = store.derivation_fingerprint("pl")
+    assert before == store.derivation_fingerprint("pl") != store.derivation_fingerprint("de")
+    monkeypatch.setattr(store, "_DERIVATION_SOURCES", store._DERIVATION_SOURCES[:-1])   # one input fewer
+    assert store.derivation_fingerprint("pl") != before
+
+
+def test_a_migration_forgets_the_fingerprint(tmp_path, monkeypatch):
+    """A later migration may add a derived column, which only a full pass fills."""
+    s = Store(tmp_path / "n.db")
+    s.rederive()
+    s.close()
+    assert Store(tmp_path / "n.db").meta("derivation")                     # no migration: kept
+    monkeypatch.setattr(store, "MIGRATIONS", MIGRATIONS + [lambda db: None])
+    assert Store(tmp_path / "n.db").meta("derivation") is None
+
+
+def test_job_domains_are_read_in_each_offers_language(db):
+    ingest(db, job("arbeitnow", "1", "Sachbearbeiter (m/w/d) Buchhaltung"),          # a German board
+           job("justjoin", "2", "Sachbearbeiter Buchhaltung"),                         # a Polish board: not Polish words
+           job("justjoin", "3", "Sachbearbeiter Buchhaltung", country="de"),           # ...unless the text is German
+           job("justjoin", "4", "Specjalista ds. logistyki"))
+    assert [db.offer(f"https://{b}/{k}")["job_domains"] for b, k in
+            (("arbeitnow", "1"), ("justjoin", "2"), ("justjoin", "3"), ("justjoin", "4"))] == ["finance", "", "finance", "logistics"]
+
+
 def test_readonly_store_sees_the_current_schema(tmp_path):
     s = Store(old_database(tmp_path / "old.db", 2), readonly=True)
     assert s.q("SELECT COUNT(*) FROM rejections")[0][0] == 0

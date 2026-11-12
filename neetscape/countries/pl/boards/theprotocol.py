@@ -12,7 +12,9 @@ Verified live 2026-11-12:
   and counts as `promoted`, so it never decides a newest-first stop;
 - many offers are pracuj.pl postings shown here too (same ids, dates and texts);
 - no result cap: the whole board (`/praca`, 4321 offers, `page.count` 87) ends on its short page 87 (21 offers),
-  page 88 is empty; Warszawa (2608) ends on page 53 (8). `max_pages` (200, twice the board) is a safety stop.
+  page 88 is empty; Warszawa (2608) ends on page 53 (8). `max_pages` (200, twice the board) is a safety stop;
+- no category per offer (2026-11-12, remote page 1, all 50 offers): the offer objects carry no category or
+  specialisation field, only `technologies` (read as skills), levels, contracts and work modes.
 """
 from __future__ import annotations
 

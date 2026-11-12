@@ -32,9 +32,11 @@ from importlib import resources
 from pathlib import Path
 
 from .. import country as countries
+from .. import infer
 from ..boards import REGISTRY, expand
 from ..country import Country
-from ..model import CONTRACT_ALIASES, CONTRACTS, FIELDS, LEVELS, WORKTIMES, Search, Where
+from ..model import (CONTRACT_ALIASES, CONTRACTS, FIELDS, LEVELS, UNKNOWN_DIMENSIONS, UNKNOWN_POLICIES, WORKTIMES, Search,
+                     Where)
 
 PRESETS = ("focused", "broad", "local", "side")  # shared presets; a country may add or override some
 SORT_KEYS = ("score", "new", "pay", "published")
@@ -113,10 +115,36 @@ def _where(where: str, value, home: str = "pl") -> Where:
                        f"\"or_remote\": bool, \"country\": cc}} or {{\"remote\": bool, \"country\": cc}}")
 
 
+def _unknown_map(value) -> dict:
+    """A search's `unknown` as a mapping: a string is the policy of every dimension (`{"default": value}`)."""
+    if isinstance(value, str):
+        return {"default": value}
+    if not isinstance(value, dict):
+        raise ProfileError(f"unknown must be 'keep', 'drop' or a mapping of dimensions to them, not {value!r}")
+    return dict(value)
+
+
+def _unknown(at: str, value) -> tuple[str, tuple]:
+    """(default policy, ((dimension, policy), ...)) of a search's `unknown`, checked."""
+    policies = _unknown_map(value)
+    bad = sorted(set(policies) - {"default", *UNKNOWN_DIMENSIONS})
+    if bad:
+        raise ProfileError(f"{at}.unknown: unknown dimension(s) {bad}; allowed: {['default', *UNKNOWN_DIMENSIONS]}")
+    for k, v in policies.items():
+        if v not in UNKNOWN_POLICIES:
+            raise ProfileError(f"{at}.unknown" + ("" if isinstance(value, str) else f".{k}") + " must be 'keep' or 'drop'")
+    default = policies.pop("default", "keep")
+    return default, tuple(sorted(policies.items()))
+
+
 def build_search(d: dict, defaults: dict, n: int, home: Country | None = None) -> Search:
-    """Search number `n` of a profile (`d` over `defaults`), checked against the vocabularies of `home`."""
+    """Search number `n` of a profile (`d` over `defaults`), checked against the vocabularies of `home`. Keys of
+    the search replace those of `defaults`, except `unknown`: both are read as mappings (a string `X` is
+    `{"default": X}`) and merged dimension by dimension, the search's winning."""
     home = home or countries.get("pl")
     s = {**defaults, **d}
+    if "unknown" in defaults and "unknown" in d:
+        s["unknown"] = _unknown_map(defaults["unknown"]) | _unknown_map(d["unknown"])
     sid = s.get("id") or f"search{n + 1}"
     at = f"searches[{sid}]"
     what = s.get("what", "all")
@@ -125,8 +153,7 @@ def build_search(d: dict, defaults: dict, n: int, home: Country | None = None) -
     pay = s.get("pay") or {}
     if pay and pay.get("per", "month") not in ("month", "hour"):
         raise ProfileError(f"{at}.pay.per must be 'month' or 'hour'")
-    if s.get("unknown", "keep") not in ("keep", "drop"):
-        raise ProfileError(f"{at}.unknown must be 'keep' or 'drop'")
+    unknown, unknown_for = _unknown(at, s.get("unknown", "keep"))
 
     def rx(key: str) -> tuple:
         return _rx(f"{at}.{key}", s.get(key))
@@ -141,11 +168,12 @@ def build_search(d: dict, defaults: dict, n: int, home: Country | None = None) -
         worktime=choice("worktime", WORKTIMES),
         contracts=choice("contracts", CONTRACTS, {**home.contract_aliases, **CONTRACT_ALIASES}),
         levels_exclude=choice("levels_exclude", LEVELS), fields=choice("fields", FIELDS),
-        fields_exclude=choice("fields_exclude", FIELDS),
+        fields_exclude=choice("fields_exclude", FIELDS), domains=choice("domains", infer.DOMAINS),
+        functions=choice("functions", infer.FUNCTIONS), functions_exclude=choice("functions_exclude", infer.FUNCTIONS),
         pay_min=pay.get("min"), pay_period=pay.get("per", "month"), require_pay=bool(pay.get("required")),
         max_age_days=s.get("max_age_days"), title_include=rx("title_include"), title_exclude=rx("title_exclude"),
         text_exclude=rx("text_exclude"), category_include=rx("category_include"),
-        unknown=s.get("unknown", "keep"), boost=int(s.get("boost", 0)), remote_proof=bool(s.get("remote_proof", False)))
+        unknown=unknown, unknown_for=unknown_for, boost=int(s.get("boost", 0)), remote_proof=bool(s.get("remote_proof", False)))
 
 
 _TYPES = {"object": dict, "array": list, "string": str, "boolean": bool, "integer": int, "number": (int, float),
@@ -280,8 +308,7 @@ def preset(name: str, country: str = "pl") -> dict:
         f = d.joinpath(f"{name}.json")
         if f.is_file():
             data = json.loads(f.read_text())
-            if country != "pl" or "country" in data:
-                data["country"] = country
+            data["country"] = country
             return data
     raise ProfileError(f"unknown preset {name!r}; available for {country}: {presets(country)}")
 

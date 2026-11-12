@@ -14,9 +14,11 @@ matched rules, tags), `rejections` (v3) the ones that fail it with their reasons
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 import re
 import sqlite3
+from importlib import resources
 from pathlib import Path
 
 from . import country as countries
@@ -106,6 +108,72 @@ def _observation_columns(db: sqlite3.Connection) -> None:
         db.execute("UPDATE offers SET facts=? WHERE id=?", (json.dumps(facts, sort_keys=True), oid))
 
 
+def _domains_column(db: sqlite3.Connection) -> None:
+    """v7: `job_domains`, every domain the title and the category name (comma-joined, sorted; derived by
+    `rederive`, which `neetscape eval` runs, so offers stored earlier get theirs at the next evaluation)."""
+    db.execute("ALTER TABLE offers ADD COLUMN job_domains TEXT DEFAULT ''")
+
+
+def _industry_column(db: sqlite3.Connection) -> None:
+    """v8: `industry`, the employer's industry as the board names it, apart from `category` (the role). Offers stored
+    earlier held both in `category`: a board whose category mixes the two (`split_category`, rocketjobs) splits it
+    again; other boards' categories are roles and stay."""
+    db.execute("ALTER TABLE offers ADD COLUMN industry TEXT DEFAULT ''")
+    for name, board in REGISTRY.items():
+        if split := getattr(board, "split_category", None):
+            for oid, category in db.execute("SELECT id, category FROM offers WHERE board=? AND category != ''",
+                                            (name,)).fetchall():
+                role, industry = split(category)
+                if industry:
+                    db.execute("UPDATE offers SET category=?, industry=? WHERE id=?", (role, industry, oid))
+
+
+def _meta_table(db: sqlite3.Connection) -> None:
+    """v9: `meta(key, value)`, facts about the database itself; `derivation` is the fingerprint of the
+    derivation the stored derived fields follow (`derivation_fingerprint`, written by `rederive`)."""
+    db.execute("CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT)")
+
+
+# What derivation reads besides an offer's observations: `infer.py` with the `model.py` and `pay.py` it uses,
+# the language packs and the country code that picks them (`country.py`, each country's `__init__.py`), `store.py`
+# (`rederive` builds the observations) and the adapters (their `posting_facts`); plus each board's country.
+_DERIVATION_SOURCES = ("infer.py", "model.py", "pay.py", "country.py", "store.py", "lang/*.py", "countries/*/__init__.py",
+                       "boards/*.py", "countries/*/boards/*.py")  # adapters: `Board.posting_facts`
+
+
+def derivation_fingerprint(home: str) -> str:
+    """A hash of everything the derived fields depend on besides the stored observations (see
+    `_DERIVATION_SOURCES`) and of the database's home country; any edit to those files changes it."""
+    h = hashlib.sha256(home.encode() + b"\0")
+    root = Path(str(resources.files("neetscape")))
+    for path in sorted({f for pattern in _DERIVATION_SOURCES for f in root.glob(pattern)}):
+        h.update(path.relative_to(root).as_posix().encode() + b"\0" + path.read_bytes() + b"\0")
+    h.update(json.dumps(sorted((n, b.caps.country) for n, b in REGISTRY.items())).encode())
+    return h.hexdigest()[:16]
+
+
+# Fields an adapter did not read from its board's data when v6 ran (an inference from text, or nothing the board
+# ships), by board: their v6 "facts" were stored inferences. A historical record of the adapters at that time.
+_INFERRED_IN_V6 = {
+    "linkedin": ("mode", "worktime", "contracts", "level"), "remoteok": ("worktime", "contracts", "level"),
+    "weworkremotely": ("contracts", "level"), "nofluffjobs": ("worktime",), "theprotocol": ("worktime",),
+    "olx": ("level",), "useme": ("level",), "indeed": ("level",), "bundesagentur": ("level",),
+}
+
+
+def _stored_facts(db: sqlite3.Connection) -> None:
+    """v10: v6 turned every offer's stored values into its facts, also values inferred from text, so old
+    inferences outranked better evidence (a posting's criteria, the current vocabularies). Such facts, by
+    board and field (`_INFERRED_IN_V6`), are marked `_stored`: they rank below every source and only fill a field
+    nothing else states. The offer's next sighting replaces its facts with the adapter's own."""
+    for oid, board, facts in db.execute("SELECT id, board, facts FROM offers WHERE facts NOT IN ('', '{}')").fetchall():
+        f = json.loads(facts)
+        stored = sorted(k for k in _INFERRED_IN_V6.get(board, ()) if k in f)
+        if stored:
+            db.execute("UPDATE offers SET facts=? WHERE id=?", (json.dumps({**f, "_stored": stored}, sort_keys=True), oid))
+    db.execute("DELETE FROM meta WHERE key='derivation'")
+
+
 MIGRATIONS = [
     """
     CREATE TABLE runs(id INTEGER PRIMARY KEY, started_at TEXT, finished_at TEXT, status TEXT,
@@ -145,6 +213,10 @@ MIGRATIONS = [
     """,
     _cluster_columns,
     _observation_columns,
+    _domains_column,
+    _industry_column,
+    _meta_table,
+    _stored_facts,
 ]
 
 # The current state as of run :run, as CTEs ending in `cur(offer_id)`. A board's latest crawl is the latest run
@@ -214,6 +286,8 @@ class Store:
             else:
                 self.db.executescript(step)
             self.db.execute(f"PRAGMA user_version={i}")
+        if version < len(MIGRATIONS):  # a migration may add a derived column: the next full rederive fills it
+            self.db.execute("DELETE FROM meta WHERE key = 'derivation'")
         self.db.commit()
 
     def close(self) -> None:
@@ -312,7 +386,8 @@ class Store:
         return dict(url=o.url, title=o.title, title_norm=o.title_norm, company=o.company, mode=o.mode,
                     locations=json.dumps(o.locations, ensure_ascii=False), worktime=o.worktime,
                     contracts=",".join(sorted({canonical_contract(c) for c in o.contracts})), level=o.level,
-                    category=o.category, skills=", ".join(o.skills), pay_text=o.pay_text, pay_period=o.pay_period,
+                    category=o.category, industry=o.industry, skills=", ".join(o.skills), pay_text=o.pay_text,
+                    pay_period=o.pay_period,
                     pay_min=o.pay_min, pay_max=o.pay_max, published=o.published.isoformat() if o.published else None,
                     promoted=int(o.promoted), snippet=o.snippet[:1000], description=o.description,
                     facts=json.dumps(infer.board_facts(o) if o.facts is None else o.facts, ensure_ascii=False, sort_keys=True),
@@ -333,7 +408,8 @@ class Store:
         values = self._offer_values(o)
         cur = self._one("SELECT * FROM offers WHERE board=? AND key=?", o.board, o.key)
         if cur:
-            merged = {k: (cur[k] if v in _EMPTY else v) for k, v in values.items()}
+            # the new sighting's facts replace the stored ones, even when the adapter read none
+            merged = {k: (cur[k] if v in _EMPTY and k != "facts" else v) for k, v in values.items()}
             if posting_date_is_first and self._posting_set_published(cur, values["published"]):
                 merged["published"] = cur["published"]
             self.db.execute(f"UPDATE offers SET {', '.join(f'{k}=?' for k in merged)}, last_seen_run=?, gone_at=NULL WHERE id=?",
@@ -346,13 +422,18 @@ class Store:
             (o.board, o.key, *values.values(), self._cluster(o, run_id), run_id, run_id)).lastrowid
         return offer_id, False
 
-    def rederive(self, offer_ids=None) -> int:
+    def rederive(self, offer_ids=None, force: bool = False) -> int:
         """Derive the inferred fields (infer.derive) of some offers, or of all, again from their observations: the
         adapter's facts, the title and card text, the requests that found them and the fetched posting. Returns
-        how many offers changed."""
+        how many offers changed. Given offers are always derived; all offers only when the derivation changed
+        since the last full pass (`derivation_fingerprint` against `meta.derivation`, which the full pass
+        stores) or with `force`."""
         if offer_ids is not None and not offer_ids:
             return 0
         home = self.run_country() or "pl"
+        fingerprint = derivation_fingerprint(home) if offer_ids is None else None
+        if fingerprint and not force and self.meta("derivation") == fingerprint:
+            return 0
         where = f"WHERE o.id IN ({','.join('?' * len(offer_ids))})" if offer_ids is not None else ""
         rows = self.db.execute(f"""
             SELECT o.*, d.text AS posting, d.jsonld AS posting_meta,
@@ -361,7 +442,7 @@ class Store:
                    EXISTS (SELECT 1 FROM sightings s JOIN requests r ON r.id = s.request_id
                            WHERE s.offer_id = o.id AND instr(r.pushed, 'remote') > 0) AS request_remote
             FROM offers o LEFT JOIN details d ON d.offer_id = o.id {where}""", tuple(offer_ids or ())).fetchall()
-        changed = 0
+        changed, updates = 0, {}
         for r in rows:
             board = REGISTRY.get(r["board"])
             code = r["country"] or countries.text_country(board.caps.country if board else "", home)
@@ -369,13 +450,23 @@ class Store:
             cols = infer.derive(title=r["title"] or "", card=infer.card_text(r), facts=json.loads(r["facts"] or "{}"),
                                 request_remote=bool(r["request_remote"]), posting=r["posting"] or "",
                                 posting_remote=bool(meta.get("remote")),
+                                posting_facts=board.posting_facts(meta) if board and r["posting"] else None,
                                 category=" ".join(filter(None, (r["category"], r["request_category"]))),
                                 languages=countries.languages(code))
             if any(r[k] != v for k, v in cols.items()):
-                self.update_offer(r["id"], cols)
+                updates.setdefault(tuple(cols), []).append((*cols.values(), r["id"]))
                 changed += 1
-        self.db.commit()
+        with self.db:  # one transaction: the updates and the fingerprint they bring up to date
+            for keys, values in updates.items():
+                self.db.executemany(f"UPDATE offers SET {', '.join(f'{k}=?' for k in keys)} WHERE id=?", values)
+            if fingerprint:
+                self.db.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('derivation', ?)", (fingerprint,))
         return changed
+
+    def meta(self, key: str) -> str | None:
+        """A value of the `meta` table, or None."""
+        row = self.db.execute("SELECT value FROM meta WHERE key = ?", (key,)).fetchone()
+        return row[0] if row else None
 
     def ingest(self, offers: list[Offer], run_id: int, request_id: int, page: int,
                posting_date_is_first: bool = False) -> tuple[int, set[str]]:

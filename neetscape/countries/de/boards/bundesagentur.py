@@ -13,17 +13,16 @@ Verified live 2026-11-12:
   `homeofficemoeglich` (typically "NACH_VEREINBARUNG", by arrangement) = hybrid, false = on site;
 - pay, when given: `verguetungsangabe` STUNDENLOHN/MONATSGEHALT/JAHRESGEHALT with `gehaltsspanneVon`/`Bis`;
 - offer page: https://www.arbeitsagentur.de/jobsuche/jobdetail/<referenznummer>.
+- category vs industry: `hauptberuf`, the occupation ("Finanzbuchhalter/in"), is the role; no industry.
 """
 from __future__ import annotations
 
 import json
 import urllib.parse
 
-from .... import infer
 from ....boards.base import Board, Caps, Request, register, with_params
 from ....boards.pages import amount, date_of, places, with_query
 from ....model import Offer, Search
-from .vocab import LANGS
 
 API = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs"
 OFFER = "https://www.arbeitsagentur.de/jobsuche/jobdetail/"
@@ -118,7 +117,7 @@ class Bundesagentur(Board):
                 board=self.name, key=ref, url=OFFER + urllib.parse.quote(ref), title=title, company=o.get("firma") or "",
                 mode=work_mode(o), locations=places((x.get("adresse") or {}).get("ort") for x in o.get("stellenlokationen") or []),
                 worktime=worktime(o), contracts=contracts(o),
-                level=KIND.get(o.get("stellenangebotsart"), (None, None))[1] or infer.level_from_text(title, LANGS),
+                level=KIND.get(o.get("stellenangebotsart"), (None, None))[1] or "unknown",
                 category=o.get("hauptberuf") or "", skills=list(o.get("alleBerufe") or []), pay_text=pay_text(o),
                 published=date_of(o.get("datumErsteVeroeffentlichung") or (o.get("veroeffentlichungszeitraum") or {}).get("von")),
                 snippet=" · ".join(x for x in (o.get("vertragsdauer") == "BEFRISTET" and "befristet", o.get("externeURL")) if x)))

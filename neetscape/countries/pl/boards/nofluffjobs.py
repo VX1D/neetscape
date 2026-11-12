@@ -17,6 +17,7 @@ Verified live 2026-11-12 (2 disjoint pages, short last page, Kraków search, any
 - `q=` is ignored by the API; it only makes page URLs (request records, `--record` files) differ per search;
 - the offer page's JSON-LD holds only the company description; the posting API (`/api/posting/<ref>`) has the
   requirements, daily tasks, languages, every contract type and pay.
+- category vs industry: `category` (`backend`, `data`, `sales`, `customerService`) is the role; no industry.
 """
 from __future__ import annotations
 

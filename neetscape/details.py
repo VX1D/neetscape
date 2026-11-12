@@ -21,7 +21,7 @@ import urllib.parse
 from collections import defaultdict
 
 from . import country as countries
-from . import infer
+from . import infer, lang
 from .boards import REGISTRY
 from .boards.fetch import BrowserFetch, BrowserRender, FetchError, Http, Limiter
 from .boards.linkedin import LinkedIn
@@ -31,7 +31,12 @@ from .posting import parse_posting
 from .store import GONE, Store
 
 BLOCKED = (401, 403, 429)  # saved as blocked, never rendered: the page would be a login wall or block page
-PLACEHOLDER_COMPANIES = {"confidential", "poufne", "anonymous", "anonim", "ogłoszenie zewnętrzne", "n/a", "-"}
+PLACEHOLDER_COMPANIES = {"n/a", "-"}  # plus every language pack's `placeholder_companies` ("confidential", "poufne")
+
+
+def _placeholder(company: str) -> bool:
+    words = PLACEHOLDER_COMPANIES | {w for code in lang.available() for w in lang.pack(code).VOCAB.get("placeholder_companies", ())}
+    return company.strip().lower() in words
 
 
 def _error(e: Exception) -> str:
@@ -57,7 +62,7 @@ def _save(store: Store, row, status: int, text: str, meta: dict, home: str = "pl
     fields again with the posting as a new observation (mode, work time, contracts)."""
     store.save_detail(row["id"], status, text, meta, infer.hints(text, _languages(row["board"], home)))
     tick()
-    if (meta.get("company") or "").strip().lower() in PLACEHOLDER_COMPANIES:
+    if _placeholder(meta.get("company") or ""):
         meta = {**meta, "company": ""}
     updates = {k: meta[k] for k in ("company", "published") if meta.get(k) and not row[k]}
     if _is_earlier_first_publication(row, meta):

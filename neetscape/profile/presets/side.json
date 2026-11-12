@@ -19,12 +19,8 @@
         "specific_task",
         "freelance"
       ],
-      "pay": {
-        "min": 30,
-        "per": "hour"
-      },
       "text_exclude": [
-        "call ?center|telemark|cold call|akwizyc|mlm|network marketing|kurier|kierowc|magazyn|sprzątan"
+        "call ?cent(er|re)|telemarket|cold call|mlm|network marketing"
       ],
       "boost": 3
     }

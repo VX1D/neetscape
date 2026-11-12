@@ -29,7 +29,7 @@ _WORKTIME = {"full_time": "full_time", "part_time": "part_time", "freelance": "f
 _CONTRACT = {"permanent": "employment", "b2b": "b2b", "mandate_contract": "mandate", "specific_task_contract": "specific_task",
              "internship": "internship", "freelance": "freelance", "any": "other", "uop": "employment", "mandate": "mandate"}
 _LEVEL = {"intern": "intern", "junior": "junior", "mid": "mid", "regular": "mid", "senior": "senior", "expert": "senior",
-          "lead": "lead", "manager": "manager", "c_level": "manager", "staż": "intern"}
+          "lead": "lead", "manager": "manager", "c_level": "manager"}
 
 
 def mode(value: str) -> str:
@@ -73,6 +73,8 @@ DOMAINS = {
     "hospitality": "hospitality", "retail": "retail", "customer": "customer_service", "sales": "sales",
     "marketing": "marketing", "office": "admin_office", "design": "design", "product": "product_project",
 }
+# the domain a function implies when the title and the category name none ("Automation Engineer", "Manual Tester")
+IMPLIED_DOMAIN = {"automate": "ai", "develop": "software", "test": "software"}
 MATRIX = {
     ("administer", "it"): "it_admin", ("administer", "tech"): "it_admin", ("administer", "cloud"): "it_admin",
     ("engineer", "it"): "it_admin", ("support", "tech"): "it_support",
@@ -101,17 +103,21 @@ ORDER = {
                "manufacturing", "logistics", "hr", "finance", "legal", "health", "education", "hospitality", "retail",
                "customer", "sales", "marketing", "office", "design", "product", "tech"),
 }
-SOURCES = ("board", "request", "posting_struct", "title", "qualifier", "card", "category", "posting")  # strongest first
+# strongest first; `stored`: values an offer had before facts were kept apart (schema v10), weakest of all
+SOURCES = ("board", "request", "posting_struct", "title", "qualifier", "card", "category", "posting", "stored")
 COLUMNS = {"mode": "mode", "worktime": "worktime", "contracts": "contract", "level": "level",
            "job_function": "function", "job_domain": "domain"}  # derived offer column -> lexicon field
 
 
 # --- reading text ---------------------------------------------------------------
 _SENTENCES = re.compile(r"(?<=[.!?;])\s+|\n+|\s+[•▪·]\s+")
-_CHOICE = re.compile(r"\b(?:lub|albo|bądź|or|either)\b|\s/\s|zdalnie/|/hybryd|remote/|/hybrid", re.I)
-_HYBRID_WORD = re.compile(r"hybry\w*|hybrid\w*", re.I)
-# where a title's head ends: "Senior .NET Developer (GenAI)", "Specjalista ds. obsługi klienta z j. niemieckim"
-_QUALIFIER = re.compile(r"\s[-–—|/]\s|[(\[]|\s(?:with|z|mit|for|dla)\s", re.I)
+_CHOICE_MARKS = r"\s/\s"  # "hybrid / remote": an option in any language; the packs' `choice` words add the rest
+# A title's head ends at a qualifier: "Senior .NET Developer (GenAI)", "Data Analyst - Remote", and at the words
+# of the active packs' `qualifier` ("Customer Support Specialist with German"). A gender marker says nothing about
+# the job and must not end the head ("Sachbearbeiter (m/w/d) Buchhaltung"): a bracketed list of single letters
+# ("(m/w/d)", "(k/m)", "(f/m/x)") in any language, and the bracketed words of the packs' `gender` ("(all genders)").
+_QUALIFIER_MARKS = r"\s[-–—|/]\s|[(\[]"
+_GENDER_LETTERS = r"[^\W\d_](?:\s*[/|,]\s*[^\W\d_]){1,3}"
 
 
 def _langs(languages) -> tuple:
@@ -120,7 +126,8 @@ def _langs(languages) -> tuple:
 
 @functools.lru_cache(maxsize=32)
 def _lexicon(languages: tuple) -> dict:
-    """{field: [(value, explicit, regex)]} merged over the packs, and {"hints": {key: regex}}."""
+    """{field: [(value, explicit, regex)]} merged over the packs, {"hints": {key: regex}}, and the title's
+    "qualifier" and "gender" regexes (generic punctuation plus the packs' words)."""
     packs = [lang.pack(code).VOCAB for code in languages]
     out: dict = {}
     for fld in lang.FIELDS:
@@ -130,6 +137,12 @@ def _lexicon(languages: tuple) -> dict:
             for value in dict.fromkeys(v for t in tables for v in t):
                 rows.append((value, explicit, re.compile("|".join(f"(?:{p})" for t in tables for p in t.get(value, [])), re.I)))
         out[fld] = rows
+    choice = [f"(?:{p})" for pk in packs for p in pk.get("choice", [])]
+    out["choice"] = re.compile("|".join([_CHOICE_MARKS, *choice]), re.I)
+    words = [f"(?:{p})" for pk in packs for p in pk.get("qualifier", [])]
+    out["qualifier"] = re.compile(_QUALIFIER_MARKS + (rf"|\s(?:{'|'.join(words)})\s" if words else ""), re.I)
+    genders = [_GENDER_LETTERS] + [f"(?:{p})" for pk in packs for p in pk.get("gender", [])]
+    out["gender"] = re.compile(rf"[(\[]\s*(?:{'|'.join(genders)})\s*[)\]]", re.I)
     out["hints"] = {}
     for key in lang.HINTS:
         pats = [f"(?:{p})" for pk in packs for p in pk.get("hints", {}).get(key, [])]
@@ -205,9 +218,10 @@ def remote_proof(text: str, languages=None) -> str:
         hybrid = hints(sentence, languages)["hybrid"]
         if not hybrid:
             continue
-        offers_remote = (hints(sentence, languages)["fully_remote"]
-                         or mode_from_text(_HYBRID_WORD.sub("", sentence), languages) == "remote")
-        if not (offers_remote and _CHOICE.search(sentence)):
+        lexicon = _lexicon(_langs(languages))
+        offers_remote = (hints(sentence, languages)["fully_remote"]  # remote beside the hybrid wording?
+                         or mode_from_text(lexicon["hints"]["hybrid"].sub("", sentence), languages) == "remote")
+        if not (offers_remote and lexicon["choice"].search(sentence)):
             found += [w for w in hybrid if w not in found]
     found += [w for w in hints(text, languages)["office"] if w not in found]
     if found:
@@ -228,8 +242,8 @@ def board_facts(offer) -> dict:
 def card_text(row) -> str:
     """Offer.text() of a stored offer row."""
     locations = " ".join(json.loads(row["locations"] or "[]"))
-    return " ".join([row["title"] or "", row["company"] or "", row["category"] or "", row["skills"] or "",
-                     row["pay_text"] or "", row["snippet"] or "", locations])
+    return " ".join([row["title"] or "", row["company"] or "", row["category"] or "", row["industry"] or "",
+                     row["skills"] or "", row["pay_text"] or "", row["snippet"] or "", locations])
 
 
 def _job_field(function: tuple, domain: tuple) -> tuple[str, str]:
@@ -243,25 +257,69 @@ def _job_field(function: tuple, domain: tuple) -> tuple[str, str]:
     return "other", ""
 
 
+def _domains(matches: list[tuple]) -> dict:
+    """Every domain the title (head and qualifier) and the category name: {domain: (source, phrase)}, each from
+    its strongest match. The weak `tech` domain ("system") counts only when no other domain is named."""
+    out: dict = {}
+    for m in sorted((m for m in matches if m[0] == "domain"), key=_rank):
+        out.setdefault(m[1], (m[2], m[4]))
+    if len(out) > 1:
+        out.pop("tech", None)
+    return out
+
+
+# "Konsultant / Konsultantka", "Kierowca/Kierowczyni", "Mitarbeiter/in": one job name in two grammatical genders,
+# not the end of the title's head; recognised by the shared start of the two words, in any language. Both words stay:
+# "Sales/Salesforce Administrator" still names Salesforce
+_GENDER_PAIR = re.compile(r"(\w+)\s*/\s*(\w+)")
+
+
+def _same_word(a: str, b: str) -> bool:
+    a, b = a.casefold(), b.casefold()
+    return len(a) >= 4 and b.startswith(a[:5] if len(a) >= 5 else a)
+
+
+def title_parts(title: str, languages=None) -> tuple[str, str]:
+    """(head, qualifiers) of a job title, gender markers removed: "Sachbearbeiter (m/w/d) Buchhaltung" ->
+    ("Sachbearbeiter Buchhaltung", ""), "Senior .NET Developer (GenAI)" -> ("Senior .NET Developer ", "(GenAI)")."""
+    lexicon = _lexicon(_langs(languages))
+    plain = _GENDER_PAIR.sub(lambda m: f"{m[1]} {m[2]}" if _same_word(m[1], m[2]) else m[0], lexicon["gender"].sub(" ", title or ""))
+    m = lexicon["qualifier"].search(plain)
+    return (plain[:m.start()], plain[m.start():]) if m and m.start() > 0 else (plain, "")
+
+
 def derive(*, title: str = "", card: str = "", facts: dict | None = None, request_remote: bool = False,
-           posting: str = "", posting_remote: bool = False, category: str = "", languages=None) -> dict:
-    """Derived offer columns (mode, worktime, contracts, level, job_function, job_domain, job_field) and
-    `evidence` (json: column -> [source, phrase]).
+           posting: str = "", posting_remote: bool = False, posting_facts: dict | None = None, category: str = "",
+           languages=None) -> dict:
+    """Derived offer columns (mode, worktime, contracts, level, job_function, job_domain, job_field, job_domains)
+    and `evidence` (json: column -> [source, phrase]; `job_domains` -> {domain: [source, phrase]}).
+
+    `job_domains`: the set of every domain the title and the category name (comma-joined, sorted), so an offer
+    has AI as a domain whatever its function ("AI Gateway Product Owner": ai, product); `job_domain` is the
+    leading one and `job_field` the single field read from the function and the leading domain.
 
     `card`: Offer.text(); `request_remote`: a request that found the offer had the board's remote filter;
-    `posting_remote`: the posting's JSON-LD says TELECOMMUTE; `category`: the board's category and the
-    categories of the requests that found the offer. A long posting mentions "remote" and "staż" for many
-    reasons: its mode counts only from full-remote statements and hybrid words, an internship only from an
-    explicit statement ("Employment type: Internship")."""
-    ms = [(COLUMNS[k], value, "board", True, "board data")
-          for k, v in (facts or {}).items() for value in (v if isinstance(v, list) else [v])]
+    `posting_remote`: the posting's JSON-LD says TELECOMMUTE; `posting_facts`: column -> value (or list) the board
+    read from the posting's structured fields (`Board.posting_facts`), a value optionally a (value, phrase) pair;
+    `category`: the board's category and the categories of the requests that found the offer: the role, never the
+    employer's industry (`Offer.industry`, context that names no domain: a salesperson at an IT company is not in
+    IT). A long posting mentions "remote" and "staż" for many reasons: its mode counts only from full-remote
+    statements and hybrid words, an internship only from an explicit statement ("Employment type: Internship")."""
+    facts = dict(facts or {})
+    stored = set(facts.pop("_stored", ()))  # inferences stored as facts by schema v6 (store._stored_facts)
+    ms = [(COLUMNS[k], value, *(("stored", "stored before v6") if k in stored else ("board", "board data")), )
+          for k, v in facts.items() for value in (v if isinstance(v, list) else [v])]
+    ms = [(fld, value, source, True, phrase) for fld, value, source, phrase in ms]
     if request_remote:
         ms.append(("mode", "remote", "request", True, "board's remote filter"))
     if posting_remote:
         ms.append(("mode", "remote", "posting_struct", True, "JSON-LD TELECOMMUTE"))
+    for k, v in (posting_facts or {}).items():
+        for item in (v if isinstance(v, list) else [v]):
+            value, phrase = item if isinstance(item, tuple) else (item, "posting data")
+            ms.append((COLUMNS[k], value, "posting_struct", True, phrase))
     ms += _scan("level", title, languages, "title")
-    m = _QUALIFIER.search(title)
-    head, qualifiers = (title[:m.start()], title[m.start():]) if m and m.start() > 0 else (title, "")
+    head, qualifiers = title_parts(title, languages)
     for fld in ("function", "domain"):
         ms += (_scan(fld, head, languages, "title") + _scan(fld, qualifiers, languages, "qualifier")
                + _scan(fld, category.replace("-", " "), languages, "category"))
@@ -293,6 +351,13 @@ def derive(*, title: str = "", card: str = "", facts: dict | None = None, reques
     out["job_field"] = field
     if source:
         evidence["job_field"] = [source, " + ".join(x[2] for x in (tf, td, cf, cd) if x[2])]
+    domains = _domains(in_title + in_category)
+    function = decided["job_function"]
+    if not domains and function[0] in IMPLIED_DOMAIN:  # "Automation Engineer": the function says what it is about
+        domains = {IMPLIED_DOMAIN[function[0]]: (function[1], function[2])}
+    out["job_domains"] = ",".join(sorted(domains))
+    if domains:
+        evidence["job_domains"] = {d: [src, phrase] for d, (src, phrase) in sorted(domains.items())}
     out["evidence"] = json.dumps(evidence, ensure_ascii=False, sort_keys=True)
     return out
 

@@ -19,8 +19,13 @@ Verified live 2026-11-12:
   `published`; `createdTime` may be a year older for refreshed ads;
 - each ad ships salary {from, to, period}, `params` type (work time), agreement (contracts), workplace, location
   {cityName, districtName} and the full description;
+- each ad's `category.id` is its own job category; its name and its parent's come from the page's category tree
+  (`categories.list`): `category` is "Parent - Name" ("Obsługa klienta i call center - Specjalista ds. obsługi
+  klienta"), or the name alone for a top-level category ("Sprzątanie"); 52 of 52 remote ads had one;
 - the employer is `user.company_name` when set; other business accounts' company line comes from a later client-side
   request, and `user.name` is often a recruiter's first name: used only with a legal form ("Sp. z o.o.").
+- category vs industry: the job category tree names roles ("Obsługa klienta i call center - Specjalista ds.
+  obsługi klienta"), also in the request's `category`; no industry.
 """
 from __future__ import annotations
 
@@ -28,12 +33,10 @@ import json
 import re
 import urllib.parse
 
-from .... import infer
 from ....boards.base import Board, Caps, Request, narrowed, register
 from ....boards.pages import clean_spaces, date_of, pay_range, present, slug, snippet, with_query
 from ....model import Offer
 from ....posting import html_to_text
-from .vocab import LANGS
 
 BASE = "https://www.olx.pl"
 WORKTIME = {"fulltime": "full_time", "parttime": "part_time", "halftime": "part_time"}
@@ -50,7 +53,9 @@ let s;try{s=JSON.parse(JSON.parse(t.slice(lo,hi+1)))}catch(e){return '{"ads":[]}
 const L=(s.listing||{}).listing||{},ads=L.ads||[],cl=((s.categories||{}).list)||{};
 const tree=Object.values(cl).filter(c=>c&&c.path&&(c.path==='praca'||c.path.startsWith('praca/')))
  .map(c=>({path:c.path,parent:(cl[c.parentId]||{}).path||''}));
-return JSON.stringify({total:L.totalElements??null,categories:tree,ads:ads.map(a=>({url:a.url,title:a.title,isPromoted:!!a.isPromoted,lastRefreshTime:a.lastRefreshTime,
+const cat=a=>{const c=cl[(a.category||{}).id]||{},p=cl[c.parentId]||{};
+ return c.name?(p.name&&p.path!=='praca'&&p.level>1?p.name+' - ':'')+c.name:''};
+return JSON.stringify({total:L.totalElements??null,categories:tree,ads:ads.map(a=>({url:a.url,title:a.title,category:cat(a),isPromoted:!!a.isPromoted,lastRefreshTime:a.lastRefreshTime,
  createdTime:a.createdTime,salary:a.salary?{from:a.salary.from,to:a.salary.to,currencyCode:a.salary.currencyCode,
  period:a.salary.period}:null,params:(a.params||[]).map(p=>({key:p.key,normalizedValue:p.normalizedValue})),
  location:{cityName:(a.location||{}).cityName,districtName:(a.location||{}).districtName},
@@ -146,7 +151,8 @@ class Olx(Board):
                 board=self.name, key=url, url=url, title=title, company=company(ad.get("user") or {}),
                 mode=work_mode(as_list(params.get("workplace"))), locations=present(city),
                 worktime=WORKTIME.get(params.get("type"), "unknown"), contracts=contracts,
-                level=infer.level_from_text(title, LANGS), pay_text=pay_text(ad.get("salary")),
+                pay_text=pay_text(ad.get("salary")),
+                category=clean_spaces(ad.get("category")),
                 published=date_of(ad.get("lastRefreshTime") or ad.get("createdTime")), promoted=bool(ad.get("isPromoted")),
                 snippet=snippet(title, description), description=description)
         return list(out.values())

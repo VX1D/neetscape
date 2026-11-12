@@ -18,6 +18,7 @@ import urllib.parse
 from email.utils import parsedate_to_datetime
 
 from .. import infer
+from ..pay import CURRENCIES
 from ..model import LEVELS, fold
 
 # embedded data
@@ -165,12 +166,9 @@ def pay_range(kind: str, lo, hi, currency: str, unit: str, gross: bool = False) 
     return f"{kind}:{amount(lo)}-{amount(hi)} {currency}/{unit}{' gross' if gross else ''}"
 
 
-CURRENCY_SYMBOLS = {"zł": "PLN", "€": "EUR", "$": "USD", "£": "GBP"}
-
-
 def currency_code(symbol: str) -> str:
-    """'zł' -> 'PLN'; a code or an unknown symbol is upper-cased."""
-    return CURRENCY_SYMBOLS.get(symbol, symbol.upper())
+    """'zł' -> 'PLN' (the currency marks of `pay.py`); a code or an unknown symbol is upper-cased."""
+    return dict(CURRENCIES).get(symbol.strip().lower(), symbol.upper())
 
 
 # board labels -> vocabulary

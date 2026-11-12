@@ -46,8 +46,8 @@ neetscape init --country de --preset broad         # a German profile: EUR amoun
 
 The profile's `country` (default `pl`) sets the currency of every amount (pay floors) and of the
 database, the default boards and the language used to read postings. A country may ship its own
-presets (`neetscape/countries/<cc>/presets/`); the shared `focused` preset is Polish-flavoured
-(phrases, PLN floor), so rewrite its phrases and pay for another country. One `--out` directory
+presets (`neetscape/countries/<cc>/presets/`), and the shared presets are language-neutral starting points (English
+phrases, no pay floor, a placeholder city): rewrite their phrases and pay for the person and the country. One `--out` directory
 holds one country: use `--out runs-de` for a German profile next to a Polish one. To look at
 another country from the same profile, give a search `"where": {"remote": true, "country": "de"}`
 (and add that country to `boards`, or leave `boards` out).
@@ -75,14 +75,16 @@ it passes any search. `defaults` are merged into every search. Full schema:
 | `worktime` | allowed: `full_time`, `part_time`, `flexible`, `unknown` |
 | `contracts` | allowed: `employment` (`uop` is an old alias), `b2b`, `mandate`, `specific_task`, `internship`, `freelance`, `mini_job`, `working_student`, `temp_agency`, `other`. With `worktime`, either one may match |
 | `levels_exclude` | `intern`, `junior`, `mid`, `senior`, `lead`, `manager`, `unknown` |
-| `fields`, `fields_exclude` | job fields read from the title (then the board's category): `ai_automation`, `security`, `qa`, `devops_cloud`, `data`, `erp_crm`, `it_support`, `it_admin`, `software_dev`, `product_project`, `design`, `ecommerce`, `customer_service`, `sales`, `marketing`, `hr`, `finance`, `legal`, `retail`, `admin_office`, `logistics`, `engineering`, `manufacturing`, `healthcare`, `education`, `hospitality`, `other`. Prefer these to title regexes for a person's field, e.g. `"fields": ["ai_automation", "it_support", "qa"]` |
+| `fields`, `fields_exclude` | job fields read from the title (then the board's category): `ai_automation`, `security`, `qa`, `devops_cloud`, `data`, `erp_crm`, `it_support`, `it_admin`, `software_dev`, `product_project`, `design`, `ecommerce`, `customer_service`, `sales`, `marketing`, `hr`, `finance`, `legal`, `retail`, `admin_office`, `logistics`, `engineering`, `manufacturing`, `healthcare`, `education`, `hospitality` (`other` when nothing matches: unknown to `fields`). Prefer these to title regexes for a person's field, e.g. `"fields": ["ai_automation", "it_support", "qa"]` |
+| `domains` | what the work is about, any of the offer's domains (title and category, in the offer's languages): `ai`, `security`, `erp`, `data`, `cloud`, `software`, `it`, `tech`, `ecommerce`, `industrial`, `construction`, `manufacturing`, `logistics`, `hr`, `finance`, `legal`, `health`, `education`, `hospitality`, `retail`, `customer`, `sales`, `marketing`, `office`, `design`, `product`. "AI Gateway Product Owner" has `ai` and `product`, "Sachbearbeiter Buchhaltung" `finance` |
+| `functions`, `functions_exclude` | what the person does: `assist`, `test`, `automate`, `develop`, `design`, `teach`, `care`, `serve`, `sell`, `market`, `people`, `account`, `transport`, `operate`, `build`, `manage_project`, `cook_clean`, `shop`, `law`, `support`, `administer`, `engineer`, `analyse`, `consult`, `manage`, `specialist` |
 | `pay` | `{"min": 9000, "per": "month"}` or `{"min": 45, "per": "hour"}`; in the profile country's currency (PLN, EUR), compared with the top of the offer's range. `"required": true` drops offers without pay |
 | `max_age_days` | ignore older postings, e.g. `30` |
 | `title_include` | regexes; at least one must match the title: `["support\|helpdesk\|automat"]` |
 | `title_exclude` | regexes that drop by title: `["senior\|\\blead\\b\|architect"]` |
 | `text_exclude` | regexes on title, company, category, skills, pay text, card text and, once fetched, the posting |
-| `category_include` | regexes on the board's own category string |
-| `unknown` | `keep` (default) or `drop` when a filtered field (mode, pay, work time, date, location) is unknown |
+| `category_include` | regexes on the board's own category and industry strings |
+| `unknown` | `keep` (default) or `drop` when a filtered field is unknown, or per dimension: `{"default": "keep", "domain": "drop"}`. Dimensions: `location`, `mode`, `remote_proof`, `worktime`, `pay`, `date`, `field`, `domain`, `function`. A mapping in `defaults` and one in a search merge per dimension (a string is `{"default": ...}`); the search's win |
 | `boost` | score added to offers passing this search (e.g. favour side jobs or a city) |
 
 Other keys: `country` (`pl` default, `de`), `boards` (the country's boards by default, e.g. `["pl"]`
@@ -114,6 +116,12 @@ Rules of thumb:
 - Use separate searches for separate intents (main remote role, local role, side jobs) rather than
   one search with loose filters.
 - Exclude seniority above their level and fields they rule out; this removes most noise.
+- `fields` vs `domains`: `fields` gives each offer one field, so "AI Gateway Product Owner" is
+  `product_project` and "AI Content Creator" `marketing`. When the person wants a subject in any role ("AI or IT,
+  but not sales, HR or marketing"), use `domains` plus `functions_exclude`
+  (`["sell", "market", "people", "account"]`); use `fields` when they name a role ("IT support", "QA"). Missing
+  values are unknown, not failures: generic titles with no domain ("Support Associate") pass `domains` unless
+  `"unknown": {"domain": "drop"}`; exclude filters never drop them.
 - For "show me everything", use `what: "all"` with `review.mode: "listing"` (the `broad` preset)
   and narrow with filters (pay, worktime, age), not with phrases.
 - `unknown: drop` on a pay filter removes most offers (many boards hide pay); prefer `keep`
@@ -133,8 +141,7 @@ too large without phrases). `or_remote` in a city search crawls both the city li
 one country (its own plus LinkedIn).
 
 LinkedIn's public search ignores its remote, job-type, distance and sort filters. A remote search
-with `what: "all"` is therefore sent as remote phrases ("remote", "zdalnie", "praca zdalna", "home
-office" for Poland). Results lean remote, but the work mode stays unknown until the posting is
+with `what: "all"` is therefore sent as remote phrases (the country's `linkedin_remote_phrases`, for Poland "remote", "zdalnie", "praca zdalna", "home office"). Results lean remote, but the work mode stays unknown until the posting is
 fetched: with `unknown: keep` these offers stay in remote searches until stage 2 settles the mode;
 with `unknown: drop` they are left out. Each phrase hits LinkedIn's 1000-result cap; such requests
 are narrowed to the newest week (or day) and marked "Capped" in the report, so run every few days.
@@ -176,7 +183,9 @@ or `neetscape/boards/` for LinkedIn and the international feeds; see CONTRIBUTIN
 person wants that; otherwise report which boards were missing.
 
 After changing only filters or rank rules, do not crawl again: `neetscape eval` then
-`neetscape report` re-evaluate the stored offers.
+`neetscape report` re-evaluate the stored offers. `eval` also derives the offers' fields (mode, work time,
+contracts, level, job field) again when neetscape's derivation code or language packs changed since the last
+pass, and skips that otherwise; `neetscape eval --rederive` forces it.
 
 ### Two stages: cards, then postings
 
@@ -207,7 +216,7 @@ survivors. Never read, or hand to subagents, a listing of thousands of rows.
 ### Pass 1: the listing
 
 `listing.tsv` in the run directory has one row per job (duplicates across boards merged):
-`id new score title company pay_<cur>_month mode worktime contracts level age boards searches tags mark url`
+`id new score title field domains company pay_<cur>_month mode worktime contracts level age boards searches tags mark url`
 (`pay_pln_month`, `pay_eur_month`: the profile country's currency).
 The listing is the current state: every offer still listed on any board as of that board's latest
 crawl, not only what this run crawled; `new` = jobs first seen in this run.

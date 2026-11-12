@@ -50,7 +50,6 @@ import datetime as dt
 import html
 import re
 
-from .... import infer
 from ....boards.base import Board, Caps, Request, register
 from ....boards.pages import (html_field, html_text, labelled_contracts, lowest, most_remote_mode, nearest_radius, slug,
                               snippet, with_query, worktime_from_labels)
@@ -186,7 +185,7 @@ class PracaPl(Board):
                 mode=most_remote_mode(modes, "zdaln", "hybryd") if modes else "unknown", locations=place(card),
                 worktime=worktime_from_labels([time_tag], r"część etatu|dodatkowa|tymczasowa", r"pełny etat"),
                 contracts=labelled_contracts(contract_tag.split(" / "), CONTRACTS, LANGS),
-                level=lv if lv != "unknown" else infer.level_from_text(title, LANGS),
+                level=lv,
                 pay_text=html_field(r'listing-v2__tag--salary">(.*?)</li>', card),
                 published=published(html_field(r'listing-v2__published">(.*?)</span>', card), today),
                 promoted="--week" in m.group("cls"),

@@ -11,7 +11,7 @@ Verified live 2026-11-12:
   `location=Kraków` resolves to a village in Łódzkie, so a city is sent as the `geoId` of the GEO typeahead hit
   ending with one of the country's `place_names`;
 - remote searches without phrases: the whole country's listing is 1000 offers of every kind, mostly on site (fully
-  remote by the posting: 1 of 10 sampled), so it is sent as the country's `REMOTE_PHRASES`, words that remote
+  remote by the posting: 1 of 10 sampled), so it is sent as the country's `linkedin_remote_phrases`, words that remote
   postings contain. Poland (pages 1 and 3, 20 postings per phrase read with `infer.hints`): "remote" 9 of 20 fully
   remote, "home office" 8, "zdalnie" 3 (and 10 more mention remote work), "praca zdalna" 4 (and 9); their page-1
   results overlap by at most 2 of 10. Germany (page 1): "remote" 1 fully remote and 6 mentioning it of 10, "home
@@ -68,11 +68,22 @@ POSTING = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/"
 TYPEAHEAD = "https://www.linkedin.com/jobs-guest/api/typeaheadHits?typeaheadType=GEO&query="
 
 # sent instead of a keyword-less remote search, by searched country (verified live, see above)
-REMOTE_PHRASES = {"pl": ("remote", "zdalnie", "praca zdalna", "home office")}
-DEFAULT_REMOTE_PHRASES = ("remote", "home office")
 MAX_NATIONAL = 0.1  # a capped request splits only while fewer of its cards than this are placed at country level
 MIN_CITY = 10       # a capped region splits into its cities seen on at least this many cards
 WINDOWS = ((7, "7 days"), (1, "24 hours"))  # newest windows for a capped request that cannot be split: f_TPR=r<seconds>
+
+# The posting's job criteria (guest endpoint, English labels: 339 of 339 stored postings checked 2026-11-12):
+# heading -> `meta["criteria"]` key, and the labels read as canonical values. A label not listed stays unknown.
+CRITERIA = {"Seniority level": "seniority", "Employment type": "employment_type", "Job function": "function",
+            "Industries": "industry"}
+# "Associate" (above entry level, below mid-senior) and "Mid-Senior level" (one bucket from mid to senior) each
+# span two of our levels, and the criteria outrank the title, so either would overrule a "Senior" or "Junior"
+# title; both stay unknown, as does "Not Applicable".
+SENIORITY = {"Internship": "intern", "Entry level": "junior", "Director": "manager", "Executive": "manager"}
+# employment type -> (worktime, contract): "Contract" and "Temporary" say a fixed term, not the hours nor B2B vs
+# freelance vs mandate; "Volunteer" and "Other" nothing. "Internship" also sets the level `intern`.
+EMPLOYMENT = {"Full-time": ("full_time", None), "Part-time": ("part_time", None), "Contract": ("flexible", None),
+              "Temporary": ("flexible", None), "Internship": (None, "internship")}
 
 
 def pick_geo(city: str, hits: list[dict], cc: str = "pl") -> str | None:
@@ -115,7 +126,7 @@ class LinkedIn(Board):
         out = []
         for r in reqs:
             if r.keyword is None and s.where.remote and not r.params.get("city"):
-                phrases = REMOTE_PHRASES.get(searched_country(r), DEFAULT_REMOTE_PHRASES)
+                phrases = country.get(searched_country(r)).linkedin_remote_phrases
                 out += [replace(r, keyword=p, pushed=r.pushed | {"keyword"}) for p in phrases]
                 warnings.append(f"{self.name}: no remote filter; '{s.id}' is sent as the phrases {', '.join(phrases)}")
             else:
@@ -181,12 +192,37 @@ class LinkedIn(Board):
         type, ...) and the location line, which the search cards lack."""
         i = page.find("show-more-less-html__markup")
         body = page[page.find(">", i) + 1:page.find("</div>", i)] if i >= 0 else ""
-        criteria = [f"{html.unescape(k)}: {clean_spaces(html.unescape(v))}" for k, v in re.findall(
+        pairs = [(html.unescape(k), clean_spaces(html.unescape(v))) for k, v in re.findall(
             r'description__job-criteria-subheader[^>]*>\s*([^<]+?)\s*</h3>\s*<span[^>]*>\s*([^<]+?)\s*</span>', page)]
         place = re.search(r'topcard__flavor--bullet[^>]*>\s*([^<]+?)\s*<', page)
-        head = ([f"Location: {clean_spaces(html.unescape(place.group(1)))}"] if place else []) + criteria
+        head = [f"Location: {clean_spaces(html.unescape(place.group(1)))}"] if place else []
+        head += [f"{k}: {v}" for k, v in pairs]
         text = html_to_text(body)
-        return {"description": ("\n".join(head) + "\n\n" + text).strip() if text else "", "source": "api"}
+        if not text:
+            return {"description": "", "source": "api"}
+        return {"description": ("\n".join(head) + "\n\n" + text).strip(), "source": "api",
+                "criteria": {CRITERIA[k]: v for k, v in pairs if k in CRITERIA}}
+
+    def posting_facts(self, meta: dict) -> dict:
+        """Level, work time and contract from the job criteria (`SENIORITY`, `EMPLOYMENT`). A posting stored before
+        `criteria` was kept has them as the head lines of its description."""
+        crit = meta.get("criteria")
+        if crit is None:
+            head = (meta.get("description") or "").split("\n\n", 1)[0]
+            crit = {CRITERIA[k]: v.strip() for k, v in re.findall(r"^([^:\n]+): (.+)$", head, re.M) if k in CRITERIA}
+        seniority, employment = crit.get("seniority", ""), crit.get("employment_type", "")
+        worktime, contract = EMPLOYMENT.get(employment, (None, None))
+        by_type = f"LinkedIn: Employment type {employment}"
+        out = {}
+        if level := SENIORITY.get(seniority):
+            out["level"] = (level, f"LinkedIn: Seniority level {seniority}")
+        elif contract == "internship":
+            out["level"] = ("intern", by_type)
+        if worktime:
+            out["worktime"] = (worktime, by_type)
+        if contract:
+            out["contracts"] = [(contract, by_type)]
+        return out
 
     @staticmethod
     def detail_url(url: str) -> str | None:

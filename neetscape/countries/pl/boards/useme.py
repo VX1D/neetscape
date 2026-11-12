@@ -15,17 +15,17 @@ Verified live 2026-11-12:
   stays unknown in the listing and comes from the posting's JSON-LD `datePosted` when it is opened (`neetscape
   details`). That is the first publication: the "Opublikowano" date the project page shows; projects are not
   refreshed (their ids grow with that date: 147434 -> 11-12, 144943 -> 09-24, 144097 -> 09-09).
+- category vs industry: the project's category ("Video", "Social media", "Strony internetowe") is the kind of
+  work, a role; no industry.
 """
 from __future__ import annotations
 
 import html
 import re
 
-from .... import infer
 from ....boards.base import Board, Caps, Request, register
 from ....boards.pages import html_field, html_text, snippet, with_query
 from ....model import Offer
-from .vocab import LANGS
 
 BASE = "https://useme.com"
 _ARTICLE = re.compile(r'<article class="job[^"]*">(.*?)</article>', re.S)
@@ -61,7 +61,7 @@ class Useme(Board):
                 board=self.name, key=url, url=url, title=title[:140],
                 company=html.unescape(client.group(1))[:80] if client else "", mode="remote", worktime="flexible",
                 contracts=["freelance"], category=html_field(r'class="job__category">(.*?)</div>', card),
-                skills=[s for s in skills if s], level=infer.level_from_text(title, LANGS),
+                skills=[s for s in skills if s],
                 pay_text=budget if re.search(r"\d", budget) else "", pay_period="project",
                 snippet=snippet(title, description, budget))
         return list(out.values())

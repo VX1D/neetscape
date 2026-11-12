@@ -52,6 +52,11 @@ All of them follow the same rules.
    `nuxt_data`, markup `html_field`, board labels -> vocabulary `most_remote_mode`, `labelled_contracts`,
    `worktime_from_labels`, `prefix_level`, `lowest_level`) and `base.py` (`with_params`, `narrowed`).
    A country's shared label tables and `LANGS` live in its `boards/vocab.py`.
+   Put the board's role or job category in `Offer.category` and the employer's industry, when the board
+   names it, in `Offer.industry` (the domain is read from the category, never from the industry). When one
+   label mixes both (rocketjobs' "sales it i telekomunikacja"), split it in a pure `split_category(category)
+   -> (category, industry)` method: the store also applies it to offers stored before the split. Say in the
+   docstring which the board's labels are.
    Optional parts, when the board needs them:
    - `Caps(whole_listing=True)`: one response is the request's whole listing (a feed, a whole-category
      download), so fetching it completes the request. Otherwise a request is complete only on an
@@ -101,16 +106,41 @@ All of them follow the same rules.
 
 1. Create `neetscape/countries/<cc>/__init__.py` defining `COUNTRY = Country(...)` (see
    `neetscape/country.py` and `neetscape/countries/de/__init__.py`): currency and `fx` (units of the
-   currency per unit of others), languages, `hours_per_month`, LinkedIn location and place names,
+   currency per unit of others), languages, `hours_per_month`, LinkedIn location and remote phrases
+   (`linkedin_remote_phrases`: LinkedIn has no remote filter) and place names,
    city aliases, legal-form words, contract words mapped onto the shared vocabulary
    (`neetscape/model.py: CONTRACTS`; propose a new canonical value only when no existing one fits),
    and `default_boards` (usually `("<cc>",)`, the group of the country's boards plus LinkedIn).
    This module must not import boards.
-2. Add a language pack `neetscape/lang/<code>.py` if the language is new: `VOCAB` (mode, work time,
-   contracts, level, job function and domain, hints; `explicit` for statements that settle a field).
-   Check a vocabulary change on a real database rather than with unit tests:
+2. Add a language pack `neetscape/lang/<code>.py` if the language is new; a language needs no change
+   outside its own module. `VOCAB` declares regexes (case-insensitive) per key:
+   - required: `mode`, `worktime`, `contract`, `level` (per canonical value), `function` and `domain` (per
+     language-neutral key of `infer.FUNCTIONS` / `infer.DOMAINS`: what a title does and what it is about), and
+     `hints` (`fully_remote`, `hybrid`, `years`, `degree`, `languages`, `fixed_term`, `office`);
+   - optional: `explicit` (per field and value, statements that settle a field: "fully remote"), `qualifier`
+     (words after which a title's head ends: "with", "z", "mit"; punctuation splits titles in every
+     language), `gender` (gender markers in words inside brackets: "all genders", "gn"; letter lists
+     such as "(m/w/d)" or "(k/m)" are recognised without it), `choice` (words offering options: "or",
+     "lub", "oder"), `pay` (period units, pay words, the thousand suffix and the word between two amounts)
+     and `placeholder_companies` (names that hide the employer: "confidential", "poufne").
+   - optional `UI`: the labels of REPORT.html, keyed as in `neetscape/lang/en.py` (`{name}` placeholders; plurals as
+     dicts by CLDR category, `one`/`few`/`many`/`other`). The page then offers the language in its selector; a
+     missing key falls back to English.
+
+   See the docstring of `neetscape/lang/__init__.py` for the details.
+   `tests/test_vocab.py` gates the job domain vocabulary on the board fixtures (title against category, and the
+   share of titles with no domain; it lists the titles a change lost); when your change improves its values,
+   raise its floors (`MIN_COVERAGE`, `MAX_NO_DOMAIN`) too. Check a vocabulary change on a real database as well:
    `python tests/infer_audit.py COPY.db --dump-stored before.json`, change, then `--rederive before.json`
-   lists every changed decision with sample titles.
+   lists every changed decision with sample titles. Build the job function and domain vocabulary from the
+   country's data: on a copy of a database crawled there, `python tests/infer_audit.py COPY.db --suggest` lists,
+   per title language and naming the pack each group belongs to, title words that predict a board category's
+   domain or function, and the most frequent words no pattern reads; curate them into the pack, then
+   `--agreement` (title against category, overall and per language) shows whether the readings improved. The tool
+   is language-neutral; a language whose titles need their own splitting (compounds) defines
+   `TITLE_TOKENS(title) -> list[str]` in its pack (see [docs/testing.md](docs/testing.md#vocabularies-check-on-real-data)).
+   Country presets go to `neetscape/countries/<cc>/presets/` (amounts in the country's currency, local phrases);
+   without them the shared, language-neutral presets apply.
 3. Add the country to the `country` enum (`$defs/country`) in `neetscape/profile/schema.json` (a test compares it with the registry).
 4. Add at least two boards (see above) under `neetscape/countries/<cc>/boards/` (its `__init__.py`
    imports them and lists them in `__all__`), and presets under

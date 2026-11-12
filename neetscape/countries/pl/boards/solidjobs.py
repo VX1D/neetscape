@@ -6,14 +6,15 @@ Verified live 2026-11-12: eight divisions (the site's /offers/<division>): it 14
 311, marketing 292, logistics 249, finances 237, other 207, hr 123; each offer in one only; an unknown division is a
 400. Every offer has a PLN-per-month range (hourly rates converted, "przeliczone z 170 – 210 PLN/h"), some a second
 for another contract (`secondarySalaryRange`). `validFrom` is the page's "Dodane N dni temu".
+Category vs industry: `mainCategory/subCategory` ("Programista/Java", "Sprzedaż B2B/Sprzedaż B2B") is the role;
+no industry.
 """
 from __future__ import annotations
 
 import json
 
-from .... import infer
 from ....boards.base import Board, Caps, Request, register
-from ....boards.pages import date_of, pay_range, present
+from ....boards.pages import date_of, lowest_level, pay_range, present
 from ....model import Offer, Search
 
 API = "https://solid.jobs/api/offers"
@@ -43,6 +44,9 @@ def pay_text(ranges: list[dict]) -> str:
     return "; ".join(out)
 
 
+LEVELS = {"staż": "intern"}  # solid.jobs' own level words beside the shared ones (infer.level)
+
+
 @register
 class SolidJobs(Board):
     name = "solidjobs"
@@ -68,7 +72,7 @@ class SolidJobs(Board):
                 mode=MODES.get(o.get("remotePossible") or "", "unknown"), locations=present(o.get("companyCity")),
                 worktime=worktime(o.get("workload")),
                 contracts=list(dict.fromkeys(CONTRACTS.get(sr.get("employmentType", ""), "other") for sr in ranges)),
-                level=infer.level(o.get("experienceLevel")), category=f"{o.get('mainCategory', '')}/{o.get('subCategory', '')}",
+                level=lowest_level([o.get("experienceLevel")], LEVELS), category=f"{o.get('mainCategory', '')}/{o.get('subCategory', '')}",
                 skills=[x.get("name", "") for x in o.get("requiredSkills") or []], pay_text=pay_text(ranges),
                 published=date_of(o.get("validFrom"))))
         return out

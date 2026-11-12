@@ -15,7 +15,10 @@ Verified live 2026-11-12:
   offers listed today were first published up to 30 days earlier, so `published` is the posting date and refreshed
   offers count as `promoted` (they never decide a newest-first stop). `isSuperOffer` (a paid product on 30-90% of a
   page) keeps its date order: not promoted;
-- the offer page's JSON-LD carries only the employer's blurb; the posting is in its Next.js `sections`.
+- the offer page's JSON-LD carries only the employer's blurb; the posting is in its Next.js `sections`;
+- no category per offer in the listing (2026-11-12, remote page 1, all 50 grouped offers): the `groupedOffers`
+  objects carry no category, specialisation or technology field (`primaryAttributes` holds flags such as
+  "Szukamy wielu kandydatów"); the page's `dictionary/categories` query is the filter list, not linked to offers.
 """
 from __future__ import annotations
 
@@ -28,7 +31,7 @@ from ....boards.base import Board, Caps, Request, register
 from ....boards.pages import (clean_spaces, date_of, labelled_contracts, lowest, most_remote_mode, page_script_json, places,
                               prefix_level, script_json, with_query, worktime_from_labels)
 from ....model import Offer, Search, fold
-from .vocab import CONTRACTS, FULL_TIME, LEVELS, PART_TIME
+from .vocab import CONTRACTS, FULL_TIME, LANGS, LEVELS, PART_TIME
 
 BASE = "https://www.pracuj.pl"
 REMOTE = "praca%20zdalna;wm,home-office"
@@ -71,7 +74,7 @@ def posting_text(page: str) -> str:
 
 def level(values) -> str:
     """The lowest of the board levels an offer lists, by the board's words, else by the label's text."""
-    return lowest(lv if (lv := prefix_level(v, LEVELS)) != "unknown" else infer.level_from_text(v.lower())
+    return lowest(lv if (lv := prefix_level(v, LEVELS)) != "unknown" else infer.level_from_text(v.lower(), LANGS)
                   for v in values or [])
 
 
@@ -111,7 +114,7 @@ class Pracuj(Board):
                 mode=most_remote_mode(g.get("workModes"), "zdaln", "hybryd"),
                 locations=places(o.get("place") for o in g["offers"]),
                 worktime=worktime_from_labels(g.get("workSchedules"), PART_TIME, FULL_TIME),
-                contracts=labelled_contracts(g.get("typesOfContract"), CONTRACTS), level=level(g.get("positionLevels")),
+                contracts=labelled_contracts(g.get("typesOfContract"), CONTRACTS, LANGS), level=level(g.get("positionLevels")),
                 pay_text=clean_spaces(g.get("salaryDisplayText")), published=published, snippet=g.get("jobDescription") or "",
                 promoted=published != date_of(g.get("lastPublicated"))))
         return out

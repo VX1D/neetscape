@@ -67,6 +67,40 @@ def test_worktime_contract_unknown_follows_policy(s, offer):
     assert reasons(offer, unknown="drop", **s) == ["work time unknown"]
 
 
+AI_PO = dict(job_field="product_project", job_domains="ai,product", job_function="manage_project")
+NOTHING = dict(job_field="other", job_domains="", job_function="unknown")   # the title and category say nothing
+
+
+@pytest.mark.parametrize("s,offer,why", [
+    (dict(domains=["ai", "it"]), AI_PO, []),                                   # any of the offer's domains
+    (dict(domains=["it", "data"]), AI_PO, ["domain ai,product"]),
+    (dict(functions=["manage_project"]), AI_PO, []),
+    (dict(functions=["develop"]), AI_PO, ["function manage_project"]),
+    (dict(functions_exclude=["sell", "manage_project"]), AI_PO, ["function manage_project"]),
+    (dict(domains=["ai"], functions_exclude=["sell"]), AI_PO | dict(job_function="sell"), ["function sell"]),
+    (dict(fields=["ai_automation"]), AI_PO, ["field product_project"]),
+    # no value: unknown to an include filter, untouched by an exclude filter
+    (dict(domains=["ai"]), NOTHING, []),
+    (dict(domains=["ai"], unknown="drop"), NOTHING, ["domain unknown"]),
+    (dict(functions=["develop"], unknown="drop"), NOTHING, ["function unknown"]),
+    (dict(fields=["ai_automation"]), NOTHING, []),
+    (dict(fields=["ai_automation"], unknown="drop"), NOTHING, ["field unknown"]),
+    (dict(fields_exclude=["sales"], functions_exclude=["sell"], unknown="drop"), NOTHING, []),
+])
+def test_job_filters(s, offer, why):
+    assert reasons(offer, **s) == why
+
+
+def test_unknown_policy_per_dimension():
+    offer = NOTHING | dict(mode="unknown")
+    s = dict(where="remote", domains=["ai"], pay={"min": 8000})
+    assert reasons(offer, unknown={"domain": "drop"}, **s) == ["domain unknown"]
+    assert reasons(offer, unknown={"default": "drop", "domain": "keep"}, **s) == ["mode unknown", "pay unknown"]
+    assert reasons(offer, unknown={"default": "drop", "remote_proof": "keep"}, remote_proof=True, **s) == [
+        "mode unknown", "domain unknown", "pay unknown"]                       # no posting: proof kept
+    assert reasons(dict(worktime="unknown"), worktime=["part_time"], unknown={"worktime": "drop"}) == ["work time unknown"]
+
+
 def test_unknown_location_dropped_once():
     assert reasons(dict(mode="onsite"), where={"city": "Kraków"}, unknown="drop") == ["location unknown"]
 

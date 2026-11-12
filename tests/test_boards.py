@@ -67,7 +67,7 @@ COVERAGE = {
     "justjoin": "company published locations contracts level mode worktime category skills",
     "linkedin": "company published locations",
     "nofluffjobs": "company published pay_text contracts level mode category skills",
-    "olx": "published locations contracts worktime",
+    "olx": "published locations contracts worktime category",
     "pracapl": "published locations level mode worktime",
     "pracuj": "company published locations contracts level mode worktime",
     "remoteok": "company published mode skills",
@@ -180,17 +180,51 @@ def test_linkedin_posting_is_the_description_block_only():
     assert linkedin.LinkedIn.posting_fields("<html>login wall</html>")["description"] == ""
 
 
+def test_linkedin_posting_keeps_its_job_criteria_as_meta():
+    meta = linkedin.LinkedIn.posting_fields(fixture("linkedin", "_posting").read_text())
+    assert meta["criteria"] == {"seniority": "Associate", "employment_type": "Full-time",
+                                "industry": "Business Consulting and Services"}
+    assert "Seniority level: Associate\nEmployment type: Full-time" in meta["description"]   # the text keeps them
+
+
+@pytest.mark.parametrize("seniority,employment,want", [
+    ("Entry level", "Full-time", {"level": "junior", "worktime": "full_time"}),
+    ("Internship", "Internship", {"level": "intern", "contracts": ["internship"]}),
+    ("Not Applicable", "Internship", {"level": "intern", "contracts": ["internship"]}),   # the type says intern
+    ("Director", "Part-time", {"level": "manager", "worktime": "part_time"}),
+    ("Executive", "Contract", {"level": "manager", "worktime": "flexible"}),             # and no contract type
+    ("Mid-Senior level", "Temporary", {"worktime": "flexible"}),                         # mid or senior: unknown
+    ("Associate", "Volunteer", {}),
+    ("Starszy specjalista", "Pełny etat", {}),                                           # unlisted labels stay unknown
+])
+def test_linkedin_criteria_map_to_canonical_values(seniority, employment, want):
+    facts = linkedin.LinkedIn().posting_facts({"criteria": {"seniority": seniority, "employment_type": employment}})
+    plain = {k: [x[0] for x in v] if isinstance(v, list) else v[0] for k, v in facts.items()}
+    assert plain == want
+    if "worktime" in facts:
+        assert facts["worktime"][1] == f"LinkedIn: Employment type {employment}"
+
+
+def test_linkedin_criteria_of_a_posting_stored_without_them_come_from_its_text():
+    meta = {"description": "Location: Warsaw\nSeniority level: Entry level\nEmployment type: Part-time\n\n"
+                           "Employment type: Full-time later in the body is not read", "source": "api"}
+    assert linkedin.LinkedIn().posting_facts(meta) == {
+        "level": ("junior", "LinkedIn: Seniority level Entry level"),
+        "worktime": ("part_time", "LinkedIn: Employment type Part-time")}
+    assert Board.posting_facts(linkedin.LinkedIn(), meta) == {} == linkedin.LinkedIn().posting_facts({})
+
+
 def test_linkedin_remote_all_is_sent_as_remote_phrases():
     reqs, warns = requests("linkedin")
-    assert [r.keyword for r in reqs] == list(linkedin.REMOTE_PHRASES["pl"])
+    assert [r.keyword for r in reqs] == list(countries.get("pl").linkedin_remote_phrases)
     assert all(r.params == {"country": "pl"} and r.pushed == {"keyword"} for r in reqs)   # the mode stays unknown
     assert "sent as the phrases remote, zdalnie" in warns[0]
-    assert [r.keyword for r in requests("linkedin", Where(remote=True, country="de"))[0]] == list(linkedin.DEFAULT_REMOTE_PHRASES)
+    assert [r.keyword for r in requests("linkedin", Where(remote=True, country="de"))[0]] == list(countries.get("de").linkedin_remote_phrases)
     # phrases, a city and "anywhere" are left alone; "city or remote" sends phrases only for its remote part
     assert [r.keyword for r in requests("linkedin", keywords=("n8n",))[0]] == ["n8n"]
     assert [r.keyword for r in requests("linkedin", Where())[0]] == [None]
     both, _ = requests("linkedin", Where(remote=True, city="Kraków"))
-    assert [(r.keyword, r.params.get("city")) for r in both] == [(None, "Kraków")] + [(p, None) for p in linkedin.REMOTE_PHRASES["pl"]]
+    assert [(r.keyword, r.params.get("city")) for r in both] == [(None, "Kraków")] + [(p, None) for p in countries.get("pl").linkedin_remote_phrases]
 
 
 def test_linkedin_split_by_region_then_city(monkeypatch):
@@ -343,6 +377,20 @@ def test_rocketjobs_internship_work_time():
     (o,) = parse("rocketjobs", rsc([offer_json("acme-staz-lodz-finanse", pay_types("internship", 3000, 4000, "PLN"),
                                                working="internship")]))
     assert o.worktime == "part_time" and o.contracts == ["internship"] and o.url.startswith("https://rocketjobs.pl/")
+
+
+def test_rocketjobs_splits_sales_and_support_categories_into_role_and_industry():
+    sales, support, marketing = parse("rocketjobs", rsc([
+        offer_json(slug, pay_types("b2b", 9000, 12000, "PLN")) for slug in (
+            "acme-account-manager-krakow-sales-it-i-telekomunikacja-1a2b3c4d",   # a sales role in the IT industry
+            "acme-agent-krakow-support-finanse-bankowosc-ubezpieczenia", "acme-seo-krakow-marketing-seo")]))
+    assert (sales.category, sales.industry) == ("sales", "it i telekomunikacja")
+    assert (support.category, support.industry) == ("support", "finanse bankowosc ubezpieczenia")
+    assert (marketing.category, marketing.industry) == ("marketing seo", "")   # a role subcategory stays whole
+    assert "it i telekomunikacja" in sales.text()                               # filters still read it
+    (jj,) = parse("justjoin", rsc([offer_json("acme-dev-krakow-support", pay_types("b2b", 1, 2, "PLN"))]))
+    assert (jj.category, jj.industry) == ("support", "")                         # justjoin: roles only
+    assert REGISTRY["rocketjobs"].split_category("support") == ("support", "")
 
 
 # nofluffjobs
