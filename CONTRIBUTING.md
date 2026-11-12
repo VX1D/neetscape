@@ -115,6 +115,9 @@ All of them follow the same rules.
      (words after which a title's head ends: "with", "z", "mit"; punctuation splits titles in every
      language) and `gender` (gender markers in words inside brackets: "all genders", "gn"; letter lists
      such as "(m/w/d)" or "(k/m)" are recognised without it).
+   - optional `UI`: the labels of REPORT.html, keyed as in `neetscape/lang/en.py` (`{name}` placeholders; plurals as
+     dicts by CLDR category, `one`/`few`/`many`/`other`). The page then offers the language in its selector; a
+     missing key falls back to English.
 
    See the docstring of `neetscape/lang/__init__.py` for the details.
    Check a vocabulary change on a real database rather than with unit tests:
