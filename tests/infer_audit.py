@@ -183,16 +183,22 @@ def readings(store) -> list[dict]:
     for r in rows:
         board = REGISTRY.get(r["board"])
         langs = countries.languages(r["country"] or countries.text_country(board.caps.country if board else "", home))
-        title, category = r["title"] or "", " ".join(filter(None, (r["category"], r["request_category"])))
-        rec = {"title": title, "category": category, "current": bool(r["current"]), "langs": lang.with_english(langs)}
-        for fld in ("function", "domain"):
-            rec[fld], rec["cat_" + fld] = _read(fld, title, category, langs)
-        head, qual = infer.title_parts(title, langs)
-        rec["domains"] = set(infer._domains(infer._scan("domain", head, langs, "title")
-                                            + infer._scan("domain", qual, langs, "qualifier")))
-        out.append(rec)
+        out.append(reading(r["title"] or "", " ".join(filter(None, (r["category"], r["request_category"]))), langs,
+                           bool(r["current"])))
     assign_languages(out)
     return out
+
+
+def reading(title: str, category: str, langs, current: bool = True) -> dict:
+    """One offer's record for `agreement` and `suggest`: the function and domain of its title and of its category,
+    and every domain its title names (`domains`). `langs`: its country's packs. `assign_languages` adds `lang`."""
+    rec = {"title": title, "category": category, "current": current, "langs": lang.with_english(langs)}
+    for fld in ("function", "domain"):
+        rec[fld], rec["cat_" + fld] = _read(fld, title, category, langs)
+    head, qual = infer.title_parts(title, langs)
+    rec["domains"] = set(infer._domains(infer._scan("domain", head, langs, "title")
+                                        + infer._scan("domain", qual, langs, "qualifier")))
+    return rec
 
 
 def _examples(titles, k: int = 3) -> list[str]:
@@ -200,6 +206,10 @@ def _examples(titles, k: int = 3) -> list[str]:
 
 
 def agreement(recs: list[dict]) -> dict:
+    """Title against category over `recs` (`reading` records with `lang`): offers where both give a domain (`both`);
+    `agreement`, the title's leading domain is the category's; `coverage`, the category's domain is among the title's
+    domains (`disagreeing`: the titles where it is not, with the two readings); per domain, confusion and language.
+    `tests/test_vocab.py` gates the fixtures' `coverage` and no-domain share with this function."""
     both = [r for r in recs if r["domain"] != "unknown" and r["cat_domain"] != "unknown"]
     t, c, tp = Counter(r["domain"] for r in both), Counter(r["cat_domain"] for r in both), Counter()
     pairs: dict = defaultdict(list)
@@ -209,9 +219,12 @@ def agreement(recs: list[dict]) -> dict:
         else:
             pairs[(r["domain"], r["cat_domain"])].append(r["title"])
     agree, current = sum(tp.values()), [r for r in recs if r["current"]]
-    covered = sum(r["cat_domain"] in r["domains"] for r in both)  # a job names several domains: is the category's among them?
+    missed = [r for r in both if r["cat_domain"] not in r["domains"]]  # a job names several domains: is the category's among them?
+    covered = len(both) - len(missed)
     return {
         "covered": covered, "coverage": covered / len(both) if both else 0.0,
+        "disagreeing": [{"title": r["title"], "category": r["category"], "title_domains": sorted(r["domains"]),
+                         "category_domain": r["cat_domain"]} for r in missed],
         "with_category": sum(bool(r["category"]) for r in recs),
         "category_domain": sum(r["cat_domain"] != "unknown" for r in recs),
         "both": len(both), "agree": agree, "agreement": agree / len(both) if both else 0.0,

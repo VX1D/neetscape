@@ -36,7 +36,14 @@ CI never touches live boards: `pyproject.toml` excludes the `live` marker by def
 
 ## Vocabularies: check on real data
 
-Language-pack vocabularies are not pinned by unit tests. Check a change on a copy of a real database:
+Language-pack vocabularies are not pinned word by word. One gate runs in CI: `tests/test_vocab.py` parses every
+board fixture and reads each offer's title against the board's category with the same measure as `--agreement`
+(below; both use `reading` and `agreement` in `tests/infer_audit.py`). It fails when the share of offers whose
+category's domain is among the title's domains drops below `MIN_COVERAGE`, or the share of fixture titles with no
+domain rises above `MAX_NO_DOMAIN`, and lists the titles concerned. Both floors sit a few points below the
+fixtures' values; when a vocabulary change improves them (`pytest tests/test_vocab.py -s` prints the values),
+raising the floors in the same change is welcome. The fixtures hold under two hundred offers; check a change on a copy
+of a real database as well:
 
 ```
 cp runs/neetscape.db /tmp/audit.db

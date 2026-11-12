@@ -4,6 +4,10 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
 
 ## Unreleased
 
+- Vocabulary regression gate: `tests/test_vocab.py` reads every board fixture's titles against the boards'
+  categories with `infer_audit --agreement`'s measure (now shared: `reading`, `agreement`) and fails, listing the
+  titles, when the category's domain is among the title's domains for less than 78% of offers (81.9% today) or
+  more than 21% of titles give no domain (18.1%). `--agreement --json` also lists the disagreeing titles.
 - Every language-specific word now lives in its language pack or country package, so a new language is one
   module (`neetscape/lang/<code>.py`) and a new country one package: pay periods, pay words, the thousand
   suffix and range words (`VOCAB["pay"]`, read by `pay.py`); words offering options (`choice`, for

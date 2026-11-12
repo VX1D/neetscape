@@ -123,7 +123,9 @@ All of them follow the same rules.
      missing key falls back to English.
 
    See the docstring of `neetscape/lang/__init__.py` for the details.
-   Check a vocabulary change on a real database rather than with unit tests:
+   `tests/test_vocab.py` gates the job domain vocabulary on the board fixtures (title against category, and the
+   share of titles with no domain; it lists the titles a change lost); when your change improves its values,
+   raise its floors (`MIN_COVERAGE`, `MAX_NO_DOMAIN`) too. Check a vocabulary change on a real database as well:
    `python tests/infer_audit.py COPY.db --dump-stored before.json`, change, then `--rederive before.json`
    lists every changed decision with sample titles. Build the job function and domain vocabulary from the
    country's data: on a copy of a database crawled there, `python tests/infer_audit.py COPY.db --suggest` lists,
