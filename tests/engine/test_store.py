@@ -192,3 +192,17 @@ def test_404_after_the_last_page_ends_the_request(fake, tmp_path, monkeypatch):
     run_crawl(db, db.start_run({}, []), fake, [ALL_REMOTE])
     req = db.q("SELECT * FROM requests")[0]
     assert (req["complete"], req["stop_reason"], req["error"]) == (1, "end", "")
+
+
+def test_incremental_stop_needs_the_same_request_completed_before(fake, tmp_path):
+    from neetscape.model import Search, Where
+    kw = Search(id="kw", label="kw", where=Where(remote=True), keywords=("x",))
+    db = Store(tmp_path / "j.db")
+    fake.pages = {("x", 1): [["a", "Job A", {}], ["b", "Job B", {}], ["c", "Job C", {}]], ("x", 2): []}
+    run_crawl(db, db.start_run({}, []), fake, [kw])                     # the phrase search sees a, b, c
+    fake.pages = {("*", 1): [["a", "Job A", {}], ["b", "Job B", {}], ["c", "Job C", {}]],
+                  ("*", 2): [["d", "Job D", {}], ["e", "Job E", {}], ["f", "Job F", {}]], ("*", 3): []}
+    r2 = db.start_run({}, [])
+    run_crawl(db, r2, fake, [ALL_REMOTE])                               # "all" was never crawled to its end
+    req = db.q("SELECT * FROM requests WHERE run_id=? AND keyword IS NULL", r2)[0]
+    assert req["pages"] == 3 and req["complete"] and db.offer("https://fake/f")   # page 1 known from the phrase: no stop

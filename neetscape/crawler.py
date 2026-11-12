@@ -91,6 +91,9 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
     pages = found = 0
     complete, reason, error = False, "", ""
     newest_first = r.params.get("sort") == "newest"
+    # an incremental stop is sound only for a listing crawled to its end before: offers known from other
+    # requests (other phrases, other searches) say nothing about what lies deeper in this one
+    incremental = incremental and store.completed_before(r.key, run_id)
     max_pages = min(board.caps.max_pages, limit_pages or board.caps.max_pages)
     text_kw = fill_kwargs(text_country(board, r, search)) | {"base": base, "hours": hours, "days": days}
     try:
