@@ -165,6 +165,10 @@ class Store:
                         ("error" if error else "done", pages, found, int(complete), stop_reason, error, now(), req_id))
         self.db.commit()
 
+    def completed_before(self, req_key: str, run_id: int) -> bool:
+        """Whether an earlier run fetched this same request (board, phrase, parameters) to its end."""
+        return bool(self.q("SELECT 1 FROM requests WHERE req_key=? AND run_id<? AND complete=1 LIMIT 1", req_key, run_id))
+
     def done_request_keys(self, run_id: int) -> set[str]:
         return {r[0] for r in self.q("SELECT req_key FROM requests WHERE run_id=? AND status='done'", run_id)}
 
