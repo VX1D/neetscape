@@ -4,6 +4,9 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
 
 ## Unreleased
 
+- Progress line for `run`, `crawl` and `details`: a bar with requests (or postings) done, pages, offers, what
+  each board is fetching and the time left; redrawn in place on a terminal, a `progress ...` line every 30 s
+  when stderr goes to a file.
 - Postings as a second stage: listing cards are filtered first and postings are fetched only for
   matches. In `review.mode: "auto"`, `run` fetches the top `details_top` matches whose job has no stored
   posting yet (once per job across runs) and re-evaluates; `details` re-evaluates too and logs how many

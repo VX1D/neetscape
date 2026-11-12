@@ -25,7 +25,7 @@ from . import infer
 from .boards import REGISTRY
 from .boards.base import Request, accept_language
 from .boards.fetch import BrowserFetch, FetchError, Http, Limiter
-from .log import log
+from .log import Progress, log
 from .model import Offer, Search
 from .store import Store
 
@@ -86,7 +86,7 @@ def _apply_pushed(o: Offer, r: Request) -> None:
 async def _run_request(board, fetcher, r: Request, search: Search, store: Store, run_id: int, *, fx: dict,
                        limit_pages: int | None, incremental: bool, record: Path | None, base: str = "PLN",
                        hours: int | None = None, days: int | None = None, save_fixture: Path | None = None,
-                       max_age: float = math.inf) -> None:
+                       max_age: float = math.inf, progress: Progress | None = None) -> None:
     req_id = store.start_request(run_id, r.board, r.search_id, r.keyword, r.params, r.pushed)
     pages = found = 0
     complete, reason, error = False, "", ""
@@ -112,11 +112,15 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
                 save_fixture.write_text(raw)
             offers = board.parse(raw, r)
             pages += 1
+            if progress:
+                progress.active(r.board, f"p{page}")
             for o in offers:
                 _apply_pushed(o, r)
                 infer.fill_from_text(o, fx, **text_kw)
             new, known = store.ingest(offers, run_id, req_id, page)
             found += new
+            if progress:
+                progress.add(pages=1, offers=new)
             if not offers:
                 complete, reason = True, "empty page"
                 break
@@ -158,7 +162,7 @@ async def crawl(requests: list[Request], searches: dict[str, Search], store: Sto
     max_age = age_limits(requests, searches)
     tabs = asyncio.Semaphore(4)  # browser tabs open at once
 
-    async def one_board(name: str, reqs: list[Request]) -> None:
+    async def one_board(name: str, reqs: list[Request], progress: Progress) -> None:
         board = REGISTRY[name]
         uses_browser = board.caps.transport != "http"
         if uses_browser:
@@ -169,11 +173,14 @@ async def crawl(requests: list[Request], searches: dict[str, Search], store: Sto
                     await _run_request(board, fetcher, r, searches[r.search_id], store, run_id, fx=fx,
                                        limit_pages=limit_pages, incremental=incremental, record=record, base=base,
                                        hours=hours, days=days, save_fixture=save_fixture,
-                                       max_age=max_age.get(r.key, math.inf))
+                                       max_age=max_age.get(r.key, math.inf), progress=progress)
+                    progress.step()
         except Exception as e:
             log("ERROR", name, f"{type(e).__name__}: {e}")
         finally:
+            progress.active(name, None)
             if uses_browser:
                 tabs.release()
 
-    await asyncio.gather(*[one_board(n, rs) for n, rs in by_board.items()])
+    with Progress(sum(len(rs) for rs in by_board.values()), "requests") as progress:
+        await asyncio.gather(*[one_board(n, rs, progress) for n, rs in by_board.items()])
