@@ -266,9 +266,11 @@ neetscape mark 40 rejected --note "requires German C1"
 neetscape report
 ```
 
-`REPORT.html` in the run directory then shows the review on top: marks grouped by status with
-their notes, key facts and the stored posting, above the filterable, sortable table of every
-passing offer. That page is the shortlist the person reads. Aim for:
+`REPORT.html` in the run directory then shows the review as a list with the selected offer's facts, the
+posting's red flags, your note and the full posting beside it; the person groups, sorts and filters it. Make
+the note's first line its category ("Apply now", "Side jobs", "Stretch") and the next lines `✅ why`
+and `⚠ risk`: the page groups by that first line and colours the rest. That page is the shortlist the
+person reads. Aim for:
 - **Apply now** (`shortlisted`): 5–10 offers;
 - **Side jobs**: the same for part-time and freelance work, if they wanted it (say so in the note);
 - **Stretch**: good fits with one blocker (`shortlisted`, the blocker in the note);
