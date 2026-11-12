@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import re
 
 from . import country as countries
 from . import infer
@@ -98,18 +99,39 @@ def _check_where(o, s: Search, v: _Verdict) -> None:
 def _check_remote_proof(o, s: Search, v: _Verdict) -> None:
     """`remote_proof`: the posting itself must describe remote work ("fully remote", or plain remote wording) and
     mention no hybrid model or required presence (client visits, business travel, office days, relocation).
-    Precision over recall: "remote or hybrid, your choice" fails too. Without a fetched posting the proof is
-    unknown and follows the `unknown` policy."""
+    "Hybrid or 100% remote, your choice" passes (remote is offered); "hybrid, 1 day a week in the office" or "remote
+    with client visits" fails. Without a fetched posting the proof is unknown and follows the `unknown` policy."""
     text = _posting(o)
     if not text or text.startswith("ERROR"):
         v.unknown("remote proof")
         return
     languages = countries.languages(s.where.country)
     h = infer.hints(text, languages)
-    if h["hybrid"] or h["office"]:
-        v.fail("posting requires presence: " + ", ".join((h["hybrid"] + h["office"])[:2]))
+    presence = _required_presence(text, languages) + h["office"]
+    if presence:
+        v.fail("posting requires presence: " + ", ".join(presence[:2]))
     elif not (h["fully_remote"] or infer.mode_from_text(text, languages) == "remote"):
         v.fail("posting does not mention remote work")
+
+
+_SENTENCES = re.compile(r"(?<=[.!?;])\s+|\n+|\s+[•▪·]\s+")
+_CHOICE = re.compile(r"\b(?:lub|albo|bądź|or|either)\b|\s/\s|zdalnie/|/hybryd|remote/|/hybrid", re.I)
+
+
+def _required_presence(text: str, languages) -> list[str]:
+    """Hybrid wording that the posting requires. A sentence offering remote work as one of the options ("hybrid or
+    100% remote", "remote for people outside the city, hybrid in Gdańsk or fully remote") is a choice, not a
+    requirement, and is left out."""
+    found: list[str] = []
+    for sentence in _SENTENCES.split(text):
+        hybrid = infer.hints(sentence, languages)["hybrid"]
+        if not hybrid:
+            continue
+        offers_remote = infer.hints(sentence, languages)["fully_remote"] or infer.mode_from_text(
+            re.sub(r"(?i)hybry\w*|hybrid\w*", "", sentence), languages) == "remote"
+        if not (offers_remote and _CHOICE.search(sentence)):
+            found += [w for w in hybrid if w not in found]
+    return found
 
 
 def _check_keywords(o, s: Search, v: _Verdict) -> None:

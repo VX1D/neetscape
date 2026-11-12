@@ -23,7 +23,10 @@ VOCAB = {
         "b2b": [r"\bb2b\b", r"samozatrudnienie", r"kontrakt", r"podwykonawstwo"],
         "mandate": [r"umowa zlecenie", r"\bzlec\.?\b", r"\buz\b"],
         "specific_task": [r"umowa o dzieło", r"\buod\b"],
-        "internship": [r"staż", r"praktyk"],
+        # "staż pracy" / "2 lata stażu" is work experience and "dobrych praktyk" good practice, not an internship
+        "internship": [r"(?<!lat )(?<!lata )(?<!roku )\bstaż(?:u|em|e|ów|y)?\b(?!\s+(?:pracy|zawodow\w*|w zawodzie|na (?:podobnym|tym|analogicznym)))",
+                       r"\bstażyst\w*", r"\bpraktykant\w*", r"\bpraktyk[ai]? (?:studenck|zawodow|letni|wakacyjn)\w*",
+                       r"umow\w* o staż"],
     },
     "level": {
         "intern": [r"stażyst", r"praktykant"],
@@ -69,6 +72,10 @@ EXAMPLES = [
     ("Umowa na okres próbny", "contract", ["employment"]),
     ("Umowa na czas określony", "contract", ["employment"]),
     ("Umowa o dzieło", "contract", ["specific_task"]),
+    ("Wymagamy 2 lat stażu pracy na podobnym stanowisku", "contract", []),
+    ("Znajomość dobrych praktyk QA i ITIL", "contract", []),
+    ("Oferujemy płatny staż w dziale IT", "contract", ["internship"]),
+    ("Praktyki studenckie w zespole wsparcia", "contract", ["internship"]),
     ("Młodszy specjalista ds. obsługi klienta", "level", "junior"),
     ("Kierownik sklepu", "level", "manager"),
     ("3 lata doświadczenia komercyjnego", "years", True),

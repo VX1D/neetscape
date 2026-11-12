@@ -147,8 +147,10 @@ def test_remote_proof_reads_the_posting():
     assert ev.check(R(row(posting="Praca w 100% zdalna, z dowolnego miejsca w Polsce.")), search)[0]
     assert ev.check(R(row(posting="Pracujesz w trybie zdalnym, w zespole.")), search)[0]   # remote wording, no presence
     assert ev.check(R(row(posting="Biuro w centrum, pakiet medyczny.")), search)[1] == ["posting does not mention remote work"]
-    hybrid = row(posting="Fully remote or hybrid from our Warsaw office.")
-    assert ev.check(R(hybrid), search)[1] == ["posting requires presence: hybrid"]
+    choice = row(posting="Pracujemy w systemie hybrydowym lub w 100% zdalnie.")
+    assert ev.check(R(choice), search)[0]                                              # remote is one of the options
+    hybrid = row(posting="Praca zdalna. Praca hybrydowa: 1 dzień w tygodniu w biurze (Warszawa).")
+    assert ev.check(R(hybrid), search)[1] == ["posting requires presence: hybrydowa"]
     visits = row(posting="100% zdalnie, spotkania u klientów raz w miesiącu.")
     assert ev.check(R(visits), search)[1][0].startswith("posting requires presence: spotkania u klient")
     assert ev.check(R(visits), s(where="remote"))[0]                                   # only when asked for
