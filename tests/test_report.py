@@ -1,12 +1,14 @@
 """The listing (one row per job, marks, the current state of every board), title groups and the written reports."""
 import json
 import re
+import sys
+import types
 
 import pytest
 
 from conftest import ingest, job
 from neetscape import evaluate as ev
-from neetscape import profile, report
+from neetscape import html_report, lang, profile, report
 from neetscape.store import PAGE_LIMIT, PAGE_LIMIT_ASKED
 
 PROFILE = profile.validate({"version": 2, "boards": ["justjoin"], "searches": [{"id": "all", "where": "remote", "what": "all"}]})
@@ -107,3 +109,33 @@ def test_page_limited_requests_are_listed_in_the_report(db, tmp_path, stop, labe
     text = report.write_reports(db, PROFILE, rid, tmp_path).read_text()
     assert "Page limit (the listing may go on" in text and f'linkedin n8n {{"country": "pl"}}: 2 pages, {label}' in text
     assert html_data(tmp_path, "meta")[1]["cut"] == cut
+
+
+def test_ui_labels_of_every_pack_follow_english():
+    en = lang.pack("en").UI
+    for code in lang.available():
+        ui = getattr(lang.pack(code), "UI", None) or {}
+        assert set(ui) <= set(en), code
+        for k, v in ui.items():
+            if html_report.is_plural(v):              # a plural may stand where English has a string, and back
+                assert "other" in v and all(isinstance(x, str) for x in v.values()), (code, k)
+            elif isinstance(v, dict):                 # a map of value labels (st, fd, md, wt)
+                assert isinstance(en[k], dict) and not html_report.is_plural(en[k]) and set(v) <= set(en[k]), (code, k)
+            else:
+                assert isinstance(v, str) and (isinstance(en[k], str) or html_report.is_plural(en[k])), (code, k)
+
+
+def test_html_report_offers_exactly_the_packs_with_ui(db, tmp_path, monkeypatch):
+    bare, partial = types.ModuleType("neetscape.lang.xx"), types.ModuleType("neetscape.lang.yy")
+    partial.UI = {"name": "Yy", "all": "Yall", "md": {"remote": "yremote"}}
+    monkeypatch.setitem(sys.modules, bare.__name__, bare)
+    monkeypatch.setitem(sys.modules, partial.__name__, partial)
+    monkeypatch.setattr(lang, "available", lambda: ["de", "en", "pl", "xx", "yy"])
+    rid = evaluated(db, job(key="1"))
+    report.write_reports(db, PROFILE, rid, tmp_path)
+    page, ui = html_data(tmp_path, "ui")
+    offered = re.findall(r'<option value="(\w+)">', re.search(r"<select id=lang>(.*?)</select>", page).group(1))
+    assert offered == list(ui) == ["en", "de", "pl", "yy"]                 # English first; xx declares no UI
+    en = lang.pack("en").UI
+    assert ui["yy"]["all"] == "Yall" and ui["yy"]["review"] == en["review"]   # a missing key falls back to English
+    assert ui["yy"]["md"] == {**en["md"], "remote": "yremote"}

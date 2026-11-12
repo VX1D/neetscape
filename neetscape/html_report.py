@@ -9,12 +9,16 @@ score, pay, date or company; the rest of the filters sit behind one "Filters" bu
 arrows) move, `o` opens the offer, `x` ticks it off, `/` searches. Ticks are a per-browser convenience
 (localStorage); decisions are recorded with the `mark` command the page copies. `#review` / `#all` in the
 URL pick the tab. Re-run `neetscape report` after marking.
+
+The interface labels are the language packs' `UI` (`neetscape/lang/<code>.py`); the page offers every pack that
+declares one, English being the fallback of a missing key.
 """
 from __future__ import annotations
 
 import html
 import json
 
+from . import lang
 from .details import detail
 from .model import age_label, days_old
 from .pay import pay_label
@@ -23,6 +27,7 @@ from .store import GONE, MARK_STATUSES, Store
 
 _POSTING_CHARS = 8000
 _LANG = {"pl": "pl", "de": "de"}  # page language by profile country; English otherwise (switchable in the page)
+PLURAL = {"zero", "one", "two", "few", "many", "other"}  # CLDR plural categories (Intl.PluralRules in the page)
 
 _CSS = r"""
 :root{--bg:#fafafa;--fg:#1c1c1e;--muted:#74747c;--line:#e7e7ec;--panel:#fff;--sel:#edf3ff;--accent:#0a60d0;
@@ -89,60 +94,13 @@ font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
 
 _JS = r"""
 const M=JSON.parse(document.getElementById('meta').textContent),D=JSON.parse(document.getElementById('data').textContent);
-const T={
-en:{review:'Review',all:'All',search:'Search  /',g_auto:'Group: auto',g_category:'Group: note category',g_status:'Group: status',g_tag:'Group: tag',
- g_search:'Group: search',g_board:'Group: board',g_mode:'Group: work mode',g_none:'No groups',s_score:'Sort: score',s_pay:'Sort: pay',s_newest:'Sort: newest',
- s_company:'Sort: company',filters:'Filters',any_mode:'Any work mode',any_board:'Any board',f_new:'New in this run',f_posted:'With posting',
- f_unreviewed:'Not decided',f_hide:'Hide decided',remote_only:'Remote only',keys:'j/k move · o open · s/a/r/i decide · u undo · n note · / search',
- empty:'Nothing here. Clear the filters.',empty_review:'No review yet: decide in "All" or record one with neetscape mark.',select:'Select an offer.',
- pay:'pay / month',mode:'mode',time:'time',contract:'contract',level:'level',posted:'posted',on:'on',score:'score',ago:'ago',fully_remote:'fully remote',
- open:'Open offer ↗',back:'← list',note_ph:'Note: why · risk (saved with the decision)',copy:n=>`Copy ${n} command${n==1?'':'s'}`,clear:'Clear',
- copied:n=>`Copied ${n} command${n==1?'':'s'}: paste them in the terminal`,confirm_clear:'Forget the decisions made on this page?',
- decided:(a,b)=>`${a} / ${b} decided`,more:n=>`Show more (${n} left)`,offers:'offers',new:'new',errors:'board errors',cut:'cut listings',
- p_none:'Posting not fetched',p_empty:'Posting is empty',p_failed:'Fetching the posting failed',p_gone:'Offer removed',p_http:'Posting unavailable',
- other:'other',no_tag:'no tag',not_reviewed:'not reviewed',
- st:{shortlisted:'shortlisted',applied:'applied',interview:'interview',offer:'offer',rejected:'rejected',ignored:'ignored'},
- dm:'domains',g_field:'Group: job field',fd:{ai_automation:'AI & automation',security:'Security',qa:'QA & testing',devops_cloud:'DevOps & cloud',data:'Data & analytics',it_support:'IT support',it_admin:'IT administration',erp_crm:'ERP & CRM',software_dev:'Software development',product_project:'Product & project',design:'Design',ecommerce:'E-commerce',customer_service:'Customer service',sales:'Sales',marketing:'Marketing',hr:'HR & payroll',finance:'Finance & accounting',legal:'Legal',admin_office:'Office & admin',logistics:'Logistics',engineering:'Engineering',manufacturing:'Manufacturing',healthcare:'Healthcare',education:'Education',hospitality:'Hospitality',retail:'Retail',other:'Other'},
- md:{remote:'remote',hybrid:'hybrid',onsite:'on-site',unknown:'unknown'},wt:{full_time:'full time',part_time:'part time',flexible:'flexible'}},
-de:{review:'Auswahl',all:'Alle',search:'Suchen  /',g_auto:'Gruppe: automatisch',g_category:'Gruppe: Notiz-Kategorie',g_status:'Gruppe: Status',g_tag:'Gruppe: Tag',
- g_search:'Gruppe: Suche',g_board:'Gruppe: Börse',g_mode:'Gruppe: Arbeitsort',g_none:'Keine Gruppen',s_score:'Sortierung: Punkte',s_pay:'Sortierung: Gehalt',
- s_newest:'Sortierung: neueste',s_company:'Sortierung: Firma',filters:'Filter',any_mode:'Jeder Arbeitsort',any_board:'Jede Börse',f_new:'Neu in diesem Lauf',
- f_posted:'Mit Anzeigentext',f_unreviewed:'Nicht entschieden',f_hide:'Entschiedene ausblenden',remote_only:'Nur remote',
- keys:'j/k bewegen · o öffnen · s/a/r/i entscheiden · u rückgängig · n Notiz · / suchen',empty:'Nichts gefunden. Filter zurücksetzen.',
- empty_review:'Noch keine Auswahl: in „Alle“ entscheiden oder mit neetscape mark festhalten.',select:'Angebot auswählen.',
- pay:'Gehalt / Monat',mode:'Arbeitsort',time:'Umfang',contract:'Vertrag',level:'Level',posted:'veröffentlicht',on:'auf',score:'Punkte',ago:'her',
- fully_remote:'voll remote',open:'Angebot öffnen ↗',back:'← Liste',note_ph:'Notiz: warum · Risiko (wird mit der Entscheidung gespeichert)',
- copy:n=>`${n} Befehl${n==1?'':'e'} kopieren`,clear:'Leeren',copied:n=>`${n} Befehl${n==1?'':'e'} kopiert: im Terminal einfügen`,
- confirm_clear:'Die Entscheidungen auf dieser Seite verwerfen?',decided:(a,b)=>`${a} / ${b} entschieden`,more:n=>`Mehr zeigen (${n} übrig)`,
- offers:'Angebote',new:'neu',errors:'Börsenfehler',cut:'abgeschnittene Listen',p_none:'Anzeigentext nicht geladen',p_empty:'Anzeigentext leer',p_failed:'Laden des Anzeigentexts fehlgeschlagen',
- p_gone:'Angebot entfernt',p_http:'Anzeigentext nicht verfügbar',other:'sonstige',no_tag:'ohne Tag',not_reviewed:'nicht geprüft',
- st:{shortlisted:'vorgemerkt',applied:'beworben',interview:'Gespräch',offer:'Zusage',rejected:'abgelehnt',ignored:'ignoriert'},
- dm:'Bereiche',g_field:'Gruppe: Berufsfeld',fd:{ai_automation:'KI & Automatisierung',security:'Sicherheit',qa:'QA & Test',devops_cloud:'DevOps & Cloud',data:'Daten & Analyse',it_support:'IT-Support',it_admin:'IT-Administration',erp_crm:'ERP & CRM',software_dev:'Softwareentwicklung',product_project:'Produkt & Projekt',design:'Design',ecommerce:'E-Commerce',customer_service:'Kundenservice',sales:'Vertrieb',marketing:'Marketing',hr:'Personal & Lohn',finance:'Finanzen & Buchhaltung',legal:'Recht',admin_office:'Büro & Verwaltung',logistics:'Logistik',engineering:'Ingenieurwesen',manufacturing:'Produktion',healthcare:'Gesundheit',education:'Bildung',hospitality:'Gastgewerbe',retail:'Einzelhandel',other:'Sonstige'},
- md:{remote:'remote',hybrid:'hybrid',onsite:'vor Ort',unknown:'unbekannt'},wt:{full_time:'Vollzeit',part_time:'Teilzeit',flexible:'flexibel'}},
-pl:{review:'Przegląd',all:'Wszystkie',search:'Szukaj  /',g_auto:'Grupy: auto',g_category:'Grupy: kategoria notatki',g_status:'Grupy: status',g_tag:'Grupy: tag',
- g_search:'Grupy: wyszukiwanie',g_board:'Grupy: portal',g_mode:'Grupy: tryb pracy',g_none:'Bez grup',s_score:'Sortuj: wynik',s_pay:'Sortuj: stawka',
- s_newest:'Sortuj: najnowsze',s_company:'Sortuj: firma',filters:'Filtry',any_mode:'Każdy tryb pracy',any_board:'Każdy portal',f_new:'Nowe w tym przebiegu',
- f_posted:'Z opisem',f_unreviewed:'Bez decyzji',f_hide:'Ukryj zdecydowane',remote_only:'Tylko zdalne',
- keys:'j/k ruch · o otwórz · s/a/r/i decyzja · u cofnij · n notatka · / szukaj',empty:'Nic tu nie ma. Wyczyść filtry.',
- empty_review:'Brak przeglądu: zdecyduj w „Wszystkie” albo zapisz przez neetscape mark.',select:'Wybierz ofertę.',
- pay:'stawka / mies.',mode:'tryb',time:'wymiar',contract:'umowa',level:'poziom',posted:'dodana',on:'na',score:'wynik',ago:'temu',fully_remote:'w pełni zdalna',
- open:'Otwórz ofertę ↗',back:'← lista',note_ph:'Notatka: dlaczego · ryzyko (zapisywana z decyzją)',copy:n=>`Kopiuj komendy (${n})`,clear:'Wyczyść',
- copied:n=>`Skopiowano ${n}: wklej w terminalu`,confirm_clear:'Zapomnieć decyzje podjęte na tej stronie?',decided:(a,b)=>`${a} / ${b} z decyzją`,
- more:n=>`Pokaż więcej (zostało ${n})`,offers:'ofert',new:'nowych',errors:'błędów portali',cut:'uciętych list',p_none:'Opis niepobrany',p_empty:'Opis pusty',
- p_failed:'Nie udało się pobrać opisu',p_gone:'Oferta usunięta',p_http:'Opis niedostępny',other:'inne',no_tag:'bez tagu',not_reviewed:'nieprzejrzane',
- st:{shortlisted:'na liście',applied:'aplikowano',interview:'rozmowa',offer:'oferta',rejected:'odrzucone',ignored:'pominięte'},
- dm:'domeny',g_field:'Grupy: dziedzina',fd:{ai_automation:'AI i automatyzacja',security:'Bezpieczeństwo',qa:'QA i testy',devops_cloud:'DevOps i chmura',data:'Dane i analityka',it_support:'Wsparcie IT',it_admin:'Administracja IT',erp_crm:'ERP i CRM',software_dev:'Programowanie',product_project:'Produkt i projekty',design:'Design',ecommerce:'E-commerce',customer_service:'Obsługa klienta',sales:'Sprzedaż',marketing:'Marketing',hr:'HR i płace',finance:'Finanse i księgowość',legal:'Prawo',admin_office:'Biuro i administracja',logistics:'Logistyka',engineering:'Inżynieria',manufacturing:'Produkcja',healthcare:'Zdrowie',education:'Edukacja',hospitality:'Gastronomia i hotele',retail:'Handel detaliczny',other:'Inne'},
- md:{remote:'zdalna',hybrid:'hybrydowa',onsite:'stacjonarna',unknown:'nieznany'},wt:{full_time:'pełny etat',part_time:'część etatu',flexible:'elastyczny'}}};
-
-const X={en:{view:'View',prev:'Previous (k)',next:'Next (j)',shown:(a,b)=>`${a} of ${b}`,lang:'Language'},
- de:{view:'Ansicht',prev:'Zurück (k)',next:'Weiter (j)',shown:(a,b)=>`${a} von ${b}`,lang:'Sprache'},
- pl:{view:'Widok',prev:'Poprzednia (k)',next:'Następna (j)',shown:(a,b)=>`${a} z ${b}`,lang:'Język'}};
-for(const k in X)Object.assign(T[k],X[k]);
-const $=id=>document.getElementById(id),L=$('list'),P=$('detail');
+const $=id=>document.getElementById(id),L=$('list'),P=$('detail'),T=JSON.parse($('ui').textContent);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const load=(k,v)=>{try{return JSON.parse(localStorage.getItem(M.key+k))??v}catch(e){return v}};
 const keep=(k,v)=>{try{localStorage.setItem(M.key+k,JSON.stringify(v))}catch(e){}};
 let lang=new URLSearchParams(location.search).get('lang')||load('-lang',M.lang);if(!T[lang])lang='en';let t=T[lang];
+// a label: a string with {name} placeholders, or plural forms by CLDR category chosen by v.n
+const tr=(k,v={})=>{let x=t[k];if(typeof x==='object')x=x[new Intl.PluralRules(lang).select(v.n)]??x.other;return x.replace(/\{(\w+)\}/g,(m,n)=>v[n]??m)};
 const dec=load('-dec',{}),ui=load('-ui',{}),hv=location.hash.slice(1);
 const S={view:['review','all'].includes(hv)?hv:ui.view||(D.some(d=>d.mark)?'review':'all'),group:'auto',sort:'score',limit:200,sel:ui.sel??null,closed:{}};
 const DECIDE={s:'shortlisted',a:'applied',r:'rejected',i:'ignored'},MODES=['remote','hybrid','onsite','unknown'];
@@ -153,7 +111,7 @@ const flags=d=>{const h=d.hints||{};return[...(h.years||[]),...(h.degree||[]),..
 const payTxt=d=>d.pay==='—'?'':d.pay+(d.pay_sort?' '+M.currency:'');
 function i18n(){document.documentElement.lang=lang;document.querySelectorAll('[data-t]').forEach(e=>{e.textContent=t[e.dataset.t]});
  $('q').placeholder=t.search;$('mode').querySelectorAll('option').forEach(o=>{o.textContent=o.value?(t.md[o.value]||o.value):t.any_mode});
- $('stats').textContent=`${M.n_rows} ${t.offers} · ${M.n_new} ${t.new}`+(M.errors?` · ${M.errors} ${t.errors}`:'')+(M.cut?` · ${M.cut} ${t.cut}`:'');$('lang').value=lang}
+ $('stats').textContent=[tr('offers',{n:M.n_rows}),tr('new',{n:M.n_new}),M.errors&&tr('errors',{n:M.errors}),M.cut&&tr('cut',{n:M.cut})].filter(Boolean).join(' · ');$('lang').value=lang}
 function keyOf(d,g){switch(g){case'category':return d.category||t.other;case'status':return status(d)?st(status(d)):t.not_reviewed;
  case'tag':return M.tags[d.tags[0]]||d.tags[0]||t.no_tag;case'search':return M.searches[d.searches[0]]||d.searches[0]||'—';
  case'board':return d.boards.split(',')[0];case'mode':return t.md[d.mode]||d.mode;case'field':return t.fd[d.field]||d.field;default:return''}}
@@ -171,16 +129,16 @@ function row(d){const f=flags(d).length,s=status(d);return `<div class="row${d.i
 <div class=s><span class="dot ${esc(d.mode)}"></span>${esc(d.company||'—')} · ${esc(d.age)}${dec[d.id]?`<span class="badge ${esc(s)}">${esc(st(s))}</span>`:''}</div>
 <div class=p>${f?`<span class=flagn>⚠ ${f}</span>`:''}</div></div>`}
 let shown=[];
-function tray(){const n=Object.keys(dec).length;$('tray').hidden=!n;$('copy').textContent=t.copy(n)}
+function tray(){const n=Object.keys(dec).length;$('tray').hidden=!n;$('copy').textContent=tr('copy',{n})}
 function drawList(){const r=visible(),g=group(),total=D.filter(inView).length;
  const ac=['new','posted','hide','unmarked','remote'].filter(id=>$(id).checked).length+($('mode').value?1:0)+($('board').value?1:0);
  $('vlabel').textContent='⚙ '+t.view+(ac?` · ${ac}`:'');
  const groups=new Map();for(const d of r.slice(0,g==='none'?S.limit:r.length)){const k=keyOf(d,g);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(d)}
  const keys=[...groups.keys()].sort((a,b)=>rank(g,a)-rank(g,b)||a.localeCompare(b));shown=[];
- let h=r.length<total?`<div class=lc>${t.shown(r.length,total)}</div>`:'';
+ let h=r.length<total?`<div class=lc>${tr('shown',{a:r.length,b:total})}</div>`:'';
  for(const k of keys){const items=groups.get(k);if(g!=='none')h+=`<div class=gh data-g="${esc(k)}"><span>${S.closed[k]?'▸':'▾'} ${esc(k)}</span><span>${items.length}</span></div>`;
   if(!S.closed[k]){h+=items.map(row).join('');shown.push(...items)}}
- if(g==='none'&&r.length>S.limit)h+=`<button class=more id=more>${t.more(r.length-S.limit)}</button>`;
+ if(g==='none'&&r.length>S.limit)h+=`<button class=more id=more>${tr('more',{n:r.length-S.limit})}</button>`;
  L.innerHTML=shown.length||h?h:`<div class=empty>${S.view==='review'?t.empty_review:t.empty}</div>`;
  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));tray();
  if(!shown.some(d=>d.id===S.sel))select(shown[0]?.id??null,false);else drawDetail()}
@@ -217,7 +175,7 @@ function decide(s){if(S.sel==null)return;const id=S.sel,old=dec[id];
 const quote=s=>"'"+String(s).replace(/'/g,"'\\''")+"'";
 async function copyAll(){const ids=Object.keys(dec);if(!ids.length)return;
  const cmd=ids.map(id=>`neetscape mark ${id} ${dec[id].s}`+(dec[id].n?` --note ${quote(dec[id].n)}`:'')).concat(['neetscape report']).join('\n');
- try{await navigator.clipboard.writeText(cmd);toast(t.copied(ids.length))}catch(e){prompt('',cmd)}}
+ try{await navigator.clipboard.writeText(cmd);toast(tr('copied',{n:ids.length}))}catch(e){prompt('',cmd)}}
 function toast(x){const e=$('toast');e.textContent=x;e.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.opacity=0,2200)}
 L.addEventListener('click',e=>{const g=e.target.closest('.gh');if(g){S.closed[g.dataset.g]=!S.closed[g.dataset.g];drawList();return}
  if(e.target.id==='more'){S.limit+=200;drawList();return}const r=e.target.closest('.row');if(r){select(+r.dataset.id,false);document.body.classList.add('reading')}});
@@ -257,11 +215,11 @@ _PAGE = """<!doctype html><html lang=en><head><meta charset=utf-8><meta name=vie
 <select id=mode><option value=""></option>{modes}</select><select id=board><option value="" data-t=any_board></option>{boards}</select>
 <label><input type=checkbox id=new><span data-t=f_new></span></label><label><input type=checkbox id=posted><span data-t=f_posted></span></label>
 <label><input type=checkbox id=unmarked><span data-t=f_unreviewed></span></label><label><input type=checkbox id=hide><span data-t=f_hide></span></label><hr>
-<select id=lang><option value=en>English</option><option value=de>Deutsch</option><option value=pl>Polski</option></select>
+<select id=lang>{langs}</select>
 <div class=help data-t=keys></div></div></details>
 </header>
 <div class=app><div id=list></div><div id=detail></div></div><div id=toast></div>
-<script type="application/json" id=meta>{meta}</script>
+<script type="application/json" id=meta>{meta}</script><script type="application/json" id=ui>{ui}</script>
 <script type="application/json" id=data>{data}</script><script>{js}</script></body></html>"""
 
 
@@ -335,6 +293,25 @@ def _script_json(value) -> str:
     return json.dumps(value, ensure_ascii=False).replace("<", "\\u003c")
 
 
+def is_plural(value) -> bool:
+    """A label's plural forms: a dict keyed by CLDR plural category (a dict of value labels has other keys)."""
+    return isinstance(value, dict) and bool(value) and set(value) <= PLURAL
+
+
+def labels() -> dict[str, dict]:
+    """The page's labels per language: every pack declaring `UI`, English first; a key a language leaves out (or a
+    value missing from a map such as `fd`) falls back to English."""
+    en = lang.pack("en").UI
+    out = {"en": en}
+    for code in lang.available():
+        ui = getattr(lang.pack(code), "UI", None)
+        if code == "en" or not ui:
+            continue
+        out[code] = {k: {**v, **ui[k]} if isinstance(v, dict) and not is_plural(v) and k in ui else ui.get(k, v)
+                     for k, v in en.items()}
+    return out
+
+
 def _options(values) -> str:
     return "".join(f'<option value="{_e(v)}">{_e(v)}</option>' for v in values)
 
@@ -343,7 +320,8 @@ def write_html(store: Store, profile: Profile, run_id: int, rows: list[dict], pa
     """Write the review page of a run's listing `rows` (and its marked offers) to `path`."""
     run = store.run(run_id)
     data = _data(store, run_id, rows)
-    meta = {"key": f"neetscape-{path.parent.name}", "currency": profile.currency, "lang": _LANG.get(profile.country.code, "en"),
+    ui, page_lang = labels(), _LANG.get(profile.country.code, "en")
+    meta = {"key": f"neetscape-{path.parent.name}", "currency": profile.currency, "lang": page_lang if page_lang in ui else "en",
             "statuses": [s for s in MARK_STATUSES if s != "ignored"], "n_rows": len(rows), "n_new": sum(d["is_new"] for d in rows),
             "errors": sum(r["errors"] or 0 for r in store.board_stats(run_id)),
             # listings this run did not fetch to their end (over a result cap, or a board's max_pages; see REPORT.md)
@@ -353,4 +331,5 @@ def write_html(store: Store, profile: Profile, run_id: int, rows: list[dict], pa
         run_id=run_id, css=_CSS, js=_JS, label=_e(profile.raw.get("label") or "neetscape"), started=_e(run["started_at"][:16]),
         n_marked=sum(1 for d in data if d["mark"]), n_rows=len(rows), modes=_options(["remote", "hybrid", "onsite", "unknown"]),
         boards=_options(sorted({b for d in data for b in d["boards"].split(",") if b})), meta=_script_json(meta),
-        data=_script_json(data)))
+        data=_script_json(data), ui=_script_json(ui),
+        langs="".join(f'<option value="{_e(c)}">{_e(u.get("name", c))}</option>' for c, u in ui.items())))

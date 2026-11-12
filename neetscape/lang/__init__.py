@@ -42,6 +42,12 @@ nothing). Optional keys:
 - `placeholder_companies`: company names that hide the employer ("confidential", "poufne"), dropped from a
   posting's company field (lower case, whole name).
 
+A pack may also define `UI`, the labels of REPORT.html in its language (`neetscape/lang/en.py` lists every key):
+plain strings with `{name}` placeholders, maps of value labels (`st`, `fd`, `md`, `wt`), and plurals as dicts keyed
+by CLDR plural category (`{"one": "{n} oferta", "few": "{n} oferty", "many": "{n} ofert", "other": "{n} oferty"}`,
+chosen in the page by `Intl.PluralRules`; `other` is required). The page offers every pack with `UI`; a key a
+language leaves out falls back to English.
+
 The keys of `function` and `domain` are language-neutral (`infer.FUNCTIONS`, `infer.DOMAINS`); a new language
 maps its words onto them and needs no change outside its own module.
 
