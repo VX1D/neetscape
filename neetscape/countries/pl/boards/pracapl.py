@@ -18,6 +18,9 @@ URLs (verified live 2026-11-12; robots.txt allows `/s-*.html` and offer pages, t
 - `sort=date` newest first (the default order is "date" on some listings and "accuracy" on others, so it is always sent);
 - 50 cards per page (4 full pages checked; no page-size parameter), so a shorter page is the last; a page past the
   last is an empty listing (HTTP 200, no cards);
+- no result cap (verified live 2026-11-12): the whole board (`/oferty-pracy.html`, "z 228" pages) is served to its
+  short last page 228 (24 cards), page 229 is empty; Warszawa ("z 47") ends on page 47 (7 cards). `max_pages` (500,
+  about twice the whole board) is only a safety stop;
 - above the cards, on every page, up to 2 "Oferta tygodnia" cards (`listing-v2__item--week`, a paid product, out of
   date order: `promoted`); highlighted cards (`--highlight`, 1-12 per page) keep their place in the date order, so
   they are not promoted. Page 1 of a keyword listing may end with up to 5 "Oferty urzędu pracy" (labour-office offers
@@ -30,6 +33,12 @@ URLs (verified live 2026-11-12; robots.txt allows `/s-*.html` and offer pages, t
   shown "przed chwilą" had JSON-LD `datePosted` two weeks earlier); the page footer's "Numer wydania: N" is the
   server's day as days since 1970-01-01 (20769 = 2026-11-12), so `published` = that day minus the whole days shown
   (hours count as today: up to one day off around midnight); without the footer `published` stays unknown;
+- first publication (checked 2026-11-12): the result page carries no other date (a card has only the relative
+  date; no data attribute, no JSON). The offer page's JSON-LD `datePosted` (read by `details`) is older than the
+  listing date (4 of 4 cards shown today: 10-22, 10-23, 10-23, 10-29) and `validThrough` is 20-30 days after it,
+  so it starts the current publication period; whether it is the first publication cannot be told from public
+  pages (the offer page shows no date, and offer ids are not in `datePosted` order: 11597278 -> 10-23,
+  11605810 -> 10-22);
 - each card ships title, employer, location (`title` attribute "Polska, <voivodeship>, <town>[, street]"), the work
   modes, contract types, levels, work time, the salary as published ("4 850 - 6 000 zł brutto/mies.") when given,
   and a teaser of the description; no category.
@@ -118,12 +127,10 @@ def _place(body: str) -> list[str]:
 class PracaPl(Board):
     name = "pracapl"
     caps = Caps(keywords=True, remote="filter", city=True, radius=True, worktime=True, sort_newest=True, page_size=50,
-                max_pages=20, huge_unfiltered=True, transport="http")
+                max_pages=500, huge_unfiltered=True, transport="http")
     accept = "text/html"
 
     def page_url(self, r: Request, page: int) -> str | None:
-        if page > self.caps.max_pages:
-            return None
         kw = keyword_slug(r.keyword or "")
         city = slug(r.params["city"]) if r.params.get("city") else ""
         path = (f"s-{kw}" + (f"_m-{city}" if city else "")) if kw else (city or "oferty-pracy")

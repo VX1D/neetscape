@@ -60,7 +60,7 @@ def test_page_urls():
     remote = Request("gowork", "t", None, {"remote": True})
     assert BOARD.page_url(remote, 1) == "https://www.gowork.pl/praca/zdalna;tr"
     assert BOARD.page_url(remote, 3) == "https://www.gowork.pl/praca/zdalna;tr/3;pg"
-    assert BOARD.page_url(remote, BOARD.caps.max_pages + 1) is None
+    assert BOARD.page_url(remote, BOARD.caps.max_pages + 1)  # never None: max_pages is a safety stop
 
 
 def test_requests_remote_everything_but_not_whole_board():
@@ -68,6 +68,19 @@ def test_requests_remote_everything_but_not_whole_board():
     assert [r.params for r in reqs] == [{"remote": True}] and not warns
     reqs, warns = BOARD.requests(Search(id="any", label="any", where=Where(remote=False), keywords=None))
     assert not reqs and warns  # 26 000 offers without a keyword or a city
+
+
+def test_phrases_starting_with_praca():
+    """Page 1 of a `/praca/praca...;st` search redirects to itself: the leading word "praca" is dropped."""
+    assert [gowork.keyword_slug(p) for p in ("praca dodatkowa", "Praca  zdalna", "praca praca biurowa", "pracownik biurowy")] \
+        == ["dodatkowa", "zdalna", "biurowa", "pracownik-biurowy"]
+    assert gowork.keyword_slug("praca") == gowork.keyword_slug("pracadodatkowa") == ""
+    r = Request("gowork", "t", "praca dodatkowa", {"remote": True})
+    assert BOARD.page_url(r, 1) == "https://www.gowork.pl/praca/dodatkowa;st/zdalna;tr"
+    s = Search(id="side", label="side", where=Where(remote=True), keywords=("praca dodatkowa", "praca", "helpdesk"))
+    reqs, warns = BOARD.requests(s)
+    assert [r.keyword for r in reqs] == ["praca dodatkowa", "helpdesk"]
+    assert len(warns) == 1 and "'praca'" in warns[0] and "skipped for 'side'" in warns[0]
 
 
 def test_page_without_payload_raises():

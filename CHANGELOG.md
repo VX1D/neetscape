@@ -11,6 +11,15 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
   upgrading, run `neetscape eval` once (`list` and `report` warn otherwise).
 - REPORT.md lists requests stopped at a page limit next to "Capped", labelled `--limit-pages (deliberate)` or
   `the board's max_pages`; REPORT.html shows the number of cut listings.
+- justjoin.it, rocketjobs.pl: a listing shows at most 10 000 results (200 pages); a larger request is split by
+  experience level, then by category, read from the page.
+- pracuj, gowork, praca.pl, theprotocol, nofluffjobs: no result cap; `max_pages` is a safety stop of about twice
+  the whole board, and a listing ends on its own last page (pracuj, praca.pl and theprotocol city listings were
+  cut short before).
+- gowork: a phrase starting with "praca" no longer fails with HTTP 302 (the board redirects page 1 to itself); the
+  leading "praca" is dropped and an empty phrase is skipped with a warning. The posting's first publication
+  date replaces the listing's refresh date (`Board.posting_date_is_first`).
+- useme: a search without phrases lists every open project (~35 pages) instead of being skipped as too large.
 - Result caps: a board that shows at most N results per search declares `result_cap`; when a request
   matches more, the crawler splits it into narrower requests built from its first page (recursively) and
   fetches each to its end; requests that cannot be narrowed are listed as "Capped" in `REPORT.md`.

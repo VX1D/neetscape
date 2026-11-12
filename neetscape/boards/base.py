@@ -52,6 +52,11 @@ class Request:
         return request_key(self.board, self.keyword, self.params)
 
 
+def narrowed(r: Request, param: str, values) -> list[Request]:
+    """One copy of `r` per value, with `params[param]` set to it: the sub-requests of a `Board.split()`."""
+    return [replace(r, params={**r.params, param: v}) for v in values]
+
+
 class Board:
     name: ClassVar[str]
     caps: ClassVar[Caps]
@@ -59,6 +64,9 @@ class Board:
     headers: ClassVar[dict] = {}              # http: extra request headers (e.g. a public API key)
     content_type: ClassVar[str] = ""          # http: Content-Type of the `post_body` of a POST search
     min_interval: ClassVar[dict] = {}         # host -> seconds between requests, for boards that throttle hard
+    posting_date_is_first: ClassVar[bool] = False  # the posting's date (JSON-LD datePosted) is the first publication,
+    #                                               earlier than the listing's refresh date: `details` replaces it
+    #                                               and later sightings of the card keep it
     posting_selector: ClassVar[str] = ""      # CSS selector of the posting body on the rendered offer page, used
     #                                           when `posting()` finds no text; empty: never fall back to rendering
 

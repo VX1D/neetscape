@@ -138,7 +138,10 @@ their posting is fetched (stage 2, below) and settles the mode; with `unknown: d
 Board quirks worth knowing when reading results: Indeed shows only one public page (15 offers) per
 request, and its "Zdalnie" tag is often hybrid in the posting; gowork lists only its own postings
 (copies of other sites' ads are skipped); useme is freelance projects with a budget per project
-(closed projects skipped); solid.jobs is downloaded whole (every division) and filtered locally.
+(closed projects skipped; a search without phrases lists every open project); solid.jobs is downloaded whole (every division) and filtered locally. justjoin.it and rocketjobs.pl show at most
+10 000 results per search; larger searches are split automatically (by experience level, then category).
+gowork drops a leading "praca" from phrases (its page 1 for such phrases redirects to itself), and its
+posting gives the first publication date, which replaces the listing's refresh date once fetched.
 
 ## 3. Run
 

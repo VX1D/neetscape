@@ -23,7 +23,7 @@ def test_page_urls():
     assert B.page_url(Request("theprotocol", "t", None, {"remote": True}), 2) == "https://theprotocol.it/filtry/zdalna;rw?pageNumber=2"
     assert B.page_url(Request("theprotocol", "t", None, {"city": "Kraków"}), 1) == "https://theprotocol.it/filtry/krakow;wp"
     assert B.page_url(Request("theprotocol", "t", "asystent", {"city": "Kraków"}), 1) == "https://theprotocol.it/filtry/krakow;wp?kw=asystent"
-    assert B.page_url(Request("theprotocol", "t", None, {"remote": True}), B.caps.max_pages + 1) is None
+    assert B.page_url(Request("theprotocol", "t", None, {"remote": True}), B.caps.max_pages + 1)  # never None
     assert B.caps.keywords and B.caps.sort_newest
 
 

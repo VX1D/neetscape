@@ -135,7 +135,7 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
             for o in offers:
                 _apply_pushed(o, r)
                 infer.fill_from_text(o, fx, **text_kw)
-            new, known = store.ingest(offers, run_id, req_id, page)
+            new, known = store.ingest(offers, run_id, req_id, page, board.posting_date_is_first)
             found += new
             if progress:
                 progress.add(pages=1, offers=new)

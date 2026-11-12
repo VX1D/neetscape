@@ -4,6 +4,9 @@ URLs (verified live 2026-11-12): remote `/praca/<kw>;kw/praca%20zdalna;wm,home-o
 `/praca/<kw>;kw/<city>;wp?rd=<km>&pn=N` (Kraków: 4233 offers with rd=0, 4982 with rd=30; city listings also
 hold offers marked "whole Poland"), no keyword (`/praca/praca%20zdalna;wm,home-office`: 2459 remote offers).
 50 grouped offers per page (`rop`), but the last page is not reliably short, so there is no short-page stop.
+- no result cap (verified live 2026-11-12): the whole board (`/praca`, 47 755 offers) is served to its natural end,
+  page 956 (5 test offers) then an empty page 957; Warszawa +30 km pages 100 and 150 are full. A listing ends on
+  its empty page; `max_pages` (2000, about twice the whole board's 956 pages) is only a safety stop;
 - part-time: `ws=1,2` (część etatu, dodatkowa / tymczasowa): 316 of 2459 remote offers;
 - order: without a keyword the listing is newest first (strictly by `lastPublicated`, the date the card shows).
   With a keyword it is by relevance; `sc=0` sorts by day but by relevance within a day, so a page of known
@@ -74,7 +77,7 @@ def level(values) -> str:
 class Pracuj(Board):
     name = "pracuj"
     caps = Caps(keywords=True, remote="filter", city=True, radius=True, worktime=True, sort_newest=True, page_size=0,
-                max_pages=60, transport="browser_fetch", origin="https://www.pracuj.pl/")
+                max_pages=2000, transport="browser_fetch", origin="https://www.pracuj.pl/")
 
     def requests(self, s):
         """Only listings without a keyword are newest first (see the module docstring)."""
@@ -83,8 +86,6 @@ class Pracuj(Board):
                 for r in reqs], warnings
 
     def page_url(self, r, page):
-        if page > self.caps.max_pages:
-            return None
         kw = f"{q(r.keyword)};kw/" if r.keyword else ""
         query = {"ws": "1,2"} if r.params.get("part_time") else {}
         if page > 1:

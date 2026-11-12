@@ -30,10 +30,9 @@ from __future__ import annotations
 import json
 import re
 import urllib.parse
-from dataclasses import replace
 
 from .... import infer
-from ....boards.base import Board, Caps, Request, register
+from ....boards.base import Board, Caps, Request, narrowed, register
 from ....boards.pages import clean_spaces, epoch_or_iso_date, pay_range, slug
 from ....model import Offer
 from ....posting import html_to_text
@@ -124,7 +123,7 @@ class Olx(Board):
         """One request per subcategory of the request's category, read from the page's category tree."""
         here = "praca" + ("/" + r.params["category"] if r.params.get("category") else "")
         subs = [c["path"].removeprefix("praca/") for c in _page(raw).get("categories") or [] if c.get("parent") == here]
-        return [replace(r, params={**r.params, "category": c}) for c in sorted(subs)]
+        return narrowed(r, "category", sorted(subs))
 
     def fetch_js(self) -> str:
         return FETCH_JS

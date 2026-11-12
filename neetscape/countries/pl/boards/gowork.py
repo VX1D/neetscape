@@ -6,7 +6,13 @@ URLs (verified live 2026-11-12): path segments `/praca/[<kw>;st/][<city>;l/][<ty
 the order the board's own `seo.next` links use (`krakow;l/2;pg/50;km`, `czesc-etatu;e/zdalna;tr/2;pg`).
 - keywords: `<slug>;st` (the search box sends the slug of the typed text: "automatyzacja procesów" ->
   `automatyzacja-procesow;st`, 4 offers). It searches the board's position names and titles; a slug close to a
-  known position is redirected (302) to it ("python" -> `programista-python;st`, 24 offers);
+  known position is redirected (302) to it ("python" -> `programista-python;st`, 24 offers). A slug starting with
+  "praca" is an alias of a filter ("praca-zdalna;st" -> `zdalna;tr`, "praca;st" -> `praca;l`); any other
+  (`praca-dodatkowa;st`, `praca-biurowa;st`, `pracadodatkowa;st`, also with `zdalna;tr`, `1;pg` or a radius) gets a
+  302 to itself on page 1 (in a browser too: "Failed to fetch"), while page 2 is served (`praca-dodatkowa;st/2;pg`:
+  144 results). So the word "praca" is dropped from the start of a phrase ("praca dodatkowa" -> `dodatkowa;st`,
+  493 results, a broader search; "praca biurowa" -> `biurowa;st`), and a phrase with nothing left is skipped with a
+  warning (verified live 2026-11-12; "automatyzacja" and "helpdesk" were served with 200 that day, 0 remote results);
 - remote: `zdalna;tr` (464 offers; the `workMode` checkbox "Zdalna"): it keeps offers that list "Zdalna" among
   their modes, often next to "Stacjonarna"/"Hybrydowa"; the mode is the most remote one listed. "Mobilna"
   (field work) is on site;
@@ -18,13 +24,22 @@ the order the board's own `seo.next` links use (`krakow;l/2;pg/50;km`, `czesc-et
   of other sites' ads), then roughly by `publishedAt`, not strictly (a page of segment 5 mixes 11-03 and 11-12):
   no newest-first order. `publishedAt` is the last refresh; the posting date (`createdAt`, JSON-LD `datePosted`
   on the offer page) can be weeks older. No sort parameter was found;
+- dates (verified live 2026-11-12): a listing result carries only `publishedAt` (no `createdAt` or other date in
+  the result page), so `published` is the last refresh. The offer page's JSON-LD `datePosted` is its `createdAt`,
+  the first publication (3 of 3 sampled offers refreshed 11-11/11-12: datePosted 10-15, 11-10, 10-29);
 - the whole board is 26 300 offers (658 pages): about 10 600 own postings (segments 6 and 5, pages 1-265, refreshed
   in the last ~6 weeks; employers post them on gowork: 12 of 15 sampled offers take the application on gowork,
   3 redirect to the employer's ATS), then ~14 000 `/oferta-zewnetrzna/` copies of lento.pl / nuzle.pl ads (segment 2,
   all with the same import date, no work mode, company often "Ogłoszenie zewnętrzne"). The copies are skipped;
+- no result cap (verified live 2026-11-12): page 600 of the whole board is served (copies), Kraków (1423 results)
+  is served to its last page 36 (23 copies), page 37 is empty, the remote listing (464) ends on page 12 (15 own
+  offers). A listing's own postings end on its first page of copies only, which parses to no offers and ends the
+  request; `max_pages` (1400, about twice the whole board's 658 pages) is only a safety stop;
 - pay: `netSalary` / `grossSalary` {min, max, currency "zł" or "€", period m/h/d} in hundredths (900000 = 9000 zł).
 """
 from __future__ import annotations
+
+import re
 
 from ....boards.base import Board, Caps, Request, register
 from ....boards.pages import (clean_spaces, epoch_or_iso_date, labelled_contracts, most_remote_mode, nearest_radius,
@@ -89,6 +104,16 @@ def pay_text(o: dict) -> str:
     return "; ".join(out)
 
 
+def keyword_slug(phrase: str) -> str:
+    """The `;st` slug of a phrase without a leading word "praca" ("praca dodatkowa" -> "dodatkowa"); '' when nothing
+    searchable is left or the slug still starts with "praca" ("praca", "pracadodatkowa"): the board answers page 1 of
+    every `/praca/praca...;st` search with a redirect to itself."""
+    kw = slug(phrase)
+    while re.match(r"praca(-|$)", kw):
+        kw = kw[len("praca"):].lstrip("-")
+    return "" if kw.startswith("praca") else kw
+
+
 def snippet(o: dict) -> str:
     s = o.get("aiSummary") or {}
     parts = [o.get("title") or ""] + [s.get(k) or "" for k in ("responsibilities", "skills", "experience", "benefits")]
@@ -98,15 +123,22 @@ def snippet(o: dict) -> str:
 @register
 class GoWork(Board):
     name = "gowork"
+    posting_date_is_first = True  # JSON-LD datePosted = createdAt (first publication); the listing has the refresh date
     caps = Caps(keywords=True, remote="filter", city=True, radius=True, worktime=True, sort_newest=False, page_size=40,
-                max_pages=15, huge_unfiltered=True, transport="http")
+                max_pages=1400, huge_unfiltered=True, transport="http")
     accept = "text/html,application/xhtml+xml"
 
+    def requests(self, s):
+        """Phrases with nothing searchable once the leading "praca" is dropped are skipped (see `keyword_slug`)."""
+        reqs, warnings = super().requests(s)
+        bad = sorted({r.keyword for r in reqs if r.keyword and not keyword_slug(r.keyword)})
+        warnings += [f"{self.name}: phrase {kw!r} cannot be searched (the board loops on '/praca/praca...' result "
+                     f"pages); skipped for '{s.id}'" for kw in bad]
+        return [r for r in reqs if r.keyword not in bad], warnings
+
     def page_url(self, r: Request, page: int) -> str | None:
-        if page > self.caps.max_pages:
-            return None
         parts = []
-        kw = slug(r.keyword or "")
+        kw = keyword_slug(r.keyword or "")
         if kw:
             parts.append(f"{kw};st")
         if r.params.get("city"):

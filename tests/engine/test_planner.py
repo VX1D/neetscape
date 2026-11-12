@@ -12,11 +12,11 @@ def test_planner_pushdown_and_warnings():
     assert by[("justjoin", "kw")].pushed == {"keyword", "remote"} and by[("justjoin", "kw")].params["sort"] == "newest"
     assert by[("linkedin", "kw")].pushed == {"keyword"}               # its remote filter is ignored by the API: checked locally
     assert by[("bulldogjob", "kw")].keyword is None                   # no keyword support: fetch all, filter locally
-    assert ("pracuj", "all") in by and ("useme", "all") not in by      # useme: too large without keywords
+    assert ("pracuj", "all") in by and ("useme", "all") in by          # useme: its open projects are ~35 pages
     assert by[("linkedin", "krk")].params["city"] == "Kraków"
     assert ("solidjobs", "krk") in by or ("solidjobs", "kw") in by     # whole-board download serves any search
     assert ("useme", "krk") not in by                                 # remote-only board: no city search
-    assert any("too large" in w for w in p.warnings) and any("no city" in w for w in p.warnings)
+    assert any("no city" in w for w in p.warnings)
     keys = [r.key for r in p.requests]
     assert len(keys) == len(set(keys))                                # identical requests are fetched once
 

@@ -19,7 +19,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-from .model import Offer, canonical_contract, norm, norm_company
+from .model import Offer, canonical_contract, norm, norm_company, parse_date
 
 
 def _rename_contracts(db: sqlite3.Connection) -> None:
@@ -231,13 +231,24 @@ class Store:
                     pay_min=o.pay_min, pay_max=o.pay_max, published=o.published.isoformat() if o.published else None,
                     promoted=int(o.promoted), snippet=o.snippet[:1000], description=o.description)
 
-    def _upsert(self, o: Offer, run_id: int) -> tuple[int, bool]:
+    def _posting_set_published(self, cur: sqlite3.Row, card_published: str | None) -> bool:
+        """The stored `published` came from the offer's posting and is earlier than the card's date."""
+        stored, card = parse_date(cur["published"]), parse_date(card_published)
+        if not (stored and card and stored < card):
+            return False
+        row = self.db.execute("SELECT jsonld FROM details WHERE offer_id=?", (cur["id"],)).fetchone()
+        return bool(row and row[0]) and json.loads(row[0]).get("published") == cur["published"]
+
+    def _upsert(self, o: Offer, run_id: int, posting_date_is_first: bool = False) -> tuple[int, bool]:
         """Insert or update one offer; returns (offer id, known from an earlier run). An update keeps stored
-        values the new sighting lacks."""
+        values the new sighting lacks and, with `posting_date_is_first` (`Board.posting_date_is_first`), the first
+        publication date read from the posting over the card's later refresh date."""
         values = self._offer_values(o)
         cur = self.db.execute("SELECT * FROM offers WHERE board=? AND key=?", (o.board, o.key)).fetchone()
         if cur:
             merged = {k: (cur[k] if v in _EMPTY else v) for k, v in values.items()}
+            if posting_date_is_first and self._posting_set_published(cur, values["published"]):
+                merged["published"] = cur["published"]
             self.db.execute(f"UPDATE offers SET {', '.join(f'{k}=?' for k in merged)}, last_seen_run=?, gone_at=NULL WHERE id=?",
                             (*merged.values(), run_id, cur["id"]))
             return cur["id"], cur["first_seen_run"] < run_id
@@ -248,12 +259,13 @@ class Store:
             (o.board, o.key, *values.values(), self._cluster(o, run_id), run_id, run_id)).lastrowid
         return offer_id, False
 
-    def ingest(self, offers: list[Offer], run_id: int, request_id: int, page: int) -> tuple[int, set[str]]:
+    def ingest(self, offers: list[Offer], run_id: int, request_id: int, page: int,
+               posting_date_is_first: bool = False) -> tuple[int, set[str]]:
         """Upsert offers and record the sighting. Returns (offers new to this request, keys of the offers
-        known from earlier runs)."""
+        known from earlier runs). `posting_date_is_first`: the board's flag (see `_upsert`)."""
         new_in_request, known = 0, set()
         for o in offers:
-            offer_id, seen_before = self._upsert(o, run_id)
+            offer_id, seen_before = self._upsert(o, run_id, posting_date_is_first)
             if seen_before:
                 known.add(o.key)
             new_in_request += self.db.execute("INSERT OR IGNORE INTO sightings(offer_id, request_id, page) VALUES (?,?,?)",
