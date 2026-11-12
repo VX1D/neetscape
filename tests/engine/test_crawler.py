@@ -9,7 +9,7 @@ from neetscape import crawler
 from neetscape.boards.base import Caps
 from neetscape.boards import fetch as fetch_mod
 from neetscape.boards.fetch import FetchError, Http, Limiter
-from neetscape.store import Store
+from neetscape.store import PAGE_LIMIT_ASKED, Store
 
 from conftest import ALL_REMOTE, run_crawl
 
@@ -76,7 +76,7 @@ def test_cap_without_a_total_is_reached_on_the_boards_last_page(fake, monkeypatc
 
     rid = db.start_run({}, [])                                           # --limit-pages below the board's last page
     run_crawl(db, rid, fake, [ALL_REMOTE], limit_pages=2, incremental=False)
-    assert requests_by(db, rid)[""]["stop_reason"] == "page limit"
+    assert requests_by(db, rid)[""]["stop_reason"] == PAGE_LIMIT_ASKED
 
 
 def test_a_short_listing_under_the_cap_is_not_split(fake, monkeypatch, tmp_path):
@@ -306,7 +306,7 @@ def test_no_end_probe_below_the_last_page(fake, monkeypatch, tmp_path):
     db = Store(tmp_path / "j.db")
     rid = db.start_run({}, [])
     run_crawl(db, rid, fake, [ALL_REMOTE], limit_pages=3)
-    assert calls == ["@/1", "@/2", "@/3"] and requests_by(db, rid)[""]["stop_reason"] == "page limit"
+    assert calls == ["@/1", "@/2", "@/3"] and requests_by(db, rid)[""]["stop_reason"] == PAGE_LIMIT_ASKED
 
 
 def newest_windows(r):

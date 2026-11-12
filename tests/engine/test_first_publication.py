@@ -23,7 +23,7 @@ def run_once(board, store: Store, r: Request, pages: dict[int, list[Offer]], mon
     run_id = store.start_run({}, [])
     search = Search(id=r.search_id, label=r.search_id, where=Where(remote=True), keywords=None)
     asyncio.run(crawler._run_request(board, FakeFetcher(pages), r, search, store, run_id, fx={}, limit_pages=None,
-                                     incremental=True, record=None))
+                                     incremental=True, record=None, parsed=set(), pauses=crawler.RETRY_PAUSES))
     return run_id
 
 
