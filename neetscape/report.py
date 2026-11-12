@@ -28,17 +28,16 @@ from .html_report import write_html
 from .model import age_label, norm_company, parse_date
 from .pay import pay_label
 from .profile import Profile
-from .store import GONE, HIDDEN, Store
+from .store import GONE, HIDDEN, Store, has_verdict
 
-_LISTING_SQL = """
+_LISTING_SQL = f"""
     SELECT o.*, e.search_id, e.score, e.why, c.first_seen_run = :run AS is_new,
            (SELECT t.status FROM tracked t JOIN offers o3 ON o3.url = t.url
             WHERE o3.cluster_id = o.cluster_id ORDER BY t.id DESC LIMIT 1) AS mark,
-           (SELECT GROUP_CONCAT(DISTINCT o2.board) FROM offers o2 WHERE o2.cluster_id = o.cluster_id AND (
-                EXISTS (SELECT 1 FROM evals e2 WHERE e2.run_id = :run AND e2.offer_id = o2.id) OR
-                EXISTS (SELECT 1 FROM rejections j WHERE j.run_id = :run AND j.offer_id = o2.id))) AS boards
+           (SELECT GROUP_CONCAT(DISTINCT o2.board) FROM offers o2
+            WHERE o2.cluster_id = o.cluster_id AND {has_verdict('o2.id')}) AS boards
     FROM evals e JOIN offers o ON o.id = e.offer_id JOIN clusters c ON c.id = o.cluster_id
-    WHERE e.run_id = :run {conditions} ORDER BY o.id"""
+    WHERE e.run_id = :run {{conditions}} ORDER BY o.id"""
 
 _SORT_KEYS = {
     "score": lambda d: -d["score"],

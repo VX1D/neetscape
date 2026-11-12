@@ -99,6 +99,17 @@ _CURRENT_CTE = """
                       WHERE o.gone_at IS NULL OR o.gone_at >= COALESCE((SELECT MIN(started_at) FROM runs WHERE id > :run), '~'))"""
 
 
+# Columns of `run_offers` / `current_offers` beside the offer's own (offers `o`, clusters `c`).
+_CLUSTER_AND_POSTING = "c.first_seen_run AS cluster_first_run, (SELECT d.text FROM details d WHERE d.offer_id = o.id) AS posting"
+
+
+def has_verdict(offer: str) -> str:
+    """SQL condition: the offer `offer` (an SQL expression of its id) has a verdict of run `:run`, passing
+    (`evals`) or failing (`rejections`)."""
+    return (f"(EXISTS (SELECT 1 FROM evals ve WHERE ve.run_id = :run AND ve.offer_id = {offer}) OR "
+            f"EXISTS (SELECT 1 FROM rejections vj WHERE vj.run_id = :run AND vj.offer_id = {offer}))")
+
+
 def now() -> str:
     return dt.datetime.now().isoformat(timespec="seconds")
 
@@ -266,30 +277,28 @@ class Store:
     def current_offers(self, run_id: int, offer_id: int | None = None) -> list[sqlite3.Row]:
         """The current state as of `run_id` (see `_CURRENT_CTE`), optionally one offer, in `run_offers`' shape;
         `keywords` are those of every request up to the run that found the offer."""
-        return self.db.execute(f"""
-            WITH {_CURRENT_CTE}
+        return self._with_current(f"""
             SELECT o.*, (SELECT GROUP_CONCAT(DISTINCT r.keyword) FROM sightings s JOIN requests r ON r.id = s.request_id
-                         WHERE s.offer_id = o.id AND r.run_id <= :run) AS keywords,
-                   c.first_seen_run AS cluster_first_run, (SELECT d.text FROM details d WHERE d.offer_id = o.id) AS posting
+                         WHERE s.offer_id = o.id AND r.run_id <= :run) AS keywords, {_CLUSTER_AND_POSTING}
             FROM offers o JOIN cur ON cur.offer_id = o.id JOIN clusters c ON c.id = o.cluster_id
-            {"WHERE o.id = :offer" if offer_id else ""} ORDER BY o.id""", {"run": run_id, "offer": offer_id}).fetchall()
+            {"WHERE o.id = :offer" if offer_id else ""} ORDER BY o.id""", run_id, offer=offer_id).fetchall()
 
     def unevaluated(self, run_id: int) -> int:
         """Offers of the current state as of `run_id` with no verdict of that run (stored before they became
         current, or by a neetscape that evaluated only the run's sightings); `neetscape eval` settles them."""
-        return self.db.execute(f"""
-            WITH {_CURRENT_CTE} SELECT COUNT(*) FROM cur
-            WHERE NOT EXISTS (SELECT 1 FROM evals e WHERE e.run_id = :run AND e.offer_id = cur.offer_id)
-              AND NOT EXISTS (SELECT 1 FROM rejections j WHERE j.run_id = :run AND j.offer_id = cur.offer_id)""",
-                               {"run": run_id}).fetchone()[0]
+        return self._with_current(f"SELECT COUNT(*) FROM cur WHERE NOT {has_verdict('cur.offer_id')}", run_id).fetchone()[0]
+
+    def _with_current(self, sql: str, run_id: int, **params) -> sqlite3.Cursor:
+        """Execute `sql` after the current-state CTEs as of `run_id` (`_CURRENT_CTE`, ending in `cur(offer_id)`);
+        `:run` is bound to `run_id`, `params` to their own names."""
+        return self.db.execute(f"WITH {_CURRENT_CTE} {sql}", {"run": run_id, **params})
 
     def run_offers(self, run_id: int | None, offer_id: int | None = None) -> list[sqlite3.Row]:
         """Offers sighted in a run (any run when `run_id` is None), optionally one offer, with the keywords of
         the requests that found them (`keywords`), their cluster's first run (`cluster_first_run`) and the fetched
         posting text (`posting`, NULL until `details`)."""
         return self.q(f"""
-            SELECT o.*, GROUP_CONCAT(DISTINCT r.keyword) AS keywords, c.first_seen_run AS cluster_first_run,
-                   (SELECT d.text FROM details d WHERE d.offer_id = o.id) AS posting
+            SELECT o.*, GROUP_CONCAT(DISTINCT r.keyword) AS keywords, {_CLUSTER_AND_POSTING}
             FROM offers o JOIN sightings s ON s.offer_id = o.id JOIN requests r ON r.id = s.request_id
             JOIN clusters c ON c.id = o.cluster_id
             WHERE (? IS NULL OR r.run_id = ?) {"AND o.id = ?" if offer_id else ""} GROUP BY o.id""",
@@ -376,9 +385,8 @@ class Store:
         state as of `run_id` ("yes"), marked "gone", or "no longer seen" (its board's latest crawl did not find
         it). `hidden=False` leaves out rejected/ignored marks."""
         hide = "" if hidden else "WHERE t.status NOT IN (" + ",".join(f"'{s}'" for s in HIDDEN) + ")"
-        return self.db.execute(f"""
-            WITH {_CURRENT_CTE}
+        return self._with_current(f"""
             SELECT t.*, o.title, o.company,
                    CASE WHEN o.id IN (SELECT offer_id FROM cur) THEN 'yes' WHEN o.gone_at IS NOT NULL THEN 'gone'
                         ELSE 'no longer seen' END AS listed
-            FROM tracked t LEFT JOIN offers o ON o.url = t.url {hide} ORDER BY t.at""", {"run": run_id or 0}).fetchall()
+            FROM tracked t LEFT JOIN offers o ON o.url = t.url {hide} ORDER BY t.at""", run_id or 0).fetchall()
