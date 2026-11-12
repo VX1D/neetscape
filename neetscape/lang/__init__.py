@@ -15,6 +15,10 @@ Each module `<code>.py` (ISO 639-1) defines
                      "office": [...]},                  # required presence: client visits, business travel, office days
         "qualifier": [regex, ...],                     # optional: words that open a title's qualifier
         "gender":    [regex, ...],                     # optional: bracketed gender markers written as words
+        "choice":    [regex, ...],                     # optional: words offering options ("hybrid or remote")
+        "pay":       {"hour": [...], "day": [...], "week": [...], "year": [...], "month": [...],
+                      "words": [...], "thousand": [...], "range": [...]},  # optional: pay text (neetscape/pay.py)
+        "placeholder_companies": [str, ...],           # optional: names a posting uses to hide its employer
     }
 
 Required keys: `mode`, `worktime`, `contract`, `level`, `function`, `domain` (`lang.FIELDS`; a value with no
@@ -28,6 +32,15 @@ nothing). Optional keys:
 - `gender`: gender markers in words, matched inside brackets ("all genders", German "gn", "m/w/div").
   Bracketed lists of single letters ("(m/w/d)", "(k/m)", "(f/m/x)") are recognised in every language. A
   gender marker is removed before the split, so it never ends the head ("Sachbearbeiter (m/w/d) Buchhaltung").
+- `choice`: words that offer options within a sentence (Polish "lub", English "or", German "oder"); a sentence
+  naming hybrid work beside remote work with one of them offers remote (`infer.remote_proof`). " / " counts
+  in every language;
+- `pay`: how pay text names its period (`hour`, `day`, `week`, `year`; `month` only for words never used for
+  another period), pay words next to an amount without a currency (`words`: gross, net, salary), the thousand
+  suffix (`thousand`: "k", "tys.") and the word between two amounts (`range`: "to", "do", "bis"). These are
+  read from every pack at once: units are unambiguous across languages and a board's text mixes them;
+- `placeholder_companies`: company names that hide the employer ("confidential", "poufne"), dropped from a
+  posting's company field (lower case, whole name).
 
 The keys of `function` and `domain` are language-neutral (`infer.FUNCTIONS`, `infer.DOMAINS`); a new language
 maps its words onto them and needs no change outside its own module.
@@ -43,7 +56,7 @@ from __future__ import annotations
 import importlib
 
 FIELDS = ("mode", "worktime", "contract", "level", "function", "domain")  # read from free text (infer.ORDER)
-DEFAULT = ("pl", "en")  # free text of unknown origin (historical: the tool started with Polish boards)
+DEFAULT = ("en",)  # free text whose country is unknown; callers pass the country's languages when they know it
 HINTS = ("fully_remote", "hybrid", "years", "degree", "languages", "fixed_term", "office")
 
 

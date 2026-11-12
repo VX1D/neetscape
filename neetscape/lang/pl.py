@@ -101,6 +101,18 @@ VOCAB = {
         "design": [r"graficz"],
         "product": [r"produktu|projektów|projektami"],
     },
+    # words that offer options in one sentence ("hybrydowo lub zdalnie"): remote offered beside hybrid
+    "choice": [r"\b(?:lub|albo|bądź)\b", r"zdalnie/", r"/hybryd"],
+    "placeholder_companies": ["poufne", "anonim", "ogłoszenie zewnętrzne"],  # a posting that hides its employer
+    "pay": {
+        "hour": [r"godz", r"na godzin"],
+        "week": [r"/\s*tydz\w*", r"na tydzie[nń]"],
+        "day": [r"(?<!ty)dzie[nń]", r"dniówk"],
+        "year": [r"\brok\b", r"rocznie"],
+        "words": [r"brutto", r"netto", r"wynagrodzenie"],
+        "thousand": [r"tys\.?"],
+        "range": [r"do"],
+    },
     "hints": {
         "fully_remote": [r"100\s*% ?zdaln", r"100\s*% pracy zdaln", r"w pełni zdaln", r"całkowicie zdaln", r"wyłącznie zdaln",
                          r"z dowolnego miejsca", r"cała polska \(praca zdalna\)"],

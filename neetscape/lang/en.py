@@ -104,6 +104,18 @@ VOCAB = {
         "design": [r"design|creative"],
         "product": [r"\bproduct\b|\bproject\b"],
     },
+    # pay text (neetscape/pay.py): units of time, pay words, the thousand suffix, the word between two amounts
+    "choice": [r"\b(?:or|either)\b", r"remote/", r"/hybrid"],
+    "placeholder_companies": ["confidential", "anonymous"],
+    "pay": {
+        "hour": [r"/\s*h\b", r"/\s*hour", r"hourly", r"/\s*hr\b", r"per hour"],
+        "week": [r"/\s*week\b", r"per week"],
+        "day": [r"/\s*day", r"daily", r"per day"],
+        "year": [r"/\s*year", r"/\s*yr\b", r"annual", r"yearly"],
+        "words": [r"gross", r"\bnet\b", r"salary"],
+        "thousand": [r"k"],
+        "range": [r"to"],
+    },
     "hints": {
         "fully_remote": [r"fully[- ]remote", r"full-remote", r"100\s*% remote", r"remote[- ]only", r"work from anywhere",
                          r"from anywhere in (?:poland|europe|the eu)"],

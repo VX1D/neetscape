@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "label": "Focused search",
+  "label": "Focused search (rewrite the phrases, filters and pay for the person and the country)",
   "candidate": {
     "summary": "Replace with a short summary of the person (written by the agent from the CV).",
     "strengths": [],
@@ -15,11 +15,11 @@
       "label": "Main roles",
       "where": "remote",
       "what": [
-        "automatyzacja",
         "automation",
         "ai",
         "n8n",
-        "helpdesk"
+        "helpdesk",
+        "it support"
       ],
       "keywords_for": {
         "linkedin": [
@@ -38,17 +38,13 @@
         "senior",
         "lead",
         "manager"
-      ],
-      "pay": {
-        "min": 7000,
-        "per": "month"
-      }
+      ]
     }
   ],
   "rank": {
     "rules": [
       {
-        "pattern": "(ai|llm|agent|gpt).*(automat|workflow|implement|wdroż|integrat)|(automat|wdroż|implement).*(ai|llm|agent)",
+        "pattern": "(ai|llm|agent|gpt).*(automat|workflow|implement|integrat)|(automat|implement).*(ai|llm|agent)",
         "weight": 4,
         "label": "AI + automation"
       },
@@ -58,12 +54,12 @@
         "label": "workflow tools"
       },
       {
-        "pattern": "junior|młodszy|młodsza|\\bjr\\b|entry|associate",
+        "pattern": "junior|\\bjr\\b|entry|associate",
         "weight": 3,
         "label": "junior / entry level"
       },
       {
-        "pattern": "\\bengineer\\b|developer|programist",
+        "pattern": "\\bengineer\\b|developer",
         "weight": -2,
         "label": "generic engineering role"
       }

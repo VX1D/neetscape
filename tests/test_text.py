@@ -9,6 +9,7 @@ from neetscape.model import Offer
 from neetscape.pay import DEFAULT_FX, parse_pay
 from neetscape.posting import parse_posting
 
+PL = ("pl", "en")  # Polish boards read Polish and English (country.languages("pl"))
 DE_FX = {"EUR": 1.0, "PLN": 0.233, "USD": 0.93}
 DE = dict(fx=DE_FX, base="EUR", hours=173)
 EUR = dict(fx=DE_FX, base="EUR")
@@ -66,15 +67,15 @@ def test_lang_packs_are_per_country():
 def test_fill_reads_text_where_the_board_says_nothing():
     o = Offer(board="olx", key="k", url="k", title="Junior asystent (praca zdalna)", pay_text="4 800 - 5 800 zł / mies.",
               snippet="Praca dodatkowa Umowa zlecenie", worktime="unknown")
-    infer.fill(o, DEFAULT_FX)
+    infer.fill(o, DEFAULT_FX, languages=PL)
     assert (o.mode, o.worktime, o.level, o.pay_min, o.pay_max) == ("remote", "part_time", "junior", 4800, 5800)
     assert "mandate" in o.contracts and o.evidence["mode"][0] == "card"
     board_data = Offer(board="justjoin", key="k", url="k", title="Junior (remote)", mode="hybrid")
-    infer.fill(board_data, DEFAULT_FX)
+    infer.fill(board_data, DEFAULT_FX, languages=PL)
     assert board_data.mode == "hybrid" and board_data.facts == {"mode": "hybrid"}  # board data wins over text
     assert board_data.evidence["mode"] == ["board", "board data"]
     found_remote = Offer(board="pracuj", key="k", url="k", title="Asystent", snippet="hybrydowo")
-    infer.fill(found_remote, DEFAULT_FX, request_remote=True)
+    infer.fill(found_remote, DEFAULT_FX, request_remote=True, languages=PL)
     assert found_remote.mode == "remote"  # the board's own remote filter beats card words
 
 
@@ -103,7 +104,7 @@ def test_jsonld_posting():
 
 
 def test_hints():
-    h = infer.hints("Praca w 100% zdalna. Wymagamy 3+ lata doświadczenia, bachelor degree. German C1. hybrid possible")
+    h = infer.hints("Praca w 100% zdalna. Wymagamy 3+ lata doświadczenia, bachelor degree. German C1. hybrid possible", PL)
     assert h["fully_remote"] and h["years"] and "degree" in h["degree"] and h["languages"] == ["german"] and h["hybrid"]
 
 

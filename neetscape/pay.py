@@ -11,7 +11,10 @@ Gross/net and contract type are ignored: the result is only meant for ranking an
 """
 from __future__ import annotations
 
+import functools
 import re
+
+from . import lang
 
 HOURS_PER_MONTH = 168           # defaults of `Country.hours_per_month` / `days_per_month`
 DAYS_PER_MONTH = 21
@@ -33,29 +36,33 @@ THRESHOLDS = {
     "CHF": dict(hourly_below=120, yearly_above=25000, month_min=120, month_max=120_000, single_min=250, b2b_day_below=550),
 }
 
-# currency marks (lower case), in the order `_currency` tries them
-_CURRENCIES = (("zł", "PLN"), ("pln", "PLN"), ("eur", "EUR"), ("€", "EUR"), ("usd", "USD"), ("$", "USD"),
+# currency marks (lower case), in the order `_currency` tries them; boards map symbols with it too
+CURRENCIES = (("zł", "PLN"), ("pln", "PLN"), ("eur", "EUR"), ("€", "EUR"), ("usd", "USD"), ("$", "USD"),
                ("gbp", "GBP"), ("£", "GBP"), ("chf", "CHF"))
-_CUR = "(?:" + "|".join(re.escape(mark) for mark, _ in _CURRENCIES) + ")"
-_NUM = r"\d[\d\s .,]*(?:k|tys\.?|tsd\.?)?"  # 8.3k, "4,5 tys." (thousand)
-_THOUSAND = re.compile(r"(?:k|tys\.?|tsd\.?)$")
-_RANGE = re.compile(
-    rf"(?:{_CUR}\s*)?(?P<lo>{_NUM})\s*(?:{_CUR}\s*)?(?:/\s*\w+\.?\s*)?(?:-|–|—|do|to|bis)\s*(?:{_CUR}\s*)?(?P<hi>{_NUM})\s*(?:{_CUR})?"
-    r"(?P<tail>[^;\n]{0,40})", re.I)
-_SINGLE = re.compile(rf"(?:{_CUR}\s*)?(?P<lo>{_NUM})\s*{_CUR}?(?P<tail>[^;\n]{{0,40}})", re.I)
+_CUR = "(?:" + "|".join(re.escape(mark) for mark, _ in CURRENCIES) + ")"
 
-_HOUR = re.compile(r"/\s*h\b|/\s*hour|hourly|godz|/\s*hr\b|per hour|na godzin|/\s*std\b|pro stunde|stundenlohn|je stunde|stündlich", re.I)
-_WEEK = re.compile(r"/\s*tydz\w*|na tydzie[nń]|/\s*week\b|per week|pro woche|/\s*woche\b|wöchentlich", re.I)
-_DAY = re.compile(r"/\s*day|(?<!ty)dzie[nń]|dniówk|daily|per day|tagessatz|pro tag\b|/\s*tag\b", re.I)
-_YEAR = re.compile(r"/\s*year|/\s*yr\b|\brok\b|annual|yearly|rocznie|/\s*jahr\b|pro jahr|jährlich|\bp\.\s?a\.|jahresgehalt|jahresbrutto", re.I)
-_MONTH = re.compile(r"pro monat|monatlich|/\s*monat\b|\bmtl\.", re.I)  # only words that never appeared on Polish boards
+
+@functools.lru_cache(maxsize=1)
+def _words() -> dict:
+    """Regexes of the pay words of every language pack (`VOCAB["pay"]`): units of time are unambiguous across
+    languages, and a board's text mixes them, so all packs are read at once."""
+    packs = [lang.pack(code).VOCAB.get("pay", {}) for code in lang.available()]
+    alt = lambda key: "|".join(f"(?:{p})" for pk in packs for p in pk.get(key, [])) or "(?!)"  # noqa: E731
+    num = rf"\d[\d\s .,]*(?:{alt('thousand')})?"  # 8.3k, "4,5 tys." (thousand)
+    rx = {key: re.compile(alt(key), re.I) for key in ("hour", "week", "day", "year", "month", "words")}
+    rx["thousand"] = re.compile(rf"(?:{alt('thousand')})$")
+    rx["range"] = re.compile(
+        rf"(?:{_CUR}\s*)?(?P<lo>{num})\s*(?:{_CUR}\s*)?(?:/\s*\w+\.?\s*)?(?:-|–|—|{alt('range')})\s*(?:{_CUR}\s*)?(?P<hi>{num})\s*"
+        rf"(?:{_CUR})?(?P<tail>[^;\n]{{0,40}})", re.I)
+    rx["single"] = re.compile(rf"(?:{_CUR}\s*)?(?P<lo>{num})\s*{_CUR}?(?P<tail>[^;\n]{{0,40}})", re.I)
+    return rx
 
 
 def _number(s: str) -> float | None:
     """An amount as written: "8.3k", "4,5 tys.", "10,000.00", "10.000,00", "1 200"; None when unreadable."""
     s = s.strip().lower()
-    mult = 1000 if _THOUSAND.search(s) else 1
-    s = re.sub(r"\s", "", _THOUSAND.sub("", s))
+    mult = 1000 if _words()["thousand"].search(s) else 1
+    s = re.sub(r"\s", "", _words()["thousand"].sub("", s))
     if re.fullmatch(r"\d{1,3}(,\d{3})+(\.\d+)?", s):  # 10,000.00
         s = s.replace(",", "")
     elif re.fullmatch(r"\d{1,3}(\.\d{3})+(,\d+)?", s):  # 10.000,00
@@ -72,36 +79,33 @@ def _currency(*parts: str | None) -> str | None:
     """Currency code of the first part that names one, else None."""
     for p in filter(None, parts):
         p = p.lower()
-        for mark, code in _CURRENCIES:
+        for mark, code in CURRENCIES:
             if mark in p:
                 return code
     return None
 
 
 def _has_unit(text: str) -> bool:
-    return any(rx.search(text) for rx in (_HOUR, _WEEK, _DAY, _YEAR, _MONTH))
+    return any(rx.search(text) for rx in (_words()[k] for k in ("hour", "week", "day", "year", "month")))
 
 
 def _factor(text: str, lo: float, t: dict, hours: float, days: float) -> float:
     """Multiplier from the amount's unit to a month: the unit word in `text`, else the size of `lo` (`t`: THRESHOLDS)."""
-    if _HOUR.search(text):
+    if _words()["hour"].search(text):
         return hours
-    if _WEEK.search(text):
+    if _words()["week"].search(text):
         return WEEKS_PER_MONTH
-    if _DAY.search(text):
+    if _words()["day"].search(text):
         return days
-    if _YEAR.search(text):
+    if _words()["year"].search(text):
         return 1 / 12
-    if _MONTH.search(text):
+    if _words()["month"].search(text):
         return 1.0
     if lo < t["hourly_below"]:  # bare small numbers are hourly rates in practice
         return hours
     if lo > t["yearly_above"]:  # bare large numbers are yearly
         return 1 / 12
     return 1.0
-
-
-_PAY_WORDS = re.compile(r"brutto|netto|gross|\bnet\b|gehalt|vergütung|wynagrodzenie|salary", re.I)
 
 
 def parse_pay(text: str, fx: dict | None = None, base: str = "PLN", assume: str | None = None,
@@ -117,15 +121,15 @@ def parse_pay(text: str, fx: dict | None = None, base: str = "PLN", assume: str 
     best = None
     for seg in re.split(r";|\n", text):
         structured = re.match(r"\s*[a-z0-9_]+:\s*\d", seg)  # justjoin/rocketjobs field
-        m = _RANGE.search(seg)
+        m = _words()["range"].search(seg)
         single = m is None
         if single:
-            m = _SINGLE.search(seg)
+            m = _words()["single"].search(seg)
         if not m:
             continue
         lo = _number(m.group("lo"))
         hi = lo if single else _number(m.group("hi"))
-        if lo and hi and not single and _THOUSAND.search(m.group("hi").strip().lower()) and lo * 1000 <= hi * 1.01:
+        if lo and hi and not single and _words()["thousand"].search(m.group("hi").strip().lower()) and lo * 1000 <= hi * 1.01:
             lo *= 1000  # "4,5-6,5 tys.": the multiplier is written once, after the range
         if not lo or not hi or lo > hi * 1.01:
             continue
@@ -133,7 +137,7 @@ def parse_pay(text: str, fx: dict | None = None, base: str = "PLN", assume: str 
         if cur is None:
             if structured:
                 cur = assume or "PLN"
-            elif assume and (_has_unit(seg) or _PAY_WORDS.search(seg)):
+            elif assume and (_has_unit(seg) or _words()["words"].search(seg)):
                 cur = assume
         if cur is None or cur not in fx:
             continue

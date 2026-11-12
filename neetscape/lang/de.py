@@ -81,6 +81,17 @@ VOCAB = {
         "hospitality": [r"gastronomie|hotel"],
         "sales": [r"vertrieb|verkauf"],
     },
+    "choice": [r"\boder\b", r"remote/", r"/hybrid"],
+    "pay": {
+        "hour": [r"/\s*std\b", r"pro stunde", r"stundenlohn", r"je stunde", r"stündlich"],
+        "week": [r"pro woche", r"/\s*woche\b", r"wöchentlich"],
+        "day": [r"tagessatz", r"pro tag\b", r"/\s*tag\b"],
+        "year": [r"/\s*jahr\b", r"pro jahr", r"jährlich", r"\bp\.\s?a\.", r"jahresgehalt", r"jahresbrutto"],
+        "month": [r"pro monat", r"monatlich", r"/\s*monat\b", r"\bmtl\."],
+        "words": [r"brutto", r"netto", r"gehalt", r"vergütung"],
+        "thousand": [r"tsd\.?"],
+        "range": [r"bis"],
+    },
     "hints": {
         "fully_remote": [rf"100\s*%\s*(?:{_HO}|remote)", rf"(?:vollständig|komplett|ausschließlich)\s+(?:im\s+)?(?:{_HO}|remote)",
                          r"deutschlandweit\s+remote"],

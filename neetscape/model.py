@@ -50,9 +50,15 @@ def age_label(value) -> str:
     return "?" if n is None else f"{n}d"
 
 
+# letters Unicode does not decompose into a base letter and a mark (NFKD keeps them whole), any language
+_UNDECOMPOSED = str.maketrans({"ł": "l", "Ł": "L", "ß": "ss", "ẞ": "SS", "ø": "o", "Ø": "O", "đ": "d", "Đ": "D",
+                               "ħ": "h", "Ħ": "H", "ı": "i", "æ": "ae", "Æ": "AE", "œ": "oe", "Œ": "OE", "þ": "th",
+                               "Þ": "Th", "ð": "d", "Ð": "D"})
+
+
 def fold(s: str) -> str:
-    """Lowercase ASCII fold: 'Kraków' -> 'krakow'. Used for city and company matching."""
-    s = unicodedata.normalize("NFKD", (s or "").replace("ł", "l").replace("Ł", "L").replace("ß", "ss"))
+    """Lowercase ASCII fold: 'Kraków' -> 'krakow', 'Øresund' -> 'oresund'. Used for city and company matching."""
+    s = unicodedata.normalize("NFKD", (s or "").translate(_UNDECOMPOSED))
     return "".join(c for c in s if not unicodedata.combining(c)).lower()
 
 

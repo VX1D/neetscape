@@ -11,7 +11,7 @@ Verified live 2026-11-12:
   `location=Kraków` resolves to a village in Łódzkie, so a city is sent as the `geoId` of the GEO typeahead hit
   ending with one of the country's `place_names`;
 - remote searches without phrases: the whole country's listing is 1000 offers of every kind, mostly on site (fully
-  remote by the posting: 1 of 10 sampled), so it is sent as the country's `REMOTE_PHRASES`, words that remote
+  remote by the posting: 1 of 10 sampled), so it is sent as the country's `linkedin_remote_phrases`, words that remote
   postings contain. Poland (pages 1 and 3, 20 postings per phrase read with `infer.hints`): "remote" 9 of 20 fully
   remote, "home office" 8, "zdalnie" 3 (and 10 more mention remote work), "praca zdalna" 4 (and 9); their page-1
   results overlap by at most 2 of 10. Germany (page 1): "remote" 1 fully remote and 6 mentioning it of 10, "home
@@ -68,8 +68,6 @@ POSTING = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/"
 TYPEAHEAD = "https://www.linkedin.com/jobs-guest/api/typeaheadHits?typeaheadType=GEO&query="
 
 # sent instead of a keyword-less remote search, by searched country (verified live, see above)
-REMOTE_PHRASES = {"pl": ("remote", "zdalnie", "praca zdalna", "home office")}
-DEFAULT_REMOTE_PHRASES = ("remote", "home office")
 MAX_NATIONAL = 0.1  # a capped request splits only while fewer of its cards than this are placed at country level
 MIN_CITY = 10       # a capped region splits into its cities seen on at least this many cards
 WINDOWS = ((7, "7 days"), (1, "24 hours"))  # newest windows for a capped request that cannot be split: f_TPR=r<seconds>
@@ -115,7 +113,7 @@ class LinkedIn(Board):
         out = []
         for r in reqs:
             if r.keyword is None and s.where.remote and not r.params.get("city"):
-                phrases = REMOTE_PHRASES.get(searched_country(r), DEFAULT_REMOTE_PHRASES)
+                phrases = country.get(searched_country(r)).linkedin_remote_phrases
                 out += [replace(r, keyword=p, pushed=r.pushed | {"keyword"}) for p in phrases]
                 warnings.append(f"{self.name}: no remote filter; '{s.id}' is sent as the phrases {', '.join(phrases)}")
             else:

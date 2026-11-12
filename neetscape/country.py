@@ -29,6 +29,8 @@ class Country:
     hours_per_month: int = HOURS_PER_MONTH  # converts hourly rates to monthly pay
     days_per_month: int = DAYS_PER_MONTH    # converts daily rates
     linkedin_location: str = ""            # LinkedIn free-text location for the whole country ("Poland", "Germany")
+    linkedin_remote_phrases: tuple = ("remote", "home office")  # LinkedIn has no remote filter: remote searches send
+                                                                # these phrases (words remote postings contain)
     place_names: tuple = ()                # how the country appears at the end of place names ("Polska", "Poland")
     city_aliases: dict = field(default_factory=dict)  # folded city name -> other folded spellings ("munchen": ("munich",))
     legal_suffixes: tuple = ()             # regex alternatives stripped from company names for de-duplication

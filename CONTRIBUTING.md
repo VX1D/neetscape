@@ -101,7 +101,8 @@ All of them follow the same rules.
 
 1. Create `neetscape/countries/<cc>/__init__.py` defining `COUNTRY = Country(...)` (see
    `neetscape/country.py` and `neetscape/countries/de/__init__.py`): currency and `fx` (units of the
-   currency per unit of others), languages, `hours_per_month`, LinkedIn location and place names,
+   currency per unit of others), languages, `hours_per_month`, LinkedIn location and remote phrases
+   (`linkedin_remote_phrases`: LinkedIn has no remote filter) and place names,
    city aliases, legal-form words, contract words mapped onto the shared vocabulary
    (`neetscape/model.py: CONTRACTS`; propose a new canonical value only when no existing one fits),
    and `default_boards` (usually `("<cc>",)`, the group of the country's boards plus LinkedIn).
@@ -113,8 +114,10 @@ All of them follow the same rules.
      `hints` (`fully_remote`, `hybrid`, `years`, `degree`, `languages`, `fixed_term`, `office`);
    - optional: `explicit` (per field and value, statements that settle a field: "fully remote"), `qualifier`
      (words after which a title's head ends: "with", "z", "mit"; punctuation splits titles in every
-     language) and `gender` (gender markers in words inside brackets: "all genders", "gn"; letter lists
-     such as "(m/w/d)" or "(k/m)" are recognised without it).
+     language), `gender` (gender markers in words inside brackets: "all genders", "gn"; letter lists
+     such as "(m/w/d)" or "(k/m)" are recognised without it), `choice` (words offering options: "or",
+     "lub", "oder"), `pay` (period units, pay words, the thousand suffix and the word between two amounts)
+     and `placeholder_companies` (names that hide the employer: "confidential", "poufne").
 
    See the docstring of `neetscape/lang/__init__.py` for the details.
    Check a vocabulary change on a real database rather than with unit tests:
@@ -126,6 +129,8 @@ All of them follow the same rules.
    `--agreement` (title against category, overall and per language) shows whether the readings improved. The tool
    is language-neutral; a language whose titles need their own splitting (compounds) defines
    `TITLE_TOKENS(title) -> list[str]` in its pack (see [docs/testing.md](docs/testing.md#vocabularies-check-on-real-data)).
+   Country presets go to `neetscape/countries/<cc>/presets/` (amounts in the country's currency, local phrases);
+   without them the shared, language-neutral presets apply.
 3. Add the country to the `country` enum (`$defs/country`) in `neetscape/profile/schema.json` (a test compares it with the registry).
 4. Add at least two boards (see above) under `neetscape/countries/<cc>/boards/` (its `__init__.py`
    imports them and lists them in `__all__`), and presets under

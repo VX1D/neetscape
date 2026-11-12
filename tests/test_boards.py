@@ -182,15 +182,15 @@ def test_linkedin_posting_is_the_description_block_only():
 
 def test_linkedin_remote_all_is_sent_as_remote_phrases():
     reqs, warns = requests("linkedin")
-    assert [r.keyword for r in reqs] == list(linkedin.REMOTE_PHRASES["pl"])
+    assert [r.keyword for r in reqs] == list(countries.get("pl").linkedin_remote_phrases)
     assert all(r.params == {"country": "pl"} and r.pushed == {"keyword"} for r in reqs)   # the mode stays unknown
     assert "sent as the phrases remote, zdalnie" in warns[0]
-    assert [r.keyword for r in requests("linkedin", Where(remote=True, country="de"))[0]] == list(linkedin.DEFAULT_REMOTE_PHRASES)
+    assert [r.keyword for r in requests("linkedin", Where(remote=True, country="de"))[0]] == list(countries.get("de").linkedin_remote_phrases)
     # phrases, a city and "anywhere" are left alone; "city or remote" sends phrases only for its remote part
     assert [r.keyword for r in requests("linkedin", keywords=("n8n",))[0]] == ["n8n"]
     assert [r.keyword for r in requests("linkedin", Where())[0]] == [None]
     both, _ = requests("linkedin", Where(remote=True, city="Kraków"))
-    assert [(r.keyword, r.params.get("city")) for r in both] == [(None, "Kraków")] + [(p, None) for p in linkedin.REMOTE_PHRASES["pl"]]
+    assert [(r.keyword, r.params.get("city")) for r in both] == [(None, "Kraków")] + [(p, None) for p in countries.get("pl").linkedin_remote_phrases]
 
 
 def test_linkedin_split_by_region_then_city(monkeypatch):

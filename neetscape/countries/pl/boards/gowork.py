@@ -47,7 +47,7 @@ from ....boards.base import Board, Caps, Request, register
 from ....boards.pages import (clean_spaces, currency_code, date_of, labelled_contracts, most_remote_mode, nearest_radius,
                               nuxt_data, pay_range, prefix_level, present, slug, snippet, worktime_from_labels)
 from ....model import Offer, Search
-from .vocab import CONTRACTS, FULL_TIME, LEVELS, PART_TIME
+from .vocab import CONTRACTS, FULL_TIME, LANGS, LEVELS, PART_TIME
 
 BASE = "https://www.gowork.pl"
 RADII = (5, 10, 20, 30, 50, 75, 100)  # the radius select's values
@@ -135,7 +135,7 @@ class GoWork(Board):
                 mode=most_remote_mode(o.get("workMode"), "zdaln", "hybryd") if o.get("workMode") else "unknown",
                 locations=present(loc.get("city")),
                 worktime=worktime_from_labels(o.get("employmentType"), PART_TIME, FULL_TIME),
-                contracts=labelled_contracts(o.get("contractType"), CONTRACTS),
+                contracts=labelled_contracts(o.get("contractType"), CONTRACTS, LANGS),
                 level=prefix_level((o.get("positionLevel") or {}).get("label"), LEVELS),
                 category=clean_spaces(o.get("position")), pay_text=pay_text(o),
                 published=date_of(o.get("publishedAt")), promoted=o.get("segment") == PROMOTED_SEGMENT,

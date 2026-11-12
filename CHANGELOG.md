@@ -4,6 +4,15 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
 
 ## Unreleased
 
+- Every language-specific word now lives in its language pack or country package, so a new language is one
+  module (`neetscape/lang/<code>.py`) and a new country one package: pay periods, pay words, the thousand
+  suffix and range words (`VOCAB["pay"]`, read by `pay.py`); words offering options (`choice`, for
+  `remote_proof`); placeholder employer names (`placeholder_companies`); LinkedIn's remote phrases
+  (`Country.linkedin_remote_phrases`); solid.jobs' "staż" level in its adapter; the Polish presets in
+  `countries/pl/presets/`, with language-neutral shared presets. Text of an unknown country is read in
+  English only (`lang.DEFAULT`). `model.fold` transliterates every letter Unicode does not decompose
+  (ø, đ, æ, œ, þ, ß, ł); boards map currency symbols with `pay.CURRENCIES`. On a 32k-offer database every
+  derived value, pay range and remote-proof verdict is unchanged.
 - Job domains: every offer gets `job_domains`, the set of domains its title (head and qualifier) and the
   board's category name, read in the offer's own languages ("AI Gateway Product Owner": `ai, product`;
   "Sachbearbeiter (m/w/d) Buchhaltung": `finance`); the weak `tech` domain counts only alone. Schema v7 adds

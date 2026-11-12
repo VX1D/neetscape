@@ -7,9 +7,9 @@
   "searches": [
     {
       "id": "local",
-      "label": "Near Kraków",
+      "label": "Near the city (replace the city)",
       "where": {
-        "city": "Kraków",
+        "city": "City",
         "radius_km": 30
       },
       "what": "all"

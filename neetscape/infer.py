@@ -29,7 +29,7 @@ _WORKTIME = {"full_time": "full_time", "part_time": "part_time", "freelance": "f
 _CONTRACT = {"permanent": "employment", "b2b": "b2b", "mandate_contract": "mandate", "specific_task_contract": "specific_task",
              "internship": "internship", "freelance": "freelance", "any": "other", "uop": "employment", "mandate": "mandate"}
 _LEVEL = {"intern": "intern", "junior": "junior", "mid": "mid", "regular": "mid", "senior": "senior", "expert": "senior",
-          "lead": "lead", "manager": "manager", "c_level": "manager", "staż": "intern"}
+          "lead": "lead", "manager": "manager", "c_level": "manager"}
 
 
 def mode(value: str) -> str:
@@ -110,8 +110,7 @@ COLUMNS = {"mode": "mode", "worktime": "worktime", "contracts": "contract", "lev
 
 # --- reading text ---------------------------------------------------------------
 _SENTENCES = re.compile(r"(?<=[.!?;])\s+|\n+|\s+[•▪·]\s+")
-_CHOICE = re.compile(r"\b(?:lub|albo|bądź|or|either)\b|\s/\s|zdalnie/|/hybryd|remote/|/hybrid", re.I)
-_HYBRID_WORD = re.compile(r"hybry\w*|hybrid\w*", re.I)
+_CHOICE_MARKS = r"\s/\s"  # "hybrid / remote": an option in any language; the packs' `choice` words add the rest
 # A title's head ends at a qualifier: "Senior .NET Developer (GenAI)", "Data Analyst - Remote", and at the words
 # of the active packs' `qualifier` ("Customer Support Specialist with German"). A gender marker says nothing about
 # the job and must not end the head ("Sachbearbeiter (m/w/d) Buchhaltung"): a bracketed list of single letters
@@ -137,6 +136,8 @@ def _lexicon(languages: tuple) -> dict:
             for value in dict.fromkeys(v for t in tables for v in t):
                 rows.append((value, explicit, re.compile("|".join(f"(?:{p})" for t in tables for p in t.get(value, [])), re.I)))
         out[fld] = rows
+    choice = [f"(?:{p})" for pk in packs for p in pk.get("choice", [])]
+    out["choice"] = re.compile("|".join([_CHOICE_MARKS, *choice]), re.I)
     words = [f"(?:{p})" for pk in packs for p in pk.get("qualifier", [])]
     out["qualifier"] = re.compile(_QUALIFIER_MARKS + (rf"|\s(?:{'|'.join(words)})\s" if words else ""), re.I)
     genders = [_GENDER_LETTERS] + [f"(?:{p})" for pk in packs for p in pk.get("gender", [])]
@@ -216,9 +217,10 @@ def remote_proof(text: str, languages=None) -> str:
         hybrid = hints(sentence, languages)["hybrid"]
         if not hybrid:
             continue
-        offers_remote = (hints(sentence, languages)["fully_remote"]
-                         or mode_from_text(_HYBRID_WORD.sub("", sentence), languages) == "remote")
-        if not (offers_remote and _CHOICE.search(sentence)):
+        lexicon = _lexicon(_langs(languages))
+        offers_remote = (hints(sentence, languages)["fully_remote"]  # remote beside the hybrid wording?
+                         or mode_from_text(lexicon["hints"]["hybrid"].sub("", sentence), languages) == "remote")
+        if not (offers_remote and lexicon["choice"].search(sentence)):
             found += [w for w in hybrid if w not in found]
     found += [w for w in hints(text, languages)["office"] if w not in found]
     if found:

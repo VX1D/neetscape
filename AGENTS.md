@@ -46,8 +46,8 @@ neetscape init --country de --preset broad         # a German profile: EUR amoun
 
 The profile's `country` (default `pl`) sets the currency of every amount (pay floors) and of the
 database, the default boards and the language used to read postings. A country may ship its own
-presets (`neetscape/countries/<cc>/presets/`); the shared `focused` preset is Polish-flavoured
-(phrases, PLN floor), so rewrite its phrases and pay for another country. One `--out` directory
+presets (`neetscape/countries/<cc>/presets/`), and the shared presets are language-neutral starting points (English
+phrases, no pay floor, a placeholder city): rewrite their phrases and pay for the person and the country. One `--out` directory
 holds one country: use `--out runs-de` for a German profile next to a Polish one. To look at
 another country from the same profile, give a search `"where": {"remote": true, "country": "de"}`
 (and add that country to `boards`, or leave `boards` out).
@@ -141,8 +141,7 @@ too large without phrases). `or_remote` in a city search crawls both the city li
 one country (its own plus LinkedIn).
 
 LinkedIn's public search ignores its remote, job-type, distance and sort filters. A remote search
-with `what: "all"` is therefore sent as remote phrases ("remote", "zdalnie", "praca zdalna", "home
-office" for Poland). Results lean remote, but the work mode stays unknown until the posting is
+with `what: "all"` is therefore sent as remote phrases (the country's `linkedin_remote_phrases`, for Poland "remote", "zdalnie", "praca zdalna", "home office"). Results lean remote, but the work mode stays unknown until the posting is
 fetched: with `unknown: keep` these offers stay in remote searches until stage 2 settles the mode;
 with `unknown: drop` they are left out. Each phrase hits LinkedIn's 1000-result cap; such requests
 are narrowed to the newest week (or day) and marked "Capped" in the report, so run every few days.

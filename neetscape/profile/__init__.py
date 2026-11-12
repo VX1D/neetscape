@@ -308,8 +308,7 @@ def preset(name: str, country: str = "pl") -> dict:
         f = d.joinpath(f"{name}.json")
         if f.is_file():
             data = json.loads(f.read_text())
-            if country != "pl" or "country" in data:
-                data["country"] = country
+            data["country"] = country
             return data
     raise ProfileError(f"unknown preset {name!r}; available for {country}: {presets(country)}")
 
