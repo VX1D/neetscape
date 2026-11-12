@@ -15,7 +15,10 @@ Verified live 2026-11-12:
 - `createDate` (epoch ms) is the date the card shows ("6 dni temu"); `pubDate` can be years older (reposts);
   `salarySnippet.text` ("90 000-115 000 PLN za rok"); contract and work-time labels in `taxonomyAttributes`;
 - the offer page (/viewjob) has no JSON-LD; its `window._initialData` (JS, not JSON) holds the body as the JSON
-  string `"sanitizedJobDescription":"<html>"`.
+  string `"sanitizedJobDescription":"<html>"`;
+- no category per card (2026-11-12, remote page 1, all 15 cards): `taxonomyAttributes` holds only job-types,
+  job-types-cc, shifts, schedules, remote and benefits; `taxoAttributes`, `jobTypes` and `translatedAttributes`
+  are empty, and `normTitle` is a normalised title, not a category.
 """
 from __future__ import annotations
 

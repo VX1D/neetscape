@@ -67,7 +67,7 @@ COVERAGE = {
     "justjoin": "company published locations contracts level mode worktime category skills",
     "linkedin": "company published locations",
     "nofluffjobs": "company published pay_text contracts level mode category skills",
-    "olx": "published locations contracts worktime",
+    "olx": "published locations contracts worktime category",
     "pracapl": "published locations level mode worktime",
     "pracuj": "company published locations contracts level mode worktime",
     "remoteok": "company published mode skills",
