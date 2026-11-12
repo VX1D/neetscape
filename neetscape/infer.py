@@ -266,7 +266,8 @@ def _domains(matches: list[tuple]) -> dict:
 
 
 # "Konsultant / Konsultantka", "Kierowca/Kierowczyni", "Mitarbeiter/in": one job name in two grammatical genders,
-# not the end of the title's head; recognised by the shared start of the two words, in any language
+# not the end of the title's head; recognised by the shared start of the two words, in any language. Both words stay:
+# "Sales/Salesforce Administrator" still names Salesforce
 _GENDER_PAIR = re.compile(r"(\w+)\s*/\s*(\w+)")
 
 
@@ -279,7 +280,7 @@ def title_parts(title: str, languages=None) -> tuple[str, str]:
     """(head, qualifiers) of a job title, gender markers removed: "Sachbearbeiter (m/w/d) Buchhaltung" ->
     ("Sachbearbeiter Buchhaltung", ""), "Senior .NET Developer (GenAI)" -> ("Senior .NET Developer ", "(GenAI)")."""
     lexicon = _lexicon(_langs(languages))
-    plain = _GENDER_PAIR.sub(lambda m: m[0] if not _same_word(m[1], m[2]) else m[1], lexicon["gender"].sub(" ", title or ""))
+    plain = _GENDER_PAIR.sub(lambda m: f"{m[1]} {m[2]}" if _same_word(m[1], m[2]) else m[0], lexicon["gender"].sub(" ", title or ""))
     m = lexicon["qualifier"].search(plain)
     return (plain[:m.start()], plain[m.start():]) if m and m.start() > 0 else (plain, "")
 

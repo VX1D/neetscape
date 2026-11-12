@@ -122,6 +122,7 @@ def test_hints():
     ("PLC Automation Engineer", "", ("en",), {"industrial"}, "automate"),     # ...not when the title names one
     ("Konsultant / Konsultantka ds. Automatyzacji Procesów", "", ("pl", "en"), {"ai"}, "automate"),  # a gender pair
     ("Supply Network Planning Assistant", "", ("en",), set(), "assist"),      # "network" alone is not IT
+    ("Sales/Salesforce Administrator", "", ("en",), {"erp", "sales"}, "sell"),  # a shared start keeps both words
 ])
 def test_job_domains_from_title_and_category(title, category, languages, domains, function):
     got = infer.derive(title=title, category=category, languages=languages)
