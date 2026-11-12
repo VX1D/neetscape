@@ -11,7 +11,12 @@ Verified live 2026-11-12 (Python's HTTP client gets 403 from CloudFront, a brows
 - `search[filter_enum_type][0]=parttime&search[filter_enum_type][1]=halftime` keeps part-time and "Praca
   dodatkowa" offers; `search[dist]=30` adds towns around the city;
 - each page holds ~40 organic ads plus promoted ones (`isPromoted`, the same ones repeat on every page);
-  a page past the last redirects to page 1 (so the request ends with "no new offers");
+  a search shows at most 25 pages, 1000 ads (`totalElements` is capped at 1000; verified 2026-11-12: pages 5,
+  10 and 25 of the remote listing hold distinct ads, page 26 redirects), so the board declares
+  `result_cap=1000` and `split()` narrows a capped request into the subcategories of its category, read from
+  the category tree embedded in the page (`/praca/<subcategory>/`; remote ads per subcategory stay far below
+  the cap, e.g. customer service 180, extra work 290); a page past the last redirects to page 1 (so the
+  request ends with "no new offers");
 - `created_at:desc` orders by the last refresh (`lastRefreshTime`, the "Odświeżono dnia ..." date the card
   shows), which is used as `published`; `createdTime` may be a year older for refreshed ads;
 - each ad ships its structured fields: salary {from, to, period monthly/hourly}, `params` type (work time),
@@ -25,6 +30,7 @@ from __future__ import annotations
 import json
 import re
 import urllib.parse
+from dataclasses import replace
 
 from .... import infer
 from ....boards.base import Board, Caps, Request, register
@@ -42,15 +48,17 @@ PERIOD = {"monthly": "month", "hourly": "hour", "weekly": "week", "daily": "day"
 
 # the ads of the page, shrunk in the tab ('[]' for a page without the state)
 # (the state is one 3-4 MB JSON string literal ending its line: it is cut out by index, not by a regex)
-FETCH_JS = r"""(t)=>{const i=t.indexOf('window.__PRERENDERED_STATE__');if(i<0)return '[]';
+FETCH_JS = r"""(t)=>{const i=t.indexOf('window.__PRERENDERED_STATE__');if(i<0)return '{"ads":[]}';
 const lo=t.indexOf('"',i),hi=t.lastIndexOf('"',t.indexOf('\n',lo));
-let s;try{s=JSON.parse(JSON.parse(t.slice(lo,hi+1)))}catch(e){return '[]'}
-const ads=((s.listing||{}).listing||{}).ads||[];
-return JSON.stringify(ads.map(a=>({url:a.url,title:a.title,isPromoted:!!a.isPromoted,lastRefreshTime:a.lastRefreshTime,
+let s;try{s=JSON.parse(JSON.parse(t.slice(lo,hi+1)))}catch(e){return '{"ads":[]}'}
+const L=(s.listing||{}).listing||{},ads=L.ads||[],cl=((s.categories||{}).list)||{};
+const tree=Object.values(cl).filter(c=>c&&c.path&&(c.path==='praca'||c.path.startsWith('praca/')))
+ .map(c=>({path:c.path,parent:(cl[c.parentId]||{}).path||''}));
+return JSON.stringify({total:L.totalElements??null,categories:tree,ads:ads.map(a=>({url:a.url,title:a.title,isPromoted:!!a.isPromoted,lastRefreshTime:a.lastRefreshTime,
  createdTime:a.createdTime,salary:a.salary?{from:a.salary.from,to:a.salary.to,currencyCode:a.salary.currencyCode,
  period:a.salary.period}:null,params:(a.params||[]).map(p=>({key:p.key,normalizedValue:p.normalizedValue})),
  location:{cityName:(a.location||{}).cityName,districtName:(a.location||{}).districtName},
- user:{company_name:(a.user||{}).company_name||'',name:(a.user||{}).name||''},description:(a.description||'').slice(0,12000)})))}"""
+ user:{company_name:(a.user||{}).company_name||'',name:(a.user||{}).name||''},description:(a.description||'').slice(0,12000)}))})}"""
 
 
 def work_mode(workplace: list) -> str:
@@ -77,16 +85,23 @@ def pay_text(salary: dict | None) -> str:
     return pay_range("salary", lo, hi, salary.get("currencyCode") or "PLN", PERIOD.get(salary.get("period"), "month"))
 
 
+def _page(raw: str) -> dict:
+    """The shrunk result page: {"total": matches, "categories": [{"path", "parent"}], "ads": [...]}."""
+    data = json.loads(raw or "{}")
+    return {"ads": data} if isinstance(data, list) else {"ads": [], **data}
+
+
 @register
 class Olx(Board):
     name = "olx"
     caps = Caps(keywords=True, remote="filter", city=True, radius=True, worktime=True, sort_newest=True, page_size=0,
-                max_pages=4, huge_unfiltered=True, transport="browser_fetch", origin="https://www.olx.pl/praca/")
+                max_pages=25, result_cap=1000, huge_unfiltered=True, transport="browser_fetch", origin="https://www.olx.pl/praca/")
 
     def page_url(self, r: Request, page: int) -> str | None:
         # never None: the listing goes on past `max_pages`, so a request stopped there is partial (no "gone" marks)
         kw = (r.keyword or "").strip()
-        path = "praca/" + (slug(r.params["city"]) + "/" if r.params.get("city") else "")
+        path = ("praca/" + (r.params["category"] + "/" if r.params.get("category") else "")
+                + (slug(r.params["city"]) + "/" if r.params.get("city") else ""))
         query = {}
         if r.params.get("city"):
             query["search[dist]"] = r.params.get("radius_km", 0)
@@ -102,12 +117,21 @@ class Olx(Board):
         return (f"https://www.olx.pl/{path}" + (f"q-{urllib.parse.quote(kw)}/" if kw else "")
                 + (f"?{urllib.parse.urlencode(query)}" if query else ""))
 
+    def total(self, raw: str, r: Request) -> int | None:
+        return _page(raw).get("total")
+
+    def split(self, raw: str, r: Request) -> list[Request]:
+        """One request per subcategory of the request's category, read from the page's category tree."""
+        here = "praca" + ("/" + r.params["category"] if r.params.get("category") else "")
+        subs = [c["path"].removeprefix("praca/") for c in _page(raw).get("categories") or [] if c.get("parent") == here]
+        return [replace(r, params={**r.params, "category": c}) for c in sorted(subs)]
+
     def fetch_js(self) -> str:
         return FETCH_JS
 
     def parse(self, raw: str, r: Request) -> list[Offer]:
         out: dict[str, Offer] = {}
-        for ad in json.loads(raw or "[]"):
+        for ad in _page(raw)["ads"]:
             url = re.sub(r"[?#].*$", "", ad.get("url") or "")
             if not url or not ad.get("title"):
                 continue

@@ -4,6 +4,11 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
 
 ## Unreleased
 
+- Result caps: a board that shows at most N results per search declares `result_cap`; when a request
+  matches more, the crawler splits it into narrower requests built from its first page (recursively) and
+  fetches each to its end; requests that cannot be narrowed are listed as "Capped" in `REPORT.md`.
+- olx.pl: all 25 result pages (was 4) and listings above its 1000-result cap split by job subcategory,
+  read from the page's category tree.
 - Progress line for `run`, `crawl` and `details`: a bar with requests (or postings) done, pages, offers, what
   each board is fetching and the time left; redrawn in place on a terminal, a `progress ...` line every 30 s
   when stderr goes to a file.

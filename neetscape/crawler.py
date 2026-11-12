@@ -83,10 +83,28 @@ def _apply_pushed(o: Offer, r: Request) -> None:
         o.locations = [r.params["city"]]
 
 
+MAX_SPLIT_DEPTH = 3
+
+
+def _over_cap(board, raw: str, r: Request) -> tuple[int, list[Request]] | None:
+    """(total, sub-requests) when the request reaches the board's result cap. A total equal to the cap counts:
+    boards report a capped count (olx.pl's `totalElements` never exceeds 1000), so the true number is unknown."""
+    cap = board.caps.result_cap
+    total = board.total(raw, r) if cap else None
+    if total is None or total < cap:
+        return None
+    return total, board.split(raw, r)
+
+
 async def _run_request(board, fetcher, r: Request, search: Search, store: Store, run_id: int, *, fx: dict,
                        limit_pages: int | None, incremental: bool, record: Path | None, base: str = "PLN",
                        hours: int | None = None, days: int | None = None, save_fixture: Path | None = None,
-                       max_age: float = math.inf, progress: Progress | None = None) -> None:
+                       max_age: float = math.inf, progress: Progress | None = None, depth: int = 0) -> None:
+    """Fetch one request page by page. When page 1 shows that the request matches more results than the board's
+    `result_cap`, the board's `split()` replaces it with narrower requests (fetched recursively, each to its own
+    end); a request that cannot be split is fetched up to the cap and logged as capped."""
+    children: list[Request] = []
+    capped = 0
     req_id = store.start_request(run_id, r.board, r.search_id, r.keyword, r.params, r.pushed)
     pages = found = 0
     complete, reason, error = False, "", ""
@@ -121,6 +139,12 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
             found += new
             if progress:
                 progress.add(pages=1, offers=new)
+            if page == 1 and (over := _over_cap(board, raw, r)):
+                total, subs = over
+                if subs and depth < MAX_SPLIT_DEPTH:
+                    children, reason = subs, f"split into {len(subs)} (matches {total}+, the board shows {board.caps.result_cap})"
+                    break
+                capped = total
             if not offers:
                 complete, reason = True, "empty page"
                 break
@@ -146,8 +170,19 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
             error = str(e)
     except Exception as e:  # a broken parser must not stop the other boards
         error = f"{type(e).__name__}: {e}"
+    if capped and not complete:
+        reason = f"{reason}; capped: matches {capped}+, the board shows {board.caps.result_cap}"
     store.finish_request(req_id, pages, found, complete, reason, error)
     log(r.board, r.search_id, repr(r.keyword or "*"), f"{pages}p +{found}", reason or "", ("ERROR " + error) if error else "")
+    if children:
+        if progress:
+            progress.total += len(children)
+        for child in children:
+            await _run_request(board, fetcher, child, search, store, run_id, fx=fx, limit_pages=limit_pages,
+                               incremental=incremental, record=record, base=base, hours=hours, days=days,
+                               max_age=max_age, progress=progress, depth=depth + 1)
+            if progress:
+                progress.step()
 
 
 async def crawl(requests: list[Request], searches: dict[str, Search], store: Store, run_id: int, *, port: int,

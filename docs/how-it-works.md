@@ -124,6 +124,15 @@ gone only after a complete request with the same parameters no longer returns th
 posting returns 404/410. `run --resume` continues an interrupted run, skipping requests that
 already finished.
 
+Result caps: some boards show at most a fixed number of results per search (olx.pl: 1000), however
+many it matches. Such a board declares `result_cap` and reads the match count from the first page
+(`total()`). When a request matches more, the crawler asks the board to `split()` it into narrower
+requests built from that page (olx.pl: one per subcategory in the page's category tree, read live)
+and fetches each to its own end, splitting again if one is still over the cap (up to three levels).
+A request that cannot be narrowed is fetched up to the cap and listed under "Capped" in `REPORT.md`,
+so missing offers are visible rather than silent. Incremental stops and "gone" marks work per
+narrowed request.
+
 Requests to one host are spaced by at least ~1.5 s with jitter, shared by crawling and posting
 fetches, with growing back-off on errors (longer on HTTP 429). A board that throttles harder
 declares its own minimum interval (theprotocol.it: 4 s); the profile's `politeness.min_interval_s`
