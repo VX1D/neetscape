@@ -309,21 +309,22 @@ def _item(d: dict, listed: bool, mark=None, det: dict | None = None) -> dict:
 def _data(store: Store, run_id: int, rows: list[dict]) -> list[dict]:
     """Every listed offer plus every marked one (rejected and marked-elsewhere offers are not in the listing)."""
     marks = {m["url"]: m for m in store.tracked(run_id)}
+    offers = {url: store.offer(url) for url in marks}
     by_cluster = {}
     for url, m in marks.items():
-        o = store.offer(url)
-        if o:
-            by_cluster.setdefault(o["cluster_id"], m)
+        if offers[url]:
+            by_cluster.setdefault(offers[url]["cluster_id"], m)
     out, seen = [], set()
     for d in rows:
         m = marks.get(d["url"]) or by_cluster.get(d["cluster_id"])
         out.append(_item(d, True, m, detail(store, d["id"])))
-        seen.add(m["url"] if m else d["url"])
         seen.add(d["url"])
+        if m:
+            seen.add(m["url"])
     for url, m in marks.items():
         if url in seen or m["status"] == "ignored":
             continue
-        o = store.offer(url)
+        o = offers[url]
         d = dict(o) if o else {"id": -len(out) - 1, "url": url, "title": m["title"] or url}
         out.append(_item(d, False, m, detail(store, o["id"]) if o else None))
     return out
@@ -334,7 +335,12 @@ def _script_json(value) -> str:
     return json.dumps(value, ensure_ascii=False).replace("<", "\\u003c")
 
 
+def _options(values) -> str:
+    return "".join(f'<option value="{_e(v)}">{_e(v)}</option>' for v in values)
+
+
 def write_html(store: Store, profile: Profile, run_id: int, rows: list[dict], path) -> None:
+    """Write the review page of a run's listing `rows` (and its marked offers) to `path`."""
     run = store.run(run_id)
     data = _data(store, run_id, rows)
     meta = {"key": f"neetscape-{path.parent.name}", "currency": profile.currency, "lang": _LANG.get(profile.country.code, "en"),
@@ -343,8 +349,8 @@ def write_html(store: Store, profile: Profile, run_id: int, rows: list[dict], pa
             # listings this run did not fetch to their end (over a result cap, or a board's max_pages; see REPORT.md)
             "cut": len(store.capped(run_id)) + sum(not c["deliberate"] for c in store.page_limited(run_id)),
             "searches": {s.id: s.label for s in profile.searches}, "tags": {t["id"]: t["label"] for t in profile.tags}}
-    opt = lambda values: "".join(f'<option value="{_e(v)}">{_e(v)}</option>' for v in values)
     path.write_text(_PAGE.format(
         run_id=run_id, css=_CSS, js=_JS, label=_e(profile.raw.get("label") or "neetscape"), started=_e(run["started_at"][:16]),
-        n_marked=sum(1 for d in data if d["mark"]), n_rows=len(rows), modes=opt(["remote", "hybrid", "onsite", "unknown"]),
-        boards=opt(sorted({b for d in data for b in d["boards"].split(",") if b})), meta=_script_json(meta), data=_script_json(data)))
+        n_marked=sum(1 for d in data if d["mark"]), n_rows=len(rows), modes=_options(["remote", "hybrid", "onsite", "unknown"]),
+        boards=_options(sorted({b for d in data for b in d["boards"].split(",") if b})), meta=_script_json(meta),
+        data=_script_json(data)))
