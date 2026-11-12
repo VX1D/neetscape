@@ -54,17 +54,19 @@ def listing(store: Store, profile: Profile, run_id: int, *, search: str | None =
     its offers. `new_only`: clusters first seen in the run."""
     conditions = ("AND e.search_id = :search " if search else "") + (f"AND ({where_sql})" if where_sql else "")
     best: dict[int, dict] = {}
+    searches: dict[int, set[str]] = {}
     for r in store.db.execute(_LISTING_SQL.format(conditions=conditions), {"run": run_id, "search": search}):
         d = dict(r)
         meta = json.loads(d.pop("why") or "{}")
         d["why"], d["tags"] = meta.get("why", []), meta.get("tags", [])
         if d["mark"] in HIDDEN or (new_only and not d["is_new"]):
             continue
-        cur = best.get(d["cluster_id"])
-        searches = (cur["searches"] if cur else []) + [d["search_id"]]
+        cid, cur = d["cluster_id"], best.get(d["cluster_id"])
+        searches.setdefault(cid, set()).add(d["search_id"])
         if cur is None or (d["score"], d["pay_max"] or 0) > (cur["score"], cur["pay_max"] or 0):
-            best[d["cluster_id"]] = cur = d
-        cur["searches"] = sorted(set(searches))
+            best[cid] = d
+    for cid, d in best.items():
+        d["searches"] = sorted(searches[cid])
     return sorted(best.values(), key=lambda d: tuple(_SORT_KEYS[k](d) for k in profile.sort))
 
 
@@ -186,19 +188,19 @@ def _opened_section(store: Store, rows: list[dict], currency: str) -> list[str]:
     return ["## Opened offers", ""] + [line for d, det in opened for line in _opened_offer(d, det, currency)]
 
 
-def write_reports(store: Store, profile: Profile, run_id: int, out_dir: Path, rows: list[dict] | None = None) -> Path:
-    """Write listing.tsv, offers.csv, REPORT.md and REPORT.html of a run into `out_dir`; returns the REPORT.md path.
-    `rows`: the run's `listing()` when the caller has it already."""
-    out_dir.mkdir(parents=True, exist_ok=True)
-    cur = profile.currency
-    rows = listing(store, profile, run_id) if rows is None else rows
-    (out_dir / "listing.tsv").write_text(format_rows(rows, "tsv", cur) + "\n")
+def _write_tables(out_dir: Path, rows: list[dict], currency: str) -> None:
+    """listing.tsv and offers.csv (the listing plus pay text and rank reasons)."""
+    (out_dir / "listing.tsv").write_text(format_rows(rows, "tsv", currency) + "\n")
     with open(out_dir / "offers.csv", "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=columns(cur) + ["pay_text", "why"])
+        w = csv.DictWriter(f, fieldnames=columns(currency) + ["pay_text", "why"])
         w.writeheader()
         for d in rows:
-            w.writerow(row_values(d, cur) | {"pay_text": d["pay_text"], "why": "; ".join(d["why"])})
+            w.writerow(row_values(d, currency) | {"pay_text": d["pay_text"], "why": "; ".join(d["why"])})
 
+
+def _markdown(store: Store, profile: Profile, run_id: int, rows: list[dict]) -> list[str]:
+    """The lines of REPORT.md."""
+    cur = profile.currency
     run = store.run(run_id)
     per_search = Counter(s for d in rows for s in d["searches"])
     L = [f"# neetscape report — run {run_id} ({run['started_at'][:16]})", ""]
@@ -215,8 +217,16 @@ def write_reports(store: Store, profile: Profile, run_id: int, out_dir: Path, ro
         if top:
             L += [f"## {s.label} — top {len(top)}", "", format_rows(top, "md", cur), ""]
     L += _tracked_section(store, run_id) + _opened_section(store, rows, cur)
-    L += ["## All passing offers", "", f"See `listing.tsv` / `offers.csv` ({len(rows)} rows) or `neetscape list`.", ""]
+    return L + ["## All passing offers", "", f"See `listing.tsv` / `offers.csv` ({len(rows)} rows) or `neetscape list`.", ""]
+
+
+def write_reports(store: Store, profile: Profile, run_id: int, out_dir: Path, rows: list[dict] | None = None) -> Path:
+    """Write listing.tsv, offers.csv, REPORT.md and REPORT.html of a run into `out_dir`; returns the REPORT.md path.
+    `rows`: the run's `listing()` when the caller has it already."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    rows = listing(store, profile, run_id) if rows is None else rows
+    _write_tables(out_dir, rows, profile.currency)
     path = out_dir / "REPORT.md"
-    path.write_text("\n".join(L) + "\n")
+    path.write_text("\n".join(_markdown(store, profile, run_id, rows)) + "\n")
     write_html(store, profile, run_id, rows, out_dir / "REPORT.html")
     return path
