@@ -62,3 +62,10 @@ def test_euro_in_pln_database():
 def test_thousands_words_and_weekly_rates(text, expected):
     fx, base = ({"EUR": 1.0}, "EUR") if "€" in text else (None, "PLN")
     assert parse_pay(text, fx, base=base) == expected
+
+
+def test_b2b_day_rate_filed_as_monthly():
+    from neetscape.pay import parse_pay
+    assert parse_pay("b2b:800-1100 PLN/month") == (800 * 21, 1100 * 21)        # a day rate
+    assert parse_pay("mandate:1700-1700 PLN/month") == (1700, 1700)            # a small part-time mandate stays monthly
+    assert parse_pay("b2b:12000-15000 PLN/month") == (12000, 15000)

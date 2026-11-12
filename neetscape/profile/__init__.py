@@ -132,7 +132,7 @@ def build_search(d: dict, defaults: dict, n: int, home: Country | None = None) -
         title_exclude=_rx(at + ".title_exclude", s.get("title_exclude")),
         text_exclude=_rx(at + ".text_exclude", s.get("text_exclude")),
         category_include=_rx(at + ".category_include", s.get("category_include")),
-        unknown=s.get("unknown", "keep"), boost=int(s.get("boost", 0)))
+        unknown=s.get("unknown", "keep"), boost=int(s.get("boost", 0)), remote_proof=bool(s.get("remote_proof", False)))
 
 
 _TYPES = {"object": dict, "array": list, "string": str, "boolean": bool, "integer": int, "number": (int, float),

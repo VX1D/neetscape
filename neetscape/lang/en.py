@@ -8,7 +8,7 @@ VOCAB = {
         ],
     },
     "mode": {
-        "remote": [r"\bremote\b", r"home office"],
+        "remote": [r"\bremote\b", r"home office", r"work(?:ing)? from (?:your (?:own )?)?home"],
         "hybrid": [r"hybrid(?![- ](?:cloud|apps?|mobile|infrastructure|environments?))"],
         "onsite": [r"on-?site"],
     },
@@ -32,16 +32,25 @@ VOCAB = {
         "mid": [r"\bmid\b", r"regular"],
     },
     "hints": {
-        "fully_remote": [r"fully remote", r"full-remote", r"remote-first", r"100% remote"],
+        "fully_remote": [r"fully[- ]remote", r"full-remote", r"100\s*% remote", r"remote[- ]only", r"work from anywhere",
+                         r"from anywhere in (?:poland|europe|the eu)"],
         "hybrid": [r"hybrid\w*", r"on-?site", r"\d+ days (?:a week )?in (?:the )?office"],
         "years": [r"\d\+?\s*(?:-\s*\d+\s*)?years?\s*(?:of )?(?:commercial )?experience"],
         "degree": [r"bachelor\w*", r"master'?s", r"\bdegree\b"],
         "languages": [r"\b(?:german|french|dutch|italian|spanish|swedish|norwegian|danish|czech)\b"],
         "fixed_term": [r"fixed[- ]term", r"temporary contract"],
+        "office": [r"client visits?", r"visits? (?:to|at) (?:the |our )?clients?", r"business trips?", r"travel(?:ling)? (?:is )?required",
+                   r"willing(?:ness)? to travel", r"(?:once|twice|\d+ times?) (?:a|per) (?:month|week|quarter)\W+(?:in|at|to) (?:the |our )?office",
+                   r"office (?:days?|visits?)", r"relocat\w*", r"on-?site onboarding"],
     },
 }
 
 EXAMPLES = [
+    ("Fully remote, work from anywhere in Poland", "fully_remote", True),
+    ("Location: Poland (Work from Home)", "mode", "remote"),
+    ("Remote-first culture with an office in Warsaw", "fully_remote", False),
+    ("Remote, with client visits a few times a month", "office", ["client visits"]),
+    ("Remote; you meet us once a month at our office", "office", ["once a month at our office"]),
     ("Fully remote Python developer", "mode", "remote"),
     ("Hybrid, 2 days in the office", "mode", "hybrid"),
     ("Hybrid work, 3 days remote per week", "mode", "hybrid"),

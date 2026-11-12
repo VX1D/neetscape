@@ -9,7 +9,8 @@ Each module `<code>.py` (ISO 639-1) defines
         "level":    {"intern": [...], ...},
         "first":    {"mode": [(value, regex), ...]},     # optional: checked before the merged tables
         "hints":    {"fully_remote": [...], "hybrid": [...], "years": [...], "degree": [...],
-                     "languages": [...], "fixed_term": [...]},
+                     "languages": [...], "fixed_term": [...],
+                     "office": [...]},                  # required presence: client visits, business travel, office days
     }
     EXAMPLES = [(text, field, expected), ...]           # checked by tests/core/test_lang.py
 
@@ -32,7 +33,7 @@ ORDER = {
     "level": ("intern", "junior", "senior", "lead", "manager", "mid"),
 }
 DEFAULT = ("pl", "en")  # free text of unknown origin (historical: the tool started with Polish boards)
-HINTS = ("fully_remote", "hybrid", "years", "degree", "languages", "fixed_term")
+HINTS = ("fully_remote", "hybrid", "years", "degree", "languages", "fixed_term", "office")
 
 
 def with_english(languages) -> tuple:

@@ -142,6 +142,7 @@ class Search:
     category_include: tuple = ()
     unknown: str = "keep"                       # keep or drop offers whose filtered field is unknown
     boost: int = 0
+    remote_proof: bool = False                  # the fetched posting must state fully remote work, with no hybrid or required presence
 
     def keywords_on(self, board: str) -> tuple[str, ...] | None:
         if self.keywords is None:

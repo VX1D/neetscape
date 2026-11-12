@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
+import re
 import urllib.parse
 from collections import defaultdict
 
@@ -48,9 +49,23 @@ def _from_posting(row, text: str, meta: dict, hints: dict, languages) -> dict:
     mode = "remote" if meta.get("remote") or hints.get("fully_remote") else "hybrid" if hints.get("hybrid") else "unknown"
     found = {"mode": mode, "worktime": infer.worktime_from_text(text, languages)}
     out = {k: v for k, v in found.items() if row[k] == "unknown" and v != "unknown"}
-    if not row["contracts"] and (cs := infer.contracts_from_text(text, languages)):
+    if not row["contracts"] and (cs := _posting_contracts(row, text, languages)):
         out["contracts"] = ",".join(cs)
     return out
+
+
+_INTERNSHIP_FIELD = re.compile(r"employment type:\s*internship|rodzaj (?:umowy|zatrudnienia):\s*sta[żz]", re.I)
+
+
+def _posting_contracts(row, text: str, languages) -> list[str]:
+    """Contract types named in the posting. An internship only when the title says so or a labelled field does
+    (LinkedIn's "Employment type: Internship"): free text mentions "staż" and "internships" for other reasons
+    (a company's 37 years of "stażu", "experience from internships", an internship programme as a benefit)."""
+    found = infer.contracts_from_text(text, languages)
+    if "internship" in found and not (_INTERNSHIP_FIELD.search(text)
+                                      or "internship" in infer.contracts_from_text(row["title"] or "", languages)):
+        found.remove("internship")
+    return found
 
 
 def _is_earlier_first_publication(row, meta: dict) -> bool:

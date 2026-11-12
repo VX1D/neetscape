@@ -241,3 +241,43 @@ def test_request_over_the_result_cap_is_split_recursively(fake, tmp_path):
     assert reqs[""]["stop_reason"].startswith("split into 2") and not reqs[""]["complete"]
     assert reqs["b"]["stop_reason"].startswith("split into 2") and all(reqs[k]["complete"] for k in ("a", "b1", "b2"))
     assert {o["key"] for o in db.run_offers(rid)} >= {f"{c}{i}" for c, n in (("a", 4), ("b1", 3), ("b2", 2)) for i in range(n)}
+
+
+def test_same_job_with_a_qualified_title_shares_a_cluster(tmp_path):
+    db = Store(tmp_path / "j.db")
+    r = db.start_run({}, [])
+    req = db.start_request(r, "x", "s", None, {}, ())
+    offers = [Offer(board="solidjobs", key="1", url="u1", title="Senior Fullstack Developer", company="DCG"),
+              Offer(board="justjoin", key="2", url="u2", title="Senior Fullstack Developer (Java / React)", company="DCG"),
+              Offer(board="justjoin", key="3", url="u3", title="Data Analyst Junior (SQL)", company="Acme"),
+              Offer(board="pracuj", key="4", url="u4", title="Data Analyst Junior (Python)", company="Acme"),
+              Offer(board="olx", key="5", url="u5", title="Data Analyst Junior", company="Acme")]
+    db.ingest(offers, r, req, 1)
+    cid = {o["key"]: o["cluster_id"] for o in db.q("SELECT key, cluster_id FROM offers")}
+    assert cid["1"] == cid["2"]                                   # one extra qualifier: the same job
+    assert cid["3"] != cid["4"]                                   # two different qualifiers: two jobs
+    assert cid["5"] not in (cid["3"], cid["4"])                   # the bare title matches both: ambiguous, kept apart
+
+
+def test_a_level_in_the_qualifier_is_another_job():
+    from neetscape.model import norm
+    from neetscape.store import same_job_title
+    assert same_job_title(norm("Magister Farmacji"), norm("Magister Farmacji (k/m)"))
+    assert not same_job_title(norm("Tester Manualny"), norm("Tester Manualny (Senior)"))
+    assert not same_job_title(norm("Data Analyst"), norm("Data Analyst - Junior"))
+
+
+def test_migration_merges_existing_qualified_duplicates(tmp_path):
+    from neetscape import store as st
+    db = Store(tmp_path / "j.db")
+    r = db.start_run({}, [])
+    req = db.start_request(r, "x", "s", None, {}, ())
+    db.ingest([Offer(board="a", key="1", url="u1", title="Senior Fullstack Developer", company="DCG")], r, req, 1)
+    db.db.execute("INSERT INTO clusters(dedup_key, first_seen_run) VALUES ('seniorfullstackdeveloperjavareact|dcg', 1)")
+    long_id = db.db.execute("SELECT id FROM clusters WHERE dedup_key LIKE 'seniorfullstackdeveloperjava%'").fetchone()[0]
+    db.db.execute("INSERT INTO offers(board, key, url, title, company, cluster_id) VALUES ('b','2','u2','x','DCG',?)", (long_id,))
+    db.db.execute("DROP INDEX clusters_company")
+    db.db.execute("ALTER TABLE clusters DROP COLUMN title")
+    db.db.execute("ALTER TABLE clusters DROP COLUMN company")
+    st._cluster_columns(db.db)
+    assert len({row[0] for row in db.db.execute("SELECT cluster_id FROM offers")}) == 1
