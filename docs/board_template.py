@@ -1,54 +1,59 @@
-"""Template for a new board. Copy to neetscape/countries/<cc>/boards/<name>.py, import it in that
-package's __init__.py and add it to __all__ there, record a fixture and add a parser test (see CONTRIBUTING.md).
+"""example.com — what is read and how: a public JSON API (plain HTTP), the JSON embedded in the result page, or
+server-rendered cards. Copy to neetscape/countries/<cc>/boards/<name>.py, import it in that package's __init__.py
+and add it to __all__ there, record a fixture and add a COVERAGE row (see CONTRIBUTING.md).
 
-Write here what you verified live and when: the URL format, which query parameters change the
-results (and which are ignored), page size, ordering, rate limits, the board's terms.
+    GET https://jobs.example.com/api/search?q=K&remote=1&sort=date&page=N
 
-    GET https://jobs.example.com/api/search?q=K&remote=1&page=N      (verified live YYYY-MM-DD)
+Verified live YYYY-MM-DD:
+- which query parameters change the results, and which are ignored;
+- page size, what the page after the last one returns, a result cap (or none, and how that was checked);
+- the order (newest first?), which date the board shows (first publication or last refresh);
+- rate limits, the board's terms.
 
-Worked examples per shape: a GET JSON API, neetscape/countries/de/boards/arbeitnow.py; a POST search API
-(`post_body`), countries/pl/boards/bulldogjob.py; JSON embedded in the result page read in a browser tab
-(transport "browser_fetch", `fetch_js`), countries/pl/boards/pracuj.py; server-rendered cards over plain HTTP,
-countries/pl/boards/useme.py. Shared parsing helpers are in neetscape/boards/pages.py.
+Layout: this docstring, imports, constants (URLs, vocabulary tables, `FETCH_JS`), small functions per card field,
+then the class with its methods in this order. Use the helpers in boards/pages.py and boards/base.py. Examples: a
+GET JSON API, countries/de/boards/arbeitnow.py; a POST API (`post_body`), pl/boards/bulldogjob.py; JSON embedded in
+the page, read in a tab (`fetch_js`), pl/boards/pracuj.py; server-rendered cards, pl/boards/useme.py.
 """
 from __future__ import annotations
 
 import json
-import urllib.parse
 
 from .... import infer
 from ....boards.base import Board, Caps, Request, register
-from ....boards.pages import epoch_or_iso_date, pay_range
+from ....boards.pages import date_of, pay_range, present, with_query
 from ....model import Offer
+from .vocab import LANGS  # lang packs of the country (neetscape/lang/<code>.py)
 
-LANGS = ("xx", "en")  # lang packs of the country (neetscape/lang/<code>.py)
+API = "https://jobs.example.com/api/search"
+
+
+def pay_text(salary: dict) -> str:
+    """'b2b:12000-18000 EUR/month'; '' without a range."""
+    return pay_range("b2b", salary["min"], salary.get("max"), "EUR", "month") if salary.get("min") else ""
 
 
 @register  # the country comes from the package path (neetscape.countries.<cc>...)
 class Example(Board):
     name = "example"
-    # Be honest: declare only what you verified. Whatever is not pushed is still checked locally, so a
-    # missing capability costs crawl time, never results; a wrong one silently loses offers.
+    # Be honest: declare only what you verified (defaults left out). Whatever is not pushed is still checked
+    # locally, so a missing capability costs crawl time, never results; a wrong one silently loses offers.
     caps = Caps(
         keywords=True,          # the board searches phrases server-side
         remote="filter",        # "filter" (server-side), "always" (remote-only board) or "no"
-        city=False, radius=False,
-        worktime=False,         # server-side part-time filter
         sort_newest=True,       # results can be ordered newest first (enables incremental stops)
         page_size=50,           # fixed page size (a shorter page ends the request); 0 if it varies
         max_pages=20,
-        huge_unfiltered=False,  # listing everything is too large without keywords, a city or the remote filter
-        local_all=False,        # the whole board is one cheap download (serves every search)
-        whole_listing=False,    # one response is the request's whole listing (feeds): fetching it completes it
-        result_cap=0,           # most results one search shows (olx.pl: 1000); then implement total() and split()
         transport="http",       # "http" (GET, or POST with `post_body`) or "browser_fetch" (same-origin fetch
-        origin="",              # in a tab opened on `origin`, for boards that wall plain clients)
-    )
+    )                           # in a tab opened on `origin`, for boards that wall plain clients)
+    # Other Caps: city, radius, worktime (part-time filter), huge_unfiltered (listing everything is too large
+    # without keywords, a city or the remote filter), local_all (the whole board is one cheap download),
+    # whole_listing (one response is the whole listing), result_cap (+ total()/split()), empty_retries, origin.
     accept = "application/json"  # http: Accept header
-    headers: dict = {}           # http: extra request headers (e.g. a public API key)
-    content_type = ""            # http POST searches: Content-Type of `post_body`
-    min_interval: dict = {}      # host -> seconds between requests, for boards that throttle hard
-    posting_selector = ""        # CSS selector of the posting body on the rendered offer page, a fallback for
+    # headers = {...}            # http: extra request headers (e.g. a public API key)
+    # content_type = "..."       # http POST searches: Content-Type of `post_body`
+    # min_interval = {"jobs.example.com": 4.0}  # seconds between requests, for boards that throttle hard
+    # posting_selector = "..."   # CSS selector of the posting body on the rendered offer page, a fallback for
     #                              `details` when `posting()` finds no text; empty: never render
 
     def page_url(self, r: Request, page: int) -> str | None:
@@ -61,16 +66,13 @@ class Example(Board):
             q["remote"] = 1
         if r.params.get("sort") == "newest":
             q["sort"] = "date"
-        q["page"] = page
-        return "https://jobs.example.com/api/search?" + urllib.parse.urlencode(q)
+        return with_query(API, q | {"page": page})
 
-    def post_body(self, r: Request, page: int) -> str | None:
-        """Only for searches sent as a POST (http transport): the body, sent as `content_type`. Default None (GET)."""
-        return None
+    # def post_body(self, r: Request, page: int) -> str | None:
+    #     """Only for searches sent as a POST (http transport): the body, sent as `content_type`."""
 
-    def fetch_js(self) -> str | None:
-        """Only for browser_fetch: JS `(text)=>string` that cuts the page down in the tab (pages.script_json)."""
-        return None
+    # def fetch_js(self) -> str | None:
+    #     """Only for browser_fetch: JS `(text)=>string` that cuts the page down in the tab (pages.script_json)."""
 
     def parse(self, raw: str, r: Request) -> list[Offer]:
         """Pure function of the raw page: no network, no clock. Unknown stays unknown. Raise ValueError when
@@ -78,17 +80,14 @@ class Example(Board):
         out = []
         for o in json.loads(raw).get("jobs") or []:
             url = o["url"]
-            sal = o.get("salary") or {}
             out.append(Offer(
                 board=self.name, key=url, url=url, title=o.get("title") or "", company=o.get("company") or "",
-                mode="remote" if o.get("remote") else "unknown",
-                locations=[o["city"]] if o.get("city") else [],
+                mode="remote" if o.get("remote") else "unknown", locations=present(o.get("city")),
                 contracts=[infer.contract(c) for c in o.get("contracts") or []],
-                level=infer.level_from_text(o.get("title") or "", LANGS),
-                pay_text=pay_range("b2b", sal["min"], sal.get("max"), "EUR", "month") if sal.get("min") else "",
-                published=epoch_or_iso_date(o.get("date"))))
+                level=infer.level_from_text(o.get("title") or "", LANGS), pay_text=pay_text(o.get("salary") or {}),
+                published=date_of(o.get("date"))))
         return out
 
-    # def posting(self, page: str) -> dict:
-    #     """Override only when the offer page's JSON-LD lacks the posting body: return `parse_posting`'s fields
-    #     with `description` read from the page's embedded data (never the whole page) and `source` "board"."""
+    # def posting_body(self, page: str) -> str:
+    #     """Only when the offer page's JSON-LD lacks the posting body: the body read from the page's embedded
+    #     data, as plain text (never the whole page); `posting()` then stores it with `source` "board"."""
