@@ -52,11 +52,13 @@ _discovered = False
 
 
 def register(c: Country) -> Country:
+    """Add a country to the registry (`discover` does it for every country package)."""
     COUNTRIES[c.code] = c
     return c
 
 
-def _packages():
+def _packages() -> list[str]:
+    """Codes of the country packages under `neetscape/countries/`."""
     from . import countries
     return [m.name for m in pkgutil.iter_modules(countries.__path__) if m.ispkg]
 
@@ -86,6 +88,7 @@ def load_boards() -> None:
 
 
 def get(code: str) -> Country:
+    """The country `code`; KeyError naming the available ones when it does not exist."""
     discover()
     try:
         return COUNTRIES[code]

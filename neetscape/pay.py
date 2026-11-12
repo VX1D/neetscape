@@ -33,7 +33,10 @@ THRESHOLDS = {
     "CHF": dict(hourly_below=120, yearly_above=25000, month_min=120, month_max=120_000, single_min=250, b2b_day_below=550),
 }
 
-_CUR = r"(?:zł|pln|eur|€|usd|\$|gbp|£|chf)"
+# currency marks (lower case), in the order `_currency` tries them
+_CURRENCIES = (("zł", "PLN"), ("pln", "PLN"), ("eur", "EUR"), ("€", "EUR"), ("usd", "USD"), ("$", "USD"),
+               ("gbp", "GBP"), ("£", "GBP"), ("chf", "CHF"))
+_CUR = "(?:" + "|".join(re.escape(mark) for mark, _ in _CURRENCIES) + ")"
 _NUM = r"\d[\d\s .,]*(?:k|tys\.?|tsd\.?)?"  # 8.3k, "4,5 tys." (thousand)
 _THOUSAND = re.compile(r"(?:k|tys\.?|tsd\.?)$")
 _RANGE = re.compile(
@@ -49,6 +52,7 @@ _MONTH = re.compile(r"pro monat|monatlich|/\s*monat\b|\bmtl\.", re.I)  # only wo
 
 
 def _number(s: str) -> float | None:
+    """An amount as written: "8.3k", "4,5 tys.", "10,000.00", "10.000,00", "1 200"; None when unreadable."""
     s = s.strip().lower()
     mult = 1000 if _THOUSAND.search(s) else 1
     s = re.sub(r"\s", "", _THOUSAND.sub("", s))
@@ -65,13 +69,11 @@ def _number(s: str) -> float | None:
 
 
 def _currency(*parts: str | None) -> str | None:
-    for p in parts:
-        if not p:
-            continue
+    """Currency code of the first part that names one, else None."""
+    for p in filter(None, parts):
         p = p.lower()
-        for sym, code in (("zł", "PLN"), ("pln", "PLN"), ("eur", "EUR"), ("€", "EUR"), ("usd", "USD"), ("$", "USD"),
-                          ("gbp", "GBP"), ("£", "GBP"), ("chf", "CHF")):
-            if sym in p:
+        for mark, code in _CURRENCIES:
+            if mark in p:
                 return code
     return None
 
@@ -81,6 +83,7 @@ def _has_unit(text: str) -> bool:
 
 
 def _factor(text: str, lo: float, t: dict, hours: float, days: float) -> float:
+    """Multiplier from the amount's unit to a month: the unit word in `text`, else the size of `lo` (`t`: THRESHOLDS)."""
     if _HOUR.search(text):
         return hours
     if _WEEK.search(text):

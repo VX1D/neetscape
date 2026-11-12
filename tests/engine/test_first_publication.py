@@ -22,8 +22,8 @@ def run_once(board, store: Store, r: Request, pages: dict[int, list[Offer]], mon
     monkeypatch.setattr(board, "parse", lambda raw, r: [Offer(**vars(o)) for o in pages.get(_page(raw), [])])
     run_id = store.start_run({}, [])
     search = Search(id=r.search_id, label=r.search_id, where=Where(remote=True), keywords=None)
-    asyncio.run(crawler._run_request(board, FakeFetcher(pages), r, search, store, run_id, fx={}, limit_pages=None,
-                                     incremental=True, record=None, parsed=set(), pauses=crawler.RETRY_PAUSES))
+    crawl = crawler._Crawl(store, run_id, fx={}, pauses=crawler.RETRY_PAUSES)
+    asyncio.run(crawler._run_request(board, FakeFetcher(pages), r, search, crawl))
     return run_id
 
 

@@ -20,8 +20,21 @@ import re
 import sqlite3
 from pathlib import Path
 
-from .infer import board_facts
+from . import country as countries
+from . import infer
 from .model import Offer, canonical_contract, norm, norm_company, parse_date
+
+MARK_STATUSES = ("shortlisted", "applied", "interview", "offer", "rejected", "ignored")
+HIDDEN = ("rejected", "ignored")
+GONE = (404, 410)  # HTTP statuses of a posting that mark its offer gone
+_POSTING_OK = "d.http_status = 200 AND d.text != ''"  # a stored posting with text (failures keep status 0 / 4xx)
+_EMPTY = (None, "", "unknown", "[]", "{}")  # stored values that mean "the board did not say"
+
+# Stop reasons of a request that reached its last allowed page: the board's `max_pages`, or a smaller
+# `--limit-pages N` given to the command that fetched it (a resumed run may get another limit than it started with).
+PAGE_LIMIT = "page limit"
+PAGE_LIMIT_ASKED = "page limit (--limit-pages)"
+_CAPPED = "stop_reason LIKE '%capped:%'"  # a request over the board's result cap that could not be split
 
 
 def _rename_contracts(db: sqlite3.Connection) -> None:
@@ -33,8 +46,6 @@ def _rename_contracts(db: sqlite3.Connection) -> None:
 
 
 MIN_PREFIX = 12  # a normalised title this long that starts another one of the same company names the same job
-
-
 # a qualifier naming a level makes another job ("Tester Manualny" / "Tester Manualny (Senior)"); titles are normalised
 # without spaces, so these are matched as substrings of the qualifier
 _LEVEL_QUALIFIER = re.compile(r"senior|junior|mid|regular|lead|principal|staff|expert|ekspert|starsz|mlodsz|intern|staz"
@@ -135,20 +146,6 @@ MIGRATIONS = [
     _observation_columns,
 ]
 
-MARK_STATUSES = ("shortlisted", "applied", "interview", "offer", "rejected", "ignored")
-HIDDEN = ("rejected", "ignored")
-GONE = (404, 410)  # HTTP statuses of a posting that mark its offer gone
-_POSTING_OK = "d.http_status = 200 AND d.text != ''"  # a stored posting with text (failures keep status 0 / 4xx)
-
-
-_EMPTY = (None, "", "unknown", "[]", "{}")  # stored values that mean "the board did not say"
-
-# Stop reasons of a request that reached its last allowed page: the board's `max_pages`, or a smaller
-# `--limit-pages N` given to the command that fetched it (a resumed run may get another limit than it started with).
-PAGE_LIMIT = "page limit"
-PAGE_LIMIT_ASKED = "page limit (--limit-pages)"
-_CAPPED = "stop_reason LIKE '%capped:%'"  # a request over the board's result cap that could not be split
-
 # The current state as of run :run, as CTEs ending in `cur(offer_id)`. A board's latest crawl is the latest run
 # <= :run with requests to it. An offer is current when it is not marked gone (by the start of the next run)
 # and that crawl saw it, or that crawl repeated a request that saw it earlier without reaching the request's end
@@ -181,10 +178,12 @@ def has_verdict(offer: str) -> str:
 
 
 def now() -> str:
+    """The local time as stored: ISO 8601 to the second."""
     return dt.datetime.now().isoformat(timespec="seconds")
 
 
 def request_key(board: str, keyword: str | None, params: dict) -> str:
+    """Identity of a request across runs: a hash of its board, phrase and parameters."""
     raw = json.dumps([board, keyword, sorted(params.items())], ensure_ascii=False)
     return hashlib.sha1(raw.encode()).hexdigest()[:16]
 
@@ -225,7 +224,15 @@ class Store:
         self.db.close()
 
     def q(self, sql: str, *args) -> list[sqlite3.Row]:
+        """All rows of a query with positional parameters."""
         return self.db.execute(sql, args).fetchall()
+
+    def _one(self, sql: str, *args) -> sqlite3.Row | None:
+        return self.db.execute(sql, args).fetchone()
+
+    def update_offer(self, offer_id: int, cols: dict) -> None:
+        """Set some columns of one offer (not committed)."""
+        self.db.execute(f"UPDATE offers SET {', '.join(f'{k}=?' for k in cols)} WHERE id=?", (*cols.values(), offer_id))
 
     # ---------------------------------------------------------------- runs & requests
     def start_run(self, profile: dict, argv: list[str]) -> int:
@@ -239,17 +246,19 @@ class Store:
         self.db.commit()
 
     def run(self, run_id: int) -> sqlite3.Row | None:
-        return self.db.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
+        return self._one("SELECT * FROM runs WHERE id=?", run_id)
 
     def last_run(self, status: str | None = None) -> int | None:
-        sql = "SELECT id FROM runs" + (" WHERE status=?" if status else "") + " ORDER BY id DESC LIMIT 1"
-        row = self.db.execute(sql, (status,) if status else ()).fetchone()
+        """The latest run, optionally the latest with `status`."""
+        args = (status,) if status else ()
+        row = self._one("SELECT id FROM runs" + (" WHERE status=?" if status else "") + " ORDER BY id DESC LIMIT 1", *args)
         return row[0] if row else None
 
     def run_country(self, run_id: int | None = None) -> str | None:
         """Country of the profile of a run (default: the latest run that has a profile)."""
-        sql = "SELECT profile_json FROM runs WHERE profile_json NOT IN ('', '{}')" + (" AND id=?" if run_id else "") + " ORDER BY id DESC LIMIT 1"
-        row = self.db.execute(sql, (run_id,) if run_id else ()).fetchone()
+        args = (run_id,) if run_id else ()
+        row = self._one("SELECT profile_json FROM runs WHERE profile_json NOT IN ('', '{}')" + (" AND id=?" if run_id else "")
+                        + " ORDER BY id DESC LIMIT 1", *args)
         if not row:
             return None
         return (json.loads(row[0]) or {}).get("country", "pl")
@@ -273,41 +282,42 @@ class Store:
         return bool(self.q("SELECT 1 FROM requests WHERE req_key=? AND run_id<? AND complete=1 LIMIT 1", req_key, run_id))
 
     def done_request_keys(self, run_id: int) -> set[str]:
+        """Keys of the requests a run finished (`--resume` skips them)."""
         return {r[0] for r in self.q("SELECT req_key FROM requests WHERE run_id=? AND status='done'", run_id)}
 
     # ---------------------------------------------------------------- offers
     def _cluster(self, o: Offer, run_id: int) -> int:
         """Same title and compatible company = same job. An unknown company joins a cluster whose company
         name appears in the offer's card text."""
-        t, c = o.title_norm, norm_company(o.company)
-        if c:
-            key = f"{t}|{c}"
-            if not self.db.execute("SELECT 1 FROM clusters WHERE dedup_key=?", (key,)).fetchone():
-                partners = [r for r in self.db.execute("SELECT id, title FROM clusters WHERE company=?", (c,))
-                            if same_job_title(t, r[1])]
+        title, company = o.title_norm, norm_company(o.company)
+        if company:
+            if not self._one("SELECT 1 FROM clusters WHERE dedup_key=?", f"{title}|{company}"):
+                partners = [r for r in self.q("SELECT id, title FROM clusters WHERE company=?", company)
+                            if same_job_title(title, r["title"])]
                 if len(partners) == 1:  # the same job under a longer or shorter title (one unambiguous match)
-                    return partners[0][0]
+                    return partners[0]["id"]
         else:
             hay = norm(o.snippet + " " + o.title)
-            cands = self.q("SELECT dedup_key FROM clusters WHERE dedup_key LIKE ?", t + "|%")
-            match = next((r[0] for r in cands if r[0].split("|", 1)[1] and r[0].split("|", 1)[1] in hay), None)
-            key = match or f"{t}|"
-        row = self.db.execute("SELECT id FROM clusters WHERE dedup_key=?", (key,)).fetchone()
+            # the first in key order (read from the unique index) of this title's companies named in the card
+            keys = self.q("SELECT dedup_key FROM clusters WHERE dedup_key LIKE ? ORDER BY dedup_key", title + "|%")
+            company = next((c for c in (r[0].partition("|")[2] for r in keys) if c and c in hay), "")
+        key = f"{title}|{company}"
+        row = self._one("SELECT id FROM clusters WHERE dedup_key=?", key)
         if row:
             return row[0]
-        title, _, company = key.partition("|")
         return self.db.execute("INSERT INTO clusters(dedup_key, first_seen_run, title, company) VALUES (?,?,?,?)",
                                (key, run_id, title, company)).lastrowid
 
     @staticmethod
     def _offer_values(o: Offer) -> dict:
+        """The offer's columns as stored."""
         return dict(url=o.url, title=o.title, title_norm=o.title_norm, company=o.company, mode=o.mode,
                     locations=json.dumps(o.locations, ensure_ascii=False), worktime=o.worktime,
                     contracts=",".join(sorted({canonical_contract(c) for c in o.contracts})), level=o.level,
                     category=o.category, skills=", ".join(o.skills), pay_text=o.pay_text, pay_period=o.pay_period,
                     pay_min=o.pay_min, pay_max=o.pay_max, published=o.published.isoformat() if o.published else None,
                     promoted=int(o.promoted), snippet=o.snippet[:1000], description=o.description,
-                    facts=json.dumps(board_facts(o) if o.facts is None else o.facts, ensure_ascii=False, sort_keys=True),
+                    facts=json.dumps(infer.board_facts(o) if o.facts is None else o.facts, ensure_ascii=False, sort_keys=True),
                     country=o.country)
 
     def _posting_set_published(self, cur: sqlite3.Row, card_published: str | None) -> bool:
@@ -315,7 +325,7 @@ class Store:
         stored, card = parse_date(cur["published"]), parse_date(card_published)
         if not (stored and card and stored < card):
             return False
-        row = self.db.execute("SELECT jsonld FROM details WHERE offer_id=?", (cur["id"],)).fetchone()
+        row = self._one("SELECT jsonld FROM details WHERE offer_id=?", cur["id"])
         return bool(row and row[0]) and json.loads(row[0]).get("published") == cur["published"]
 
     def _upsert(self, o: Offer, run_id: int, posting_date_is_first: bool = False) -> tuple[int, bool]:
@@ -323,7 +333,7 @@ class Store:
         values the new sighting lacks and, with `posting_date_is_first` (`Board.posting_date_is_first`), the first
         publication date read from the posting over the card's later refresh date."""
         values = self._offer_values(o)
-        cur = self.db.execute("SELECT * FROM offers WHERE board=? AND key=?", (o.board, o.key)).fetchone()
+        cur = self._one("SELECT * FROM offers WHERE board=? AND key=?", o.board, o.key)
         if cur:
             merged = {k: (cur[k] if v in _EMPTY else v) for k, v in values.items()}
             if posting_date_is_first and self._posting_set_published(cur, values["published"]):
@@ -342,8 +352,7 @@ class Store:
         """Derive the inferred fields (infer.derive) of some offers, or of all, again from their observations: the
         adapter's facts, the title and card text, the requests that found them and the fetched posting. Returns
         how many offers changed."""
-        from . import country as countries, infer
-        from .boards import REGISTRY
+        from .boards import REGISTRY  # boards import the store
         if offer_ids is not None and not offer_ids:
             return 0
         home = self.run_country() or "pl"
@@ -366,7 +375,7 @@ class Store:
                                 category=" ".join(filter(None, (r["category"], r["request_category"]))),
                                 languages=countries.languages(code))
             if any(r[k] != v for k, v in cols.items()):
-                self.db.execute(f"UPDATE offers SET {', '.join(f'{k}=?' for k in cols)} WHERE id=?", (*cols.values(), r["id"]))
+                self.update_offer(r["id"], cols)
                 changed += 1
         self.db.commit()
         return changed
@@ -389,14 +398,13 @@ class Store:
 
     def mark_gone(self, run_id: int) -> int:
         """Offers seen earlier under a request that completed in this run, but not seen by it now."""
-        rows = self.q("""
-            SELECT DISTINCT s.offer_id FROM sightings s JOIN requests old ON old.id = s.request_id
-            JOIN requests cur ON cur.req_key = old.req_key AND cur.run_id = ? AND cur.complete = 1
-            WHERE old.run_id < ? AND NOT EXISTS (
-                SELECT 1 FROM sightings s2 WHERE s2.offer_id = s.offer_id AND s2.request_id = cur.id)""", run_id, run_id)
-        stamp = now()
-        gone = sum(self.db.execute("UPDATE offers SET gone_at=? WHERE id=? AND gone_at IS NULL AND last_seen_run < ?",
-                                   (stamp, r[0], run_id)).rowcount for r in rows)
+        gone = self.db.execute("""
+            UPDATE offers SET gone_at = :now WHERE gone_at IS NULL AND last_seen_run < :run AND id IN (
+                SELECT s.offer_id FROM sightings s JOIN requests old ON old.id = s.request_id
+                JOIN requests cur ON cur.req_key = old.req_key AND cur.run_id = :run AND cur.complete = 1
+                WHERE old.run_id < :run AND NOT EXISTS (
+                    SELECT 1 FROM sightings s2 WHERE s2.offer_id = s.offer_id AND s2.request_id = cur.id))""",
+                               {"now": now(), "run": run_id}).rowcount
         self.db.commit()
         return gone
 
@@ -450,6 +458,7 @@ class Store:
         return {r["search_id"]: r["reasons"].split("; ") if r["reasons"] else [] for r in rows}
 
     def save_detail(self, offer_id: int, status: int, text: str, jsonld: dict, hints: dict) -> None:
+        """Store an offer's posting (replacing an earlier one); a 404/410 marks the offer gone."""
         self.db.execute("INSERT OR REPLACE INTO details VALUES (?,?,?,?,?,?)",
                         (offer_id, now(), status, text, json.dumps(jsonld, ensure_ascii=False), json.dumps(hints, ensure_ascii=False)))
         if status in GONE:
@@ -490,8 +499,8 @@ class Store:
     def offer(self, ref: str | int) -> sqlite3.Row | None:
         """An offer by id, URL or board key."""
         if self._is_id(ref):
-            return self.db.execute("SELECT * FROM offers WHERE id=?", (int(ref),)).fetchone()
-        return self.db.execute("SELECT * FROM offers WHERE url=? OR key=?", (ref, ref)).fetchone()
+            return self._one("SELECT * FROM offers WHERE id=?", int(ref))
+        return self._one("SELECT * FROM offers WHERE url=? OR key=?", ref, ref)
 
     def mark(self, ref: str | int, status: str, note: str = "") -> sqlite3.Row:
         """Record a decision on an offer (by id, URL or key) or on any URL found elsewhere."""
@@ -504,7 +513,7 @@ class Store:
         self.db.execute("INSERT INTO marks(url, offer_id, status, note, at) VALUES (?,?,?,?,?)",
                         (url, o["id"] if o else None, status, note, now()))
         self.db.commit()
-        return self.db.execute("SELECT * FROM tracked WHERE url=?", (url,)).fetchone()
+        return self._one("SELECT * FROM tracked WHERE url=?", url)
 
     def tracked(self, run_id: int | None = None, hidden: bool = True) -> list[sqlite3.Row]:
         """Latest mark per URL with the offer's title and company; `listed` says whether it is in the current

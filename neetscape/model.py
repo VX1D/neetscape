@@ -6,26 +6,22 @@ import re
 import unicodedata
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Literal
-
-WorkMode = Literal["remote", "hybrid", "onsite", "unknown"]
-Worktime = Literal["full_time", "part_time", "flexible", "unknown"]
-Contract = Literal["employment", "b2b", "mandate", "specific_task", "internship", "freelance", "mini_job", "working_student",
-                   "temp_agency", "other"]
-Level = Literal["intern", "junior", "mid", "senior", "lead", "manager", "unknown"]
 
 WORKTIMES = ("full_time", "part_time", "flexible", "unknown")
 # one shared vocabulary for every country; local words map onto it (Country.contract_aliases)
 CONTRACTS = ("employment", "b2b", "mandate", "specific_task", "internship", "freelance", "mini_job", "working_student",
              "temp_agency", "other")
 CONTRACT_ALIASES = {"uop": "employment"}  # old names, accepted forever
+LEVELS = ("intern", "junior", "mid", "senior", "lead", "manager", "unknown")
+# job fields (lang ORDER["field"]); "other" when none matches
+FIELDS = ("ai_automation", "security", "qa", "devops_cloud", "data", "erp_crm", "it_support", "it_admin", "software_dev",
+          "product_project", "design", "ecommerce", "customer_service", "sales", "marketing", "hr", "finance", "legal",
+          "retail", "admin_office", "logistics", "engineering", "manufacturing", "healthcare", "education", "hospitality")
 
 
 def canonical_contract(value: str) -> str:
+    """The current name of a contract type (`uop` -> `employment`)."""
     return CONTRACT_ALIASES.get(value, value)
-
-
-LEVELS = ("intern", "junior", "mid", "senior", "lead", "manager", "unknown")
 
 
 def parse_date(value) -> date | None:
@@ -55,6 +51,7 @@ def fold(s: str) -> str:
 
 
 def norm(s: str) -> str:
+    """`fold` without anything but letters and digits: 'Kraków, PL' -> 'krakowpl'."""
     return re.sub(r"[^a-z0-9]", "", fold(s))
 
 
@@ -71,10 +68,9 @@ def _legal():
 
 
 def norm_company(s: str) -> str:
+    """A company name for de-duplication: folded, without legal-form words, at most 16 characters."""
     return norm(_legal().sub("", fold(s)))[:16]
 
-
-FIELDS = ('ai_automation', 'security', 'qa', 'devops_cloud', 'data', 'erp_crm', 'it_support', 'it_admin', 'software_dev', 'product_project', 'design', 'ecommerce', 'customer_service', 'sales', 'marketing', 'hr', 'finance', 'legal', 'retail', 'admin_office', 'logistics', 'engineering', 'manufacturing', 'healthcare', 'education', 'hospitality')  # job fields (lang ORDER["field"]); "other" when none matches
 
 
 @dataclass
@@ -122,9 +118,11 @@ class Where:
     country: str = "pl"           # the job market searched (a country code); boards of other countries skip the search
 
     def describe(self) -> str:
-        if self.city:
-            return f"{self.city}" + (f" +{self.radius_km}km" if self.radius_km else "") + (" or remote" if self.remote else "") + f" ({self.country})"
-        return ("remote" if self.remote else "anywhere") + f" ({self.country})"
+        """'Kraków +30km or remote (pl)', 'remote (pl)', 'anywhere (de)'."""
+        if not self.city:
+            return f"{'remote' if self.remote else 'anywhere'} ({self.country})"
+        radius = f" +{self.radius_km}km" if self.radius_km else ""
+        return f"{self.city}{radius}{' or remote' if self.remote else ''} ({self.country})"
 
 
 @dataclass(frozen=True)
@@ -153,6 +151,7 @@ class Search:
     remote_proof: bool = False                  # the fetched posting must state fully remote work, with no hybrid or required presence
 
     def keywords_on(self, board: str) -> tuple[str, ...] | None:
+        """The phrases sent to `board` (its `keywords_for` override, else `keywords`); None = everything."""
         if self.keywords is None:
             return None
         return tuple(self.keywords_for.get(board, self.keywords))
