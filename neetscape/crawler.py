@@ -7,6 +7,10 @@ Stop rules, in order:
               offers are all older than the loosest `max_age_days` of the searches sharing the request)
 Only complete requests are used to mark offers as gone. Promoted offers never trigger a partial stop.
 
+Result cap: a request over the board's `result_cap` is replaced by the board's `split()` (see `_over_cap`).
+Transient failures (connection errors, timeouts, HTTP 5xx/429, a page that does not parse on a board whose pages
+parsed before) are retried after `RETRY_PAUSES`; only then does the request end with an error.
+
 Free text is read in the languages of the board's country (or, for boards serving any country, of the
 searched country); amounts without a currency are read in that country's currency; pay is stored per month
 in the database currency (`base`, the profile country's).
@@ -84,29 +88,86 @@ def _apply_pushed(o: Offer, r: Request) -> None:
 
 
 MAX_SPLIT_DEPTH = 3
+RETRY_PAUSES = (20, 60)  # seconds before the first and the second retry of a page that failed transiently
+EMPTY_PAUSE = 5          # seconds before fetching an empty page again (boards with `Caps.empty_retries`)
 
 
-def _over_cap(board, raw: str, r: Request) -> tuple[int, list[Request]] | None:
-    """(total, sub-requests) when the request reaches the board's result cap. A total equal to the cap counts:
-    boards report a capped count (olx.pl's `totalElements` never exceeds 1000), so the true number is unknown."""
+def _over_cap(board, raw: str, r: Request, page: int, total: int | None, listed: int,
+              seen: list[Offer]) -> tuple[int, list[Request]] | None:
+    """(matches, sub-requests) when the request reaches the board's result cap, else None.
+    With a total (read from page 1): a total equal to the cap counts, since boards report a capped count (olx.pl's
+    `totalElements` never exceeds 1000). Without one, the cap shows only at the end: the request has listed
+    `result_cap` offers or fetched the board's last page (`max_pages`); `split()` then also gets the offers seen."""
     cap = board.caps.result_cap
-    total = board.total(raw, r) if cap else None
-    if total is None or total < cap:
+    if not cap:
         return None
-    return total, board.split(raw, r)
+    if total is not None:
+        return (total, board.split(raw, r)) if page == 1 and total >= cap else None
+    if listed >= cap or page == board.caps.max_pages:
+        return listed, board.split(raw, r, seen=tuple(seen))
+    return None
+
+
+def _transient(e: Exception, parsed_before: bool) -> bool:
+    """Failures worth a retry after a pause: connection errors and timeouts, HTTP 5xx and 429 (after the
+    transport's own short retries), and a page that does not parse although pages of the same request or board
+    parsed before (a bot wall such as pracuj's page without `__NEXT_DATA__`, not a format change)."""
+    if isinstance(e, FetchError):
+        return e.status == 0 or e.status == 429 or e.status >= 500
+    if isinstance(e, (OSError, asyncio.TimeoutError)):  # refused, reset, timed out, DNS (urllib's URLError)
+        return True
+    return isinstance(e, ValueError) and parsed_before
+
+
+def _short(e: Exception) -> str:
+    return str(e) if isinstance(e, FetchError) else f"{type(e).__name__}: {e}"
+
+
+async def _fetch_page(board, fetcher, r: Request, page: int, url: str, parsed_before: bool,
+                      keep_raw=None) -> tuple[str, list[Offer]]:
+    """Fetch and parse one page, retrying transient failures after `RETRY_PAUSES` and, on boards with
+    `empty_retries`, an empty page after `EMPTY_PAUSE`; each retry is logged. `keep_raw(raw)` sees every response."""
+    body = board.post_body(r, page)
+    label = (r.board, r.search_id, repr(r.keyword or "*"), f"p{page}:")
+    empties = 0
+    for attempt in range(len(RETRY_PAUSES) + 1):
+        try:
+            while True:
+                raw = await (fetcher.get(url, body) if body is not None else fetcher.get(url))
+                if keep_raw:
+                    keep_raw(raw)
+                offers = board.parse(raw, r)
+                if offers or empties >= board.caps.empty_retries:
+                    return raw, offers
+                empties += 1
+                log(*label, f"empty page; fetching it again in {EMPTY_PAUSE}s ({empties}/{board.caps.empty_retries})")
+                await asyncio.sleep(EMPTY_PAUSE)
+        except Exception as e:
+            if attempt == len(RETRY_PAUSES) or not _transient(e, parsed_before or empties > 0):
+                raise
+            pause = RETRY_PAUSES[attempt]
+            log(*label, _short(e), f"- retry {attempt + 1}/{len(RETRY_PAUSES)} in {pause}s")
+            await asyncio.sleep(pause)
+    raise AssertionError("unreachable")
 
 
 async def _run_request(board, fetcher, r: Request, search: Search, store: Store, run_id: int, *, fx: dict,
                        limit_pages: int | None, incremental: bool, record: Path | None, base: str = "PLN",
                        hours: int | None = None, days: int | None = None, save_fixture: Path | None = None,
-                       max_age: float = math.inf, progress: Progress | None = None, depth: int = 0) -> None:
-    """Fetch one request page by page. When page 1 shows that the request matches more results than the board's
-    `result_cap`, the board's `split()` replaces it with narrower requests (fetched recursively, each to its own
-    end); a request that cannot be split is fetched up to the cap and logged as capped."""
+                       max_age: float = math.inf, progress: Progress | None = None, depth: int = 0,
+                       parsed: set | None = None) -> None:
+    """Fetch one request page by page. When the request matches more results than the board's `result_cap` (seen
+    on page 1 from `total()`, or, for boards without a total, on reaching the cap), the board's `split()` replaces
+    it with narrower requests (fetched recursively, each to its own end); a request that cannot be split is
+    fetched up to the cap and logged as capped. `parsed`: names of boards with a page parsed in this crawl (a
+    later parse error there is taken as transient and retried)."""
     children: list[Request] = []
     capped = 0
+    parsed = set() if parsed is None else parsed
     req_id = store.start_request(run_id, r.board, r.search_id, r.keyword, r.params, r.pushed)
-    pages = found = 0
+    pages = found = listed = 0
+    total: int | None = None
+    seen: list[Offer] = []
     complete, reason, error = False, "", ""
     newest_first = r.params.get("sort") == "newest"
     # an incremental stop is sound only for a listing crawled to its end before: offers known from other
@@ -120,15 +181,17 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
             if url is None:
                 complete, reason = True, "end"
                 break
-            body = board.post_body(r, page)
-            raw = await (fetcher.get(url, body) if body is not None else fetcher.get(url))
-            if record:
-                (record / r.board).mkdir(parents=True, exist_ok=True)
-                (record / r.board / f"{hashlib.sha1(url.encode()).hexdigest()[:10]}_p{page}.txt").write_text(url + "\n" + raw)
-            if save_fixture and page == 1:  # the raw page only, ready for tests/fixtures/
-                save_fixture.parent.mkdir(parents=True, exist_ok=True)
-                save_fixture.write_text(raw)
-            offers = board.parse(raw, r)
+
+            def keep_raw(raw: str, url: str = url, page: int = page) -> None:
+                if record:
+                    (record / r.board).mkdir(parents=True, exist_ok=True)
+                    (record / r.board / f"{hashlib.sha1(url.encode()).hexdigest()[:10]}_p{page}.txt").write_text(url + "\n" + raw)
+                if save_fixture and page == 1:  # the raw page only, ready for tests/fixtures/
+                    save_fixture.parent.mkdir(parents=True, exist_ok=True)
+                    save_fixture.write_text(raw)
+
+            raw, offers = await _fetch_page(board, fetcher, r, page, url, pages > 0 or board.name in parsed, keep_raw)
+            parsed.add(board.name)
             pages += 1
             if progress:
                 progress.active(r.board, f"p{page}")
@@ -139,12 +202,18 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
             found += new
             if progress:
                 progress.add(pages=1, offers=new)
-            if page == 1 and (over := _over_cap(board, raw, r)):
-                total, subs = over
-                if subs and depth < MAX_SPLIT_DEPTH:
-                    children, reason = subs, f"split into {len(subs)} (matches {total}+, the board shows {board.caps.result_cap})"
-                    break
-                capped = total
+            listed += len(offers)
+            if board.caps.result_cap:
+                if page == 1:
+                    total = board.total(raw, r)
+                if total is None:
+                    seen += offers
+                if offers and not capped and (over := _over_cap(board, raw, r, page, total, listed, seen)):
+                    matches, subs = over
+                    if subs and depth < MAX_SPLIT_DEPTH:
+                        children, reason = subs, f"split into {len(subs)} (matches {matches}+, the board shows {board.caps.result_cap})"
+                        break
+                    capped = matches
             if not offers:
                 complete, reason = True, "empty page"
                 break
@@ -180,7 +249,7 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
         for child in children:
             await _run_request(board, fetcher, child, search, store, run_id, fx=fx, limit_pages=limit_pages,
                                incremental=incremental, record=record, base=base, hours=hours, days=days,
-                               max_age=max_age, progress=progress, depth=depth + 1)
+                               max_age=max_age, progress=progress, depth=depth + 1, parsed=parsed)
             if progress:
                 progress.step()
 
@@ -196,6 +265,7 @@ async def crawl(requests: list[Request], searches: dict[str, Search], store: Sto
             by_board[r.board].append(r)
     max_age = age_limits(requests, searches)
     tabs = asyncio.Semaphore(4)  # browser tabs open at once
+    parsed: set[str] = set()     # boards with a page parsed in this crawl
 
     async def one_board(name: str, reqs: list[Request], progress: Progress) -> None:
         board = REGISTRY[name]
@@ -208,7 +278,7 @@ async def crawl(requests: list[Request], searches: dict[str, Search], store: Sto
                     await _run_request(board, fetcher, r, searches[r.search_id], store, run_id, fx=fx,
                                        limit_pages=limit_pages, incremental=incremental, record=record, base=base,
                                        hours=hours, days=days, save_fixture=save_fixture,
-                                       max_age=max_age.get(r.key, math.inf), progress=progress)
+                                       max_age=max_age.get(r.key, math.inf), progress=progress, parsed=parsed)
                     progress.step()
         except Exception as e:
             log("ERROR", name, f"{type(e).__name__}: {e}")
