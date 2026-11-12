@@ -44,7 +44,8 @@ Top-level keys: `country` (`pl` default, `de`), `boards` (board names or groups:
 default: the boards of the profile's country and of every country a search targets), `candidate` (free-form notes
 for the reviewing agent, ignored by the tool), `rank` (`rules`, `tags`, `sort`), `review` (`mode`
 `auto`/`listing`, `details_top`, `min_score`; see below), `politeness` (`min_interval_s` per host, overriding a
-board's own minimum; `retries`), `blacklist` (below),
+board's own minimum; `retries`: how often the crawl refetches a page that failed transiently, after 20 s
+then 60 s, default 2), `blacklist` (below),
 `fx` (units of the country's currency per unit of another currency; the country sets defaults). The full definition is
 [`neetscape/profile/schema.json`](../neetscape/profile/schema.json).
 

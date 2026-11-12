@@ -28,14 +28,20 @@ class Limiter:
         self.min_interval = min_interval or {}
         self.default = default
         self._last: dict[str, float] = {}
+        self._until: dict[str, float] = {}   # host -> no request before this time (a 429 back-off)
         self._locks: dict[str, asyncio.Lock] = {}
+
+    def pause(self, url: str, seconds: float) -> None:
+        """Hold every request to the URL's host for `seconds` from now (the host answered 429)."""
+        host = urllib.parse.urlsplit(url).netloc
+        self._until[host] = max(self._until.get(host, 0), time.monotonic() + seconds)
 
     async def wait(self, url: str) -> None:
         host = urllib.parse.urlsplit(url).netloc
         lock = self._locks.setdefault(host, asyncio.Lock())
         async with lock:
             gap = next((v for k, v in self.min_interval.items() if k in host), self.default)
-            delay = self._last.get(host, 0) + gap * random.uniform(0.8, 1.3) - time.monotonic()
+            delay = max(self._last.get(host, 0) + gap * random.uniform(0.8, 1.3), self._until.get(host, 0)) - time.monotonic()
             if delay > 0:
                 await asyncio.sleep(delay)
             self._last[host] = time.monotonic()
@@ -59,10 +65,16 @@ def _http_get(url: str, accept: str, language: str = "en", headers: dict | None 
         return e.code, ""
 
 
+BACKOFF_429 = 15  # seconds a host is held after answering 429 (times the attempt number)
+
+
 class Http:
     def __init__(self, limiter: Limiter, accept: str = "*/*", retries: int = 2, headers: dict | None = None,
                  language: str = "en"):
-        """`headers`: extra request headers a board needs (e.g. an API key); `language`: Accept-Language."""
+        """`headers`: extra request headers a board needs (e.g. an API key); `language`: Accept-Language.
+        `retries`: short retries of a non-200 answer (3 s, 6 s, ...) for callers without their own (`details`); the
+        crawl passes 0 and retries pages itself. A 429 holds the host in the limiter (`BACKOFF_429`) either way,
+        404/410 raise at once, and no pause follows the last attempt."""
         self.limiter, self.accept, self.retries = limiter, accept, retries
         self.headers, self.language = headers or {}, language
 
@@ -81,8 +93,17 @@ class Http:
                 return text
             if status in (404, 410):
                 raise FetchError(status)
-            await asyncio.sleep((15 if status == 429 else 3) * (attempt + 1))
+            await _back_off(self.limiter, url, status, attempt, self.retries)
         raise FetchError(status, url)
+
+
+async def _back_off(limiter: Limiter, url: str, status: int, attempt: int, retries: int) -> None:
+    """After a failed attempt: a 429 holds the host in the limiter (the next `wait` sleeps), anything else pauses
+    3 s times the attempt number before the next retry; nothing after the last attempt."""
+    if status == 429:
+        limiter.pause(url, BACKOFF_429 * (attempt + 1))
+    elif attempt < retries:
+        await asyncio.sleep(3 * (attempt + 1))
 
 
 _FETCH = r"""(async(u,shrink)=>{try{const r=await fetch(u,{credentials:'include'});const t=await r.text();
@@ -93,6 +114,7 @@ class BrowserFetch:
     """Same-origin fetch from a tab: the board sees an ordinary browser session."""
 
     def __init__(self, port: int, origin: str, limiter: Limiter, shrink_js: str | None = None, retries: int = 2):
+        """`retries`: as for `Http` (the crawl passes 0)."""
         self.port, self.origin, self.limiter, self.shrink, self.retries = port, origin, limiter, shrink_js, retries
 
     async def __aenter__(self):
@@ -114,7 +136,7 @@ class BrowserFetch:
                 return body
             if status in (404, 410):
                 raise FetchError(status)
-            await asyncio.sleep(3 * (attempt + 1))
+            await _back_off(self.limiter, url, status, attempt, self.retries)
         raise FetchError(status, url)
 
 

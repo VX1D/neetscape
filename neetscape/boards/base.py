@@ -29,7 +29,10 @@ class Caps:
     huge_unfiltered: bool = False  # listing everything is too big: needs keywords, a city or the server-side remote filter
     local_all: bool = False      # the whole board is one cheap download: any search can be served by local filtering
     whole_listing: bool = False  # one response holds the request's whole listing (feeds): fetching it completes the request
-    result_cap: int = 0          # most results one query shows (OLX 1000); above it the crawler asks `split()` (0 = none)
+    result_cap: int = 0          # most results one query shows (OLX 1000); above it the crawler asks `split()`, then
+                                 # `newest()` (0 = none). Without `total()` the crawler probes the cap's last page
+                                 # (`max_pages`, or result_cap / page_size) right after page 1: offers there = capped
+    empty_retries: int = 0       # fetch an empty page again this many times before taking it as the end (flaky boards)
     country: str = ""            # "pl", "de", ...; "any" (serves every country, gets `params["country"]`); "intl" (opt-in,
                                  # international). Empty: derived on registration from the module (see `register`)
     transport: str = "http"      # "http" (plain HTTP, GET or POST) or "browser_fetch" (same-origin fetch in a tab)
@@ -130,13 +133,23 @@ class Board:
         return parse_posting(page)
 
     def total(self, raw: str, r: Request) -> int | None:
-        """Boards with a `result_cap`: how many results the request matches, read from its first page."""
+        """Boards with a `result_cap`: how many results the request matches, read from its first page. None: the
+        board reports no total, and the crawler detects the cap at its end (see `Caps.result_cap`)."""
         return None
 
-    def split(self, raw: str, r: Request) -> list[Request]:
+    def split(self, raw: str, r: Request, seen: tuple = ()) -> list[Request]:
         """Boards with a `result_cap`: narrower requests that together cover `r` (e.g. one per category listed on
-        its first page), each expected to stay under the cap; [] when the request cannot be narrowed."""
+        its first page), each expected to stay under the cap; [] when the request cannot be narrowed. `raw` is the
+        first page when `total()` showed the cap; without a total it is page 1 too, and `seen`
+        holds the offers of page 1 and of the end probe (boards without `total()` must accept it)."""
         return []
+
+    def newest(self, r: Request) -> tuple[Request, str] | None:
+        """Boards with a `result_cap`: `r` limited to the board's newest window, one step narrower than the window `r`
+        already has (e.g. the last 7 days, then the last 24 hours), with a label for the stop reason ("7 days"); None
+        when there is none. The crawler uses it for a capped request that `split()` cannot narrow, and never counts
+        a windowed request as complete (offers outside the window are not gone)."""
+        return None
 
     def post_body(self, r: Request, page: int) -> str | None:
         """http boards whose search is a POST: the request body for this page (sent as `content_type`)."""
