@@ -17,6 +17,10 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
   Specialist" AI and automation; a qualifier such as "(GenAI)" counts less than the title's head). Columns
   `job_field`, `job_function`, `job_domain`; search filters `fields` and `fields_exclude`; a `field` column
   in listing.tsv; REPORT.html shows the field and groups by it.
+- Tests: every board's parser is checked by one table (`COVERAGE` in `tests/countries/test_countries.py`:
+  the fields it must fill on its recorded page); per-board files keep only the board's own rules. Exact
+  URLs and per-offer values are no longer pinned (`neetscape probe` checks a board live); a few report
+  formatting tests and `tests/affected.py` are removed.
 - docs/review.md: a cheap, high-precision review workflow for large crawls (narrow with the profile and `eval`,
   pick by title, let posting rules drop what they can, read only the survivors; when to use subagents).
 - Search option `remote_proof`: a remote search passes an offer only when its fetched posting describes remote

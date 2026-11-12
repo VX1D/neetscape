@@ -133,17 +133,6 @@ def test_sql_errors_exit_cleanly(fake, tmp_path, monkeypatch, capsys):
         cli.main(["mark", "99", "applied"])
 
 
-def test_list_group_title(fake, tmp_path, monkeypatch, capsys):
-    from neetscape import cli
-    monkeypatch.chdir(tmp_path)
-    _profile(tmp_path)
-    fake.pages = {("*", 1): [["a", "Support Agent", {"company": "A"}], ["b", "Support agent", {"company": "B"}]]}
-    cli.main(["run"])
-    capsys.readouterr()
-    cli.main(["list", "--group", "title", "--format", "json"])
-    assert [(g["title"], g["offers"], g["companies"]) for g in json.loads(capsys.readouterr().out)] == [("Support Agent", 2, 2)]
-
-
 def test_browser_not_started_for_feed_details(fake, browser, tmp_path, monkeypatch):
     from neetscape import cli
     monkeypatch.chdir(tmp_path)

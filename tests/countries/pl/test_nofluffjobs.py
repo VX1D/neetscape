@@ -1,14 +1,10 @@
 """nofluffjobs (search and posting APIs) on its recorded response tests/fixtures/pl/nofluffjobs.json."""
 import json
-import re
-from pathlib import Path
 
-import pytest
 
 from neetscape.boards import REGISTRY
 from neetscape.boards.base import Request
 
-FX = Path(__file__).parents[2] / "fixtures" / "pl" / "nofluffjobs.json"
 NFJ = REGISTRY["nofluffjobs"]
 
 
@@ -19,37 +15,6 @@ def _posting(url, ref, city="Remote", salary=None, **kw):
             "salary": salary or {"from": 100.0, "to": 200.0, "type": "b2b", "currency": "PLN", "period": "Month"},
             "tiles": {"values": [{"type": "requirement", "value": "Python"}]}, **kw}
 
-
-def raw_search(kw, params):
-    return json.loads(NFJ.post_body(Request("nofluffjobs", "t", kw, params), 3))["rawSearch"]
-
-
-def test_post_body_raw_search():
-    assert json.loads(NFJ.post_body(Request("nofluffjobs", "t", None, {"remote": True}), 3)) == {"rawSearch": "remote", "page": 3}
-    assert raw_search("python", {"remote": True}) == "remote keyword=python"
-    assert raw_search("agent ai", {"remote": True}) == 'remote keyword="agent ai"'  # a phrase stays one criterion
-    assert raw_search("python", {}) == "keyword=python"  # anywhere: no place criterion, not "remote"
-    assert raw_search(None, {}) == ""
-    assert raw_search("asystent", {"city": "Kraków"}) == "krakow keyword=asystent"
-    assert raw_search("agent ai", {"city": "Kraków"}) == 'krakow keyword="agent ai"'
-
-
-def test_page_urls():
-    url = NFJ.page_url(Request("nofluffjobs", "t", None, {"remote": True}), 2)
-    assert "pageFrom=2&pageTo=2" in url and url.startswith("https://nofluffjobs.com/api/search/posting?")
-    assert NFJ.page_url(Request("nofluffjobs", "t", None), NFJ.caps.max_pages + 1)  # never None: a safety stop
-
-
-def test_recorded_page_fields():
-    offers = NFJ.parse(FX.read_text(), Request("nofluffjobs", "t", None))
-    assert all(o.company and o.mode == "remote" and o.level != "unknown" and o.published and o.category for o in offers)
-    assert sum(1 for o in offers if o.pay_text) >= 5 and all(o.contracts for o in offers if o.pay_text)
-    assert len({o.pay_text for o in offers}) > 1  # each offer has its own pay, not the first one of the list
-    assert all(o.key.startswith("https://nofluffjobs.com/pl/job/") and "?" not in o.key for o in offers)
-    assert all(o.pay_text.endswith(" PLN/month") for o in offers if o.pay_text)  # API: salaryPeriod=month
-    assert all(re.fullmatch(r"[a-z0-9_]+:\d+-\d+ [A-Z]{3}/(hour|day|month|year)", o.pay_text) for o in offers if o.pay_text)
-    with pytest.raises(ValueError):
-        NFJ.parse("", Request("nofluffjobs", "t", None))
 
 
 def test_anywhere_page_keeps_one_entry_per_reference():

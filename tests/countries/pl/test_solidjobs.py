@@ -1,12 +1,10 @@
 """solid.jobs (one JSON document per division) on its recorded division tests/fixtures/pl/solidjobs.json."""
 import json
-from pathlib import Path
 
 from neetscape import planner, profile
 from neetscape.boards import REGISTRY
 from neetscape.boards.base import Request
 
-FX = Path(__file__).parents[2] / "fixtures" / "pl" / "solidjobs.json"
 SJ = REGISTRY["solidjobs"]
 
 
@@ -19,11 +17,6 @@ def _offer(i, primary, secondary=None, workload="100%", remote="Hybrydowo"):
 
 def _range(kind, lo, hi):
     return {"lowerBound": lo, "upperBound": hi, "currency": "PLN", "employmentType": kind, "salaryPeriod": "Month"}
-
-
-def test_recorded_division_fields():
-    offers = SJ.parse(FX.read_text(), Request("solidjobs", "t", None, {"division": "it"}))
-    assert all(o.pay_text and o.mode in ("remote", "hybrid", "onsite") for o in offers)
 
 
 def test_every_division_is_fetched():
