@@ -1,0 +1,118 @@
+"""profile.json: presets, validation errors, countries, and the plan of requests it compiles to."""
+import pytest
+
+from neetscape import evaluate as ev
+from neetscape import country, planner, profile
+from neetscape.model import CONTRACTS
+
+
+def validate(**raw):
+    return profile.validate({"version": 2, "searches": [{"id": "a"}], **raw})
+
+
+def plan(boards, *searches, **raw):
+    return planner.plan(profile.validate({"version": 2, "boards": boards, "searches": list(searches), **raw}))
+
+
+def test_presets_validate_and_combine():
+    for name in profile.PRESETS:
+        profile.validate(profile.preset(name))
+    p = profile.validate(profile.combine(["focused", "side"]))
+    assert [s.id for s in p.searches] == ["main", "side"] and p.rules
+    assert p.search("side").keywords is None and "part_time" in p.search("side").worktime
+    assert profile.combine(["broad"], "de")["country"] == "de"
+
+
+def one(**search):
+    return {"searches": [{"id": "a", **search}]}
+
+
+@pytest.mark.parametrize("raw,msg", [
+    ({"version": 1}, "version"),
+    ({"searches": []}, "at least one"),
+    ({"boards": ["monster"]}, "unknown boards"),
+    ({"reveiw": {}}, "unknown key"),
+    ({"defaults": {"max_age": 3}}, "unknown key"),
+    ({"rank": {"tags": [{"pattern": "x"}]}}, "rank.tags"),
+    ({"review": {"details_top": "many"}}, "details_top"),
+    ({"country": "xx"}, "unknown country"),
+    ({"blacklist": {"urls": ["("]}}, r"blacklist.urls\[0\]"),
+    ({"blacklist": {"companies": ["x"], "action": "dorp"}}, "blacklist.action"),
+    ({"searches": [{"id": "a"}, {"id": "a"}]}, "unique"),
+    (one(what="x"), "what"),
+    (one(title_include=["("]), "invalid regex"),
+    (one(worktime=["sometimes"]), "unknown values"),
+    (one(where={"remote": True, "country": "xx"}), "unknown country"),
+    (one(where={"or_remote": True}), "where"),
+    (one(titel_include=["x"]), "unknown key"),
+    (one(pay={"min": 10, "max": 20}), "unknown key"),
+    (one(where={"city": "Kraków", "radius": 10}), "unknown key"),
+    (one(keywords_for={"justjoin": "n8n"}), "keywords_for"),
+    (one(pay={"min": "8000"}), "pay.min"),
+    (one(max_age_days="30"), "max_age_days"),
+    (one(boost="high"), "boost"),
+])
+def test_profile_errors(raw, msg):
+    with pytest.raises(profile.ProfileError, match=msg):
+        validate(**raw)
+
+
+def test_contract_aliases_and_country():
+    p = validate(**one(contracts=["uop", "b2b"]))
+    assert p.searches[0].contracts == {"employment", "b2b"} and p.country.code == "pl" and p.currency == "PLN"
+    de = validate(country="de", **one(contracts=["minijob", "employment"]))
+    assert de.searches[0].contracts == {"mini_job", "employment"} and de.searches[0].where.country == "de"
+    assert validate(blacklist={}).blacklist["action"] == "drop"
+    anywhere = validate(**one(where="anywhere")).searches[0].where
+    assert not anywhere.remote and not anywhere.city and anywhere.country == "pl"
+
+
+def test_german_profile_pay_and_city():
+    p = validate(country="de", **one(where={"city": "München"}, what="all", pay={"min": 15, "per": "hour"}))
+    assert p.currency == "EUR" and p.fx["EUR"] == 1.0 and set(p.boards) == {"linkedin", "arbeitnow", "bundesagentur"}
+    row = dict(board="arbeitnow", title="Kellner", company="", category="", skills="", pay_text="", snippet="",
+               locations='["Munich"]', mode="onsite", worktime="part_time", contracts="", level="unknown",
+               pay_min=2595, pay_max=2595, pay_period="", published=None, keywords="")
+    assert ev.check(row, p.searches[0], hours_per_month=173)[0]           # Munich == München; 2595/173 = 15 €/h
+    assert not ev.check({**row, "pay_max": 2400}, p.searches[0], hours_per_month=173)[0]
+
+
+def test_schema_enums_match_the_registry():
+    s = profile.schema()
+    search = s["properties"]["searches"]["items"]["properties"]
+    assert sorted(s["properties"]["country"]["enum"]) == sorted(search["where"]["oneOf"][1]["properties"]["country"]["enum"]) \
+        == country.codes()
+    assert search["contracts"]["items"]["enum"] == list(CONTRACTS) + ["uop"]
+
+
+def test_plan_pushdown_and_warnings():
+    p = plan(["justjoin", "linkedin", "bulldogjob", "pracuj", "useme", "solidjobs"],
+             {"id": "kw", "where": "remote", "what": ["n8n"]},
+             {"id": "all", "where": "remote", "what": "all"},
+             {"id": "krk", "where": {"city": "Kraków", "radius_km": 30}, "what": "all"})
+    by = {(r.board, r.search_id): r for r in p.requests}
+    assert by[("justjoin", "kw")].pushed == {"keyword", "remote"} and by[("justjoin", "kw")].params["sort"] == "newest"
+    assert by[("linkedin", "kw")].pushed == {"keyword"}               # its remote filter is ignored by the API: checked locally
+    assert by[("bulldogjob", "kw")].keyword is None                   # no keyword support: fetch all, filter locally
+    assert ("pracuj", "all") in by and ("useme", "all") in by          # useme: its open projects are ~35 pages
+    assert by[("linkedin", "krk")].params["city"] == "Kraków"
+    assert ("solidjobs", "krk") in by or ("solidjobs", "kw") in by     # whole-board download serves any search
+    assert ("useme", "krk") not in by                                 # remote-only board: no city search
+    assert any("no city" in w for w in p.warnings)
+    keys = [r.key for r in p.requests]
+    assert len(keys) == len(set(keys))                                # identical requests are fetched once
+
+
+def test_city_or_remote_fetches_both_listings():
+    reqs = plan(["justjoin"], {"id": "x", "where": {"city": "Kraków", "radius_km": 20, "or_remote": True}, "what": "all"}).requests
+    assert {frozenset(r.pushed) for r in reqs} == {frozenset({"city"}), frozenset({"remote"})}
+
+
+def test_polish_profile_searching_germany():
+    p = profile.validate({"version": 2, "searches": [{"id": "pl", "where": "remote", "what": ["python"]},
+                                                     {"id": "de", "where": {"remote": True, "country": "de"}, "what": ["python"]}]})
+    assert p.currency == "PLN" and "justjoin" in p.boards and "bundesagentur" in p.boards
+    reqs = planner.plan(p).requests
+    assert {r.board for r in reqs if r.search_id == "de"} == {"linkedin", "arbeitnow", "bundesagentur"}
+    assert "bundesagentur" not in {r.board for r in reqs if r.search_id == "pl"}
+    assert {r.params["country"] for r in reqs if r.board == "linkedin"} == {"pl", "de"}
