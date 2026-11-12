@@ -4,6 +4,13 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
 
 ## Unreleased
 
+- docs/review.md: a cheap, high-precision review workflow for large crawls (narrow with the profile and `eval`,
+  pick by title, let posting rules drop what they can, read only the survivors; when to use subagents).
+- Search option `remote_proof`: a remote search passes an offer only when its fetched posting describes remote
+  work and mentions no hybrid model or required presence; a new posting hint `office` (client visits, business
+  trips, office days, relocation). Stronger "fully remote" phrases (Polish "z dowolnego miejsca", "100% pracy
+  zdalnej"; English "work from anywhere", "remote only", "work from home"); "remote-first" no longer counts as
+  fully remote; Polish "pracę zdalną" / "w trybie zdalnym" read as remote.
 - City searches: an offer a board with a verified radius filter found with it (same city, no larger radius) is
   within the area even when its location names another town (e.g. Bielsko-Biała in a 30 km search around
   Andrychów); before, only the city's name counted and such offers were rejected as "not in <city>".

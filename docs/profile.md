@@ -39,6 +39,7 @@ Search fields:
 | `title_include`, `title_exclude`, `text_exclude`, `category_include` | case-insensitive Python regexes; `text_exclude` reads title, company, category, skills, pay text, card text and, once fetched, the posting |
 | `unknown` | `keep` (default) or `drop` offers whose filtered field (mode, pay, work time, date, location) is unknown |
 | `boost` | score added to offers passing this search |
+| `remote_proof` | remote searches: once the posting is fetched, it must describe remote work and mention no hybrid model or required presence (client visits, business trips, office days, relocation); before that the field is unknown (`unknown`). Precision over recall: "remote or hybrid, your choice" fails |
 
 Top-level keys: `country` (`pl` default, `de`), `boards` (board names or groups: a country code, `intl`, `all`;
 default: the boards of the profile's country and of every country a search targets), `candidate` (free-form notes

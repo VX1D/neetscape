@@ -198,6 +198,11 @@ The review has two passes: first narrow the listing to candidate ids without ope
 then read each candidate's posting and decide. Do not skip pass 2: listing fields come from cards
 and are often unknown or wrong.
 
+With a broad profile or a full crawl (thousands of offers), follow [docs/review.md](docs/review.md):
+narrow with the profile and `eval` first (free), pick candidates by title, fetch their postings and
+let the rules (`remote_proof`, `text_exclude`, blacklist) drop what they can, and read only the
+survivors. Never read, or hand to subagents, a listing of thousands of rows.
+
 ### Pass 1: the listing
 
 `listing.tsv` in the run directory has one row per job (duplicates across boards merged):
