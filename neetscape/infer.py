@@ -288,7 +288,8 @@ def title_parts(title: str, languages=None) -> tuple[str, str]:
 
 
 def derive(*, title: str = "", card: str = "", facts: dict | None = None, request_remote: bool = False,
-           posting: str = "", posting_remote: bool = False, category: str = "", languages=None) -> dict:
+           posting: str = "", posting_remote: bool = False, posting_facts: dict | None = None, category: str = "",
+           languages=None) -> dict:
     """Derived offer columns (mode, worktime, contracts, level, job_function, job_domain, job_field, job_domains)
     and `evidence` (json: column -> [source, phrase]; `job_domains` -> {domain: [source, phrase]}).
 
@@ -297,8 +298,9 @@ def derive(*, title: str = "", card: str = "", facts: dict | None = None, reques
     leading one and `job_field` the single field read from the function and the leading domain.
 
     `card`: Offer.text(); `request_remote`: a request that found the offer had the board's remote filter;
-    `posting_remote`: the posting's JSON-LD says TELECOMMUTE; `category`: the board's category and the
-    categories of the requests that found the offer. A long posting mentions "remote" and "staż" for many
+    `posting_remote`: the posting's JSON-LD says TELECOMMUTE; `posting_facts`: column -> value (or list) the board
+    read from the posting's structured fields (`Board.posting_facts`), a value optionally a (value, phrase) pair;
+    `category`: the board's category and the categories of the requests that found the offer. A long posting mentions "remote" and "staż" for many
     reasons: its mode counts only from full-remote statements and hybrid words, an internship only from an
     explicit statement ("Employment type: Internship")."""
     ms = [(COLUMNS[k], value, "board", True, "board data")
@@ -307,6 +309,10 @@ def derive(*, title: str = "", card: str = "", facts: dict | None = None, reques
         ms.append(("mode", "remote", "request", True, "board's remote filter"))
     if posting_remote:
         ms.append(("mode", "remote", "posting_struct", True, "JSON-LD TELECOMMUTE"))
+    for k, v in (posting_facts or {}).items():
+        for item in (v if isinstance(v, list) else [v]):
+            value, phrase = item if isinstance(item, tuple) else (item, "posting data")
+            ms.append((COLUMNS[k], value, "posting_struct", True, phrase))
     ms += _scan("level", title, languages, "title")
     head, qualifiers = title_parts(title, languages)
     for fld in ("function", "domain"):

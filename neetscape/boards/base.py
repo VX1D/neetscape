@@ -147,6 +147,12 @@ class Board:
             meta["description"], meta["source"] = body, "board"
         return meta
 
+    def posting_facts(self, meta: dict) -> dict:
+        """Canonical values (`level`, `worktime`, `contracts`) read from the structured fields of a stored posting's
+        meta (what `posting()` returned), passed to `infer.derive` as source `posting_struct`. A value may be a
+        (value, phrase) pair; the phrase is the evidence `show` prints. Default: none."""
+        return {}
+
     def posting_body(self, page: str) -> str:
         """Boards whose JSON-LD lacks the posting body (or that have none): the body read from the offer page's
         embedded data, as plain text; '' when absent. Never page chrome."""
