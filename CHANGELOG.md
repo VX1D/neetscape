@@ -4,6 +4,18 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
 
 ## Unreleased
 
+- Interactive `neetscape init`: on a terminal without `--preset` (or with `--interactive`) it asks for the
+  country, remote or a city, phrases, domains, excluded functions, work time, contracts, pay floor, excluded
+  seniority and posting age, and writes a validated one-search profile (`profile.from_answers`, on top of the
+  `broad` preset). Off a terminal, `init` without `--preset` still writes `focused`.
+- One default country: `country.DEFAULT_COUNTRY` ("pl", the historical default) replaces the "pl" defaults
+  scattered through the model, profile, store, CLI, details and LinkedIn; behaviour is unchanged.
+- Neutral examples: the `focused` presets (shared and Polish) use an ordinary role (an accountant, with
+  `fields: ["finance"]`) and neutral rank rules instead of one niche's phrases; the profile, review and agent
+  docs show varied searches (remote IT, accounting near a city, tutoring, warehouse work, healthcare). The
+  README gains "Who it is for" with three small profiles, the newer features (fields, domains and functions,
+  `unknown` per dimension, `show` explaining values, re-derivation without a crawl, language packs and country
+  packages) and requirements per OS.
 - Facts are what boards ship: adapters no longer infer a level from the title (olx, useme, indeed, praca.pl,
   arbeitnow, bundesagentur), the title is read by `derive` like every board's. Schema v10 marks the facts
   schema v6 copied from inferences (LinkedIn's mode/work time/contracts/level, nofluffjobs' and theprotocol's

@@ -6,6 +6,10 @@ A profile is the union of its searches: conditions inside a search are ANDed, an
 profile if it passes any search. `defaults` are merged into every search. Rank rules only order
 results; they never drop anything.
 
+The keys and values are the same in every country; only the phrases in `what` are sent to the boards
+as they are, so write them in the language the boards' postings use. An example for three different
+people in Poland, one search each (a real profile usually holds one person's searches):
+
 ```json
 {
   "version": 2,
@@ -13,18 +17,28 @@ results; they never drop anything.
   "boards": ["pl"],
   "defaults": {"max_age_days": 30, "unknown": "keep"},
   "searches": [
-    {"id": "main", "where": "remote", "what": ["automation", "n8n", "helpdesk"],
-     "keywords_for": {"linkedin": ["AI automation", "IT support"]},
-     "title_exclude": ["senior|lead|architect"], "pay": {"min": 8000, "per": "month"}},
-    {"id": "krk", "where": {"city": "Kraków", "radius_km": 30, "or_remote": true}, "what": "all",
-     "contracts": ["employment", "b2b"]},
-    {"id": "side", "where": "remote", "what": "all", "worktime": ["part_time", "flexible"],
-     "contracts": ["mandate", "specific_task", "freelance"], "pay": {"min": 40, "per": "hour"}, "boost": 3}
+    {"id": "it-remote", "label": "Remote IT support", "where": "remote",
+     "what": ["it support", "helpdesk", "service desk"],
+     "fields": ["it_support", "it_admin"], "levels_exclude": ["senior", "lead", "manager"],
+     "pay": {"min": 7000, "per": "month"}},
+    {"id": "accounting", "label": "Accounting near Poznań", "where": {"city": "Poznań", "radius_km": 25},
+     "what": ["księgowa", "księgowy", "accountant"], "fields": ["finance"],
+     "contracts": ["employment"], "title_exclude": ["główn|kierownik|manager"]},
+    {"id": "side", "label": "Tutoring on the side", "where": "anywhere", "what": ["korepetycje", "tutor"],
+     "fields": ["education"], "worktime": ["part_time", "flexible"],
+     "contracts": ["mandate", "specific_task", "freelance"], "pay": {"min": 50, "per": "hour"}, "boost": 3}
   ],
-  "rank": {"rules": [{"pattern": "n8n|zapier", "weight": 3}], "sort": ["score", "new", "pay"]},
+  "rank": {"rules": [{"pattern": "junior|młodsz|entry", "weight": 2, "label": "entry level"}],
+           "sort": ["score", "new", "pay"]},
   "review": {"mode": "listing"}
 }
 ```
+
+`what` holds Polish phrases (*księgowa*, *korepetycje*: accountant, tutoring) because Polish boards
+match them against Polish postings; `fields`, `domains`, `functions`, contract and work-time values are
+language-neutral and read from titles in every language the country's language packs cover
+("Księgowa", "Accountant" and "Buchhalterin" all have the field `finance`). The `główn|kierownik` pattern
+(chief, head) is local too.
 
 Search fields:
 
@@ -83,7 +97,15 @@ same key of `defaults`.
              "unknown": {"default": "keep", "domain": "drop"}}
 ```
 
-`fields` stays the simpler choice when the person names a role ("IT support", "QA").
+The same works outside IT: a nurse who would take any healthcare job except selling medical equipment
+(`"Przedstawiciel medyczny"`, a medical sales rep, is `health` and `sell`):
+
+```json
+"defaults": {"domains": ["health"], "functions_exclude": ["sell", "market"]}
+```
+
+`fields` stays the simpler choice when the person names a role ("IT support", "QA", `healthcare`,
+`education`).
 
 Top-level keys: `country` (`pl` default, `de`), `boards` (board names or groups: a country code, `intl`, `all`;
 default: the boards of the profile's country and of every country a search targets), `candidate` (free-form notes

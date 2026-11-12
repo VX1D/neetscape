@@ -14,7 +14,7 @@ rules only order results; they never drop anything.
       "review": {"mode": "listing"}
     }
 
-`country` (default "pl") sets the currency of every amount (pay floors, `fx`) and of the database, the
+`country` (default `country.DEFAULT_COUNTRY`, "pl") sets the currency of every amount (pay floors, `fx`) and of the database, the
 default boards and the language of the text; a search can target another country with
 `"where": {"remote": true, "country": "de"}` (its boards must be listed in `boards`).
 
@@ -64,8 +64,8 @@ class Profile:
     min_interval: dict = field(default_factory=dict)
     retries: int = 2
     blacklist: dict = field(default_factory=dict)   # companies/urls/text: compiled regexes; action: drop|flag
-    fx: dict = field(default_factory=lambda: dict(countries.get("pl").fx))
-    country: Country = field(default_factory=lambda: countries.get("pl"))
+    fx: dict = field(default_factory=lambda: dict(countries.get(countries.DEFAULT_COUNTRY).fx))
+    country: Country = field(default_factory=lambda: countries.get(countries.DEFAULT_COUNTRY))
 
     @property
     def currency(self) -> str:
@@ -97,7 +97,7 @@ def _choice(where: str, values, allowed, aliases: dict | None = None) -> frozens
     return frozenset(values)
 
 
-def _where(where: str, value, home: str = "pl") -> Where:
+def _where(where: str, value, home: str = countries.DEFAULT_COUNTRY) -> Where:
     """A search's `where`: "remote", "anywhere", a city object or a remote/country object."""
     if value in ("remote", None):
         return Where(remote=True, country=home)
@@ -141,7 +141,7 @@ def build_search(d: dict, defaults: dict, n: int, home: Country | None = None) -
     """Search number `n` of a profile (`d` over `defaults`), checked against the vocabularies of `home`. Keys of
     the search replace those of `defaults`, except `unknown`: both are read as mappings (a string `X` is
     `{"default": X}`) and merged dimension by dimension, the search's winning."""
-    home = home or countries.get("pl")
+    home = home or countries.get(countries.DEFAULT_COUNTRY)
     s = {**defaults, **d}
     if "unknown" in defaults and "unknown" in d:
         s["unknown"] = _unknown_map(defaults["unknown"]) | _unknown_map(d["unknown"])
@@ -218,7 +218,7 @@ def validate(raw: dict) -> Profile:
     _check_shape(raw, _schema(), "")
     if not raw.get("searches"):
         raise ProfileError("profile needs at least one entry in 'searches'")
-    code = raw.get("country", "pl")
+    code = raw.get("country", countries.DEFAULT_COUNTRY)
     if code not in countries.codes():
         raise ProfileError(f"unknown country {code!r}; available: {countries.codes()}")
     home = countries.get(code)
@@ -293,7 +293,7 @@ def _preset_dirs(country: str):
     return [own, _HERE / "presets"]
 
 
-def presets(country: str = "pl") -> list[str]:
+def presets(country: str = countries.DEFAULT_COUNTRY) -> list[str]:
     """Preset names available for a country: its own (countries/<cc>/presets/) and the shared ones."""
     names = []
     for d in _preset_dirs(country):
@@ -302,7 +302,7 @@ def presets(country: str = "pl") -> list[str]:
     return sorted(set(names), key=lambda n: (PRESETS.index(n) if n in PRESETS else len(PRESETS), n))
 
 
-def preset(name: str, country: str = "pl") -> dict:
+def preset(name: str, country: str = countries.DEFAULT_COUNTRY) -> dict:
     """A preset for `country`: countries/<cc>/presets/<name>.json, else the shared profile/presets/<name>.json."""
     for d in _preset_dirs(country):
         f = d.joinpath(f"{name}.json")
@@ -313,7 +313,7 @@ def preset(name: str, country: str = "pl") -> dict:
     raise ProfileError(f"unknown preset {name!r}; available for {country}: {presets(country)}")
 
 
-def combine(names: list[str], country: str = "pl") -> dict:
+def combine(names: list[str], country: str = countries.DEFAULT_COUNTRY) -> dict:
     """Merge presets: searches are concatenated, everything else comes from the first preset that sets it."""
     if country not in countries.codes():
         raise ProfileError(f"unknown country {country!r}; available: {countries.codes()}")
@@ -328,6 +328,53 @@ def combine(names: list[str], country: str = "pl") -> dict:
     if len(names) > 1:
         out["label"] = " + ".join(p.get("label", n) for n, p in zip(names, loaded))
     return out
+
+
+WORKTIME_ANSWERS = {"full": ["full_time"], "part": ["part_time", "flexible"], "any": None}
+WHERE_ANSWERS = ("remote", "city", "both")
+
+
+def from_answers(ans: dict) -> dict:
+    """A profile from the answers of `neetscape init`'s questions, validated; raises `ProfileError`.
+
+    Keys (all optional): country, where ("remote", "city", "both"), city, radius_km, what (phrases; empty: every
+    offer), domains, functions_exclude, worktime ("full", "part", "any"), contracts, pay_min, pay_per ("month",
+    "hour"), levels_exclude, max_age_days (None: no limit). The settings besides the one search come from the `broad` preset."""
+    code = ans.get("country") or countries.DEFAULT_COUNTRY
+    where = ans.get("where") or "remote"
+    if where not in WHERE_ANSWERS:
+        raise ProfileError(f"where must be one of {list(WHERE_ANSWERS)}, not {where!r}")
+    data = combine(["broad"], code)
+    search: dict = {}
+    if where == "remote":
+        search |= {"id": "remote", "label": "Remote", "where": "remote"}
+    else:
+        if not ans.get("city"):
+            raise ProfileError("a city search needs a city")
+        place = {"city": ans["city"], "radius_km": ans.get("radius_km") or 30}
+        if where == "both":
+            place["or_remote"] = True
+        search |= {"id": "local" if where == "city" else "local-or-remote",
+                   "label": f"Near {ans['city']}" + (" or remote" if where == "both" else ""), "where": place}
+    search["what"] = list(ans.get("what") or []) or "all"
+    worktime = WORKTIME_ANSWERS.get(ans.get("worktime") or "any", KeyError)
+    if worktime is KeyError:
+        raise ProfileError(f"worktime must be one of {list(WORKTIME_ANSWERS)}, not {ans.get('worktime')!r}")
+    if worktime:
+        search["worktime"] = worktime
+    for key in ("contracts", "levels_exclude", "domains", "functions_exclude"):
+        if ans.get(key):
+            search[key] = list(ans[key])
+    if ans.get("pay_min"):
+        search["pay"] = {"min": ans["pay_min"], "per": ans.get("pay_per") or "month"}
+    data["label"] = search["label"]
+    data["searches"] = [search]
+    if "max_age_days" in ans:  # absent: the preset's; None: no age limit
+        data["defaults"] = {k: v for k, v in (data.get("defaults") or {}).items() if k != "max_age_days"}
+        if ans["max_age_days"]:
+            data["defaults"]["max_age_days"] = ans["max_age_days"]
+    validate(data)
+    return data
 
 
 def _resolve(node, defs: dict):

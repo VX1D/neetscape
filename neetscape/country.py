@@ -17,6 +17,9 @@ from dataclasses import dataclass, field
 from .pay import DAYS_PER_MONTH, HOURS_PER_MONTH
 
 PSEUDO = ("any", "intl")
+# The historical default: the market neetscape started with. Profiles name their country (`neetscape init` writes it);
+# this is only what a profile, a request or a run without one falls back to.
+DEFAULT_COUNTRY = "pl"
 
 
 @dataclass(frozen=True)

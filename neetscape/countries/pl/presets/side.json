@@ -24,7 +24,7 @@
         "per": "hour"
       },
       "text_exclude": [
-        "call ?center|telemark|cold call|akwizyc|mlm|network marketing|kurier|kierowc|magazyn|sprzątan"
+        "mlm|network marketing|piramid\\w* finansow"
       ],
       "boost": 3
     }

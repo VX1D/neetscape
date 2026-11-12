@@ -141,3 +141,37 @@ def test_polish_profile_searching_germany():
     assert {r.board for r in reqs if r.search_id == "de"} == {"linkedin", "arbeitnow", "bundesagentur"}
     assert "bundesagentur" not in {r.board for r in reqs if r.search_id == "pl"}
     assert {r.params["country"] for r in reqs if r.board == "linkedin"} == {"pl", "de"}
+
+
+def test_profile_from_init_answers():
+    remote_it = profile.from_answers({"country": "pl", "where": "remote", "what": ["n8n", "helpdesk"],
+                                      "domains": ["ai", "it"], "functions_exclude": ["sell", "market"],
+                                      "worktime": "full", "contracts": ["employment", "b2b"], "pay_min": 9000,
+                                      "levels_exclude": ["senior", "lead"], "max_age_days": 21})
+    s = profile.validate(remote_it).searches[0]
+    assert s.where.remote and not s.where.city and s.keywords == ("n8n", "helpdesk") and s.domains == {"ai", "it"}
+    assert s.functions_exclude == {"sell", "market"} and s.worktime == {"full_time"} and s.pay_min == 9000
+    assert s.pay_period == "month" and s.levels_exclude == {"senior", "lead"} and s.max_age_days == 21
+    assert remote_it["review"]["mode"] == "listing"                    # from the broad preset
+
+    local = profile.validate(profile.from_answers({"country": "de", "where": "city", "city": "München", "radius_km": 20,
+                                                   "max_age_days": None}))
+    s = local.searches[0]
+    assert local.currency == "EUR" and s.where.city == "München" and s.where.radius_km == 20 and not s.where.remote
+    assert s.keywords is None and s.max_age_days is None and not s.worktime and not s.contracts and s.pay_min is None
+
+    side = profile.validate(profile.from_answers({"where": "both", "city": "Kraków", "worktime": "part",
+                                                  "contracts": ["mandate", "freelance"], "pay_min": 40,
+                                                  "pay_per": "hour"}))
+    s = side.searches[0]
+    assert side.country.code == country.DEFAULT_COUNTRY and s.where.remote and s.where.city == "Kraków"
+    assert s.where.radius_km == 30 and s.worktime == {"part_time", "flexible"} and s.pay_period == "hour"
+    assert s.max_age_days == 30                                         # the preset's default
+
+
+@pytest.mark.parametrize("answers,msg", [({"where": "city"}, "needs a city"), ({"where": "moon"}, "where"),
+                                         ({"worktime": "nights"}, "worktime"), ({"contracts": ["bogus"]}, "contracts"),
+                                         ({"country": "xx"}, "unknown country")])
+def test_profile_from_bad_init_answers(answers, msg):
+    with pytest.raises(profile.ProfileError, match=msg):
+        profile.from_answers(answers)
