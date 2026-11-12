@@ -9,6 +9,7 @@ _LD = re.compile(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</s
 
 
 def html_to_text(fragment: str) -> str:
+    """Plain text of an HTML fragment: block ends become line breaks, list items "• ", entities unescaped."""
     t = re.sub(r"(?i)<br\s*/?>|</p>|</li>|</h\d>|</div>", "\n", fragment or "")
     t = re.sub(r"(?i)<li[^>]*>", "• ", t)
     t = re.sub(r"<[^>]+>", " ", t)
@@ -18,6 +19,7 @@ def html_to_text(fragment: str) -> str:
 
 
 def _walk(node):
+    """Every dict in a JSON tree, depth first."""
     if isinstance(node, dict):
         yield node
         for v in node.values():
@@ -27,15 +29,22 @@ def _walk(node):
             yield from _walk(v)
 
 
-def find_jobposting(page_html: str) -> dict | None:
-    for block in _LD.findall(page_html or ""):
+def _json(block: str):
+    """A JSON-LD block, as written or HTML-escaped; None when it is neither."""
+    for text in (block, htmllib.unescape(block)):
         try:
-            data = json.loads(block.strip())
+            return json.loads(text)
         except json.JSONDecodeError:
-            try:
-                data = json.loads(htmllib.unescape(block.strip()))
-            except json.JSONDecodeError:
-                continue
+            pass
+    return None
+
+
+def find_jobposting(page_html: str) -> dict | None:
+    """The first schema.org JobPosting in the page's JSON-LD blocks, or None."""
+    for block in _LD.findall(page_html or ""):
+        data = _json(block.strip())
+        if data is None:
+            continue
         for node in _walk(data):
             t = node.get("@type")
             if t == "JobPosting" or (isinstance(t, list) and "JobPosting" in t):
@@ -43,7 +52,13 @@ def find_jobposting(page_html: str) -> dict | None:
     return None
 
 
+def _joined(value) -> str:
+    """A JSON-LD value that may be a list, as one space-separated string."""
+    return " ".join(value) if isinstance(value, list) else (value or "")
+
+
 def _salary(base) -> str:
+    """A JSON-LD `baseSalary` as text: "8000-12000 PLN/month"; '' when it has no amount."""
     if not isinstance(base, dict):
         return ""
     cur = base.get("currency", "")
@@ -60,20 +75,19 @@ def _salary(base) -> str:
 
 
 def parse_posting(page_html: str) -> dict:
-    """Return {description, company, published, salary, remote} from JSON-LD; empty values when absent."""
+    """{description, company, published, valid_through, salary, remote, employment_type} from the page's JobPosting
+    JSON-LD; {} when it has none."""
     jp = find_jobposting(page_html)
     if not jp:
         return {}
     org = jp.get("hiringOrganization")
-    loc_type = jp.get("jobLocationType")
-    loc_type = " ".join(loc_type) if isinstance(loc_type, list) else (loc_type or "")
     return {
         "description": html_to_text(jp.get("description", "")),
         "company": (org.get("name") if isinstance(org, dict) else org) or "",
         "published": (jp.get("datePosted") or "")[:10],
         "valid_through": (jp.get("validThrough") or "")[:10],
         "salary": _salary(jp.get("baseSalary")),
-        "remote": "TELECOMMUTE" in loc_type.upper(),
-        "employment_type": " ".join(jp["employmentType"]) if isinstance(jp.get("employmentType"), list) else (jp.get("employmentType") or ""),
+        "remote": "TELECOMMUTE" in _joined(jp.get("jobLocationType")).upper(),
+        "employment_type": _joined(jp.get("employmentType")),
     }
 

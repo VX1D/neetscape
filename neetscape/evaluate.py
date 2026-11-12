@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import datetime as dt
 import json
-import re
 
 from . import country as countries
 from . import infer
@@ -23,22 +22,28 @@ from .pay import HOURS_PER_MONTH
 from .profile import Profile
 from .store import Store
 
-_TEXT_FIELDS = ("title", "company", "category", "skills", "pay_text", "snippet")
+_TEXT_FIELDS = ("title", "company", "category", "skills", "pay_text", "snippet")   # what rank rules on `any` read
+_CARD_FIELDS = (*_TEXT_FIELDS, "locations")
 
 
 def _text(o, fields=_TEXT_FIELDS) -> str:
     return " ".join(str(o[k] or "") for k in fields)
 
 
+def _optional(o, key: str) -> str:
+    """A column only some offer queries select (`posting`, `areas`, `keywords`, `job_field`); "" when absent."""
+    return (o[key] if key in o.keys() else "") or ""
+
+
 def _posting(o) -> str:
     """The fetched posting text (`details`), "" until it is fetched and when the fetch failed (`ERROR ...`)."""
-    text = (o["posting"] if "posting" in o.keys() else "") or ""
+    text = _optional(o, "posting")
     return "" if text.startswith("ERROR") else text
 
 
 def _filter_text(o) -> str:
     """What `text_exclude` and the blacklist's `text` read: the card fields, locations and the posting."""
-    return _text(o, (*_TEXT_FIELDS, "locations")) + " " + _posting(o)
+    return _text(o, _CARD_FIELDS) + " " + _posting(o)
 
 
 class _Verdict:
@@ -69,8 +74,7 @@ def _found_in_area(o, s: Search) -> bool:
     name differs). Only boards whose radius filter is verified (`Caps.radius`) count: a board with a city filter
     only may answer an unknown town with the whole country (seen live), and LinkedIn ignores the distance. Boards
     that round a radius up to their own steps may include slightly farther offers."""
-    areas = (o["areas"] if "areas" in o.keys() else "") or ""
-    for area in filter(None, areas.split(",")):
+    for area in filter(None, _optional(o, "areas").split(",")):
         board, city, radius = (area.split("|") + ["", "", ""])[:3]
         b = REGISTRY.get(board)
         if b and b.caps.radius and _city_in(s.where.city, s.where.country, fold(city)) \
@@ -102,36 +106,11 @@ def _check_remote_proof(o, s: Search, v: _Verdict) -> None:
     "Hybrid or 100% remote, your choice" passes (remote is offered); "hybrid, 1 day a week in the office" or "remote
     with client visits" fails. Without a fetched posting the proof is unknown and follows the `unknown` policy."""
     text = _posting(o)
-    if not text or text.startswith("ERROR"):
+    if not text:
         v.unknown("remote proof")
         return
-    languages = countries.languages(s.where.country)
-    h = infer.hints(text, languages)
-    presence = _required_presence(text, languages) + h["office"]
-    if presence:
-        v.fail("posting requires presence: " + ", ".join(presence[:2]))
-    elif not (h["fully_remote"] or infer.mode_from_text(text, languages) == "remote"):
-        v.fail("posting does not mention remote work")
-
-
-_SENTENCES = re.compile(r"(?<=[.!?;])\s+|\n+|\s+[•▪·]\s+")
-_CHOICE = re.compile(r"\b(?:lub|albo|bądź|or|either)\b|\s/\s|zdalnie/|/hybryd|remote/|/hybrid", re.I)
-
-
-def _required_presence(text: str, languages) -> list[str]:
-    """Hybrid wording that the posting requires. A sentence offering remote work as one of the options ("hybrid or
-    100% remote", "remote for people outside the city, hybrid in Gdańsk or fully remote") is a choice, not a
-    requirement, and is left out."""
-    found: list[str] = []
-    for sentence in _SENTENCES.split(text):
-        hybrid = infer.hints(sentence, languages)["hybrid"]
-        if not hybrid:
-            continue
-        offers_remote = infer.hints(sentence, languages)["fully_remote"] or infer.mode_from_text(
-            re.sub(r"(?i)hybry\w*|hybrid\w*", "", sentence), languages) == "remote"
-        if not (offers_remote and _CHOICE.search(sentence)):
-            found += [w for w in hybrid if w not in found]
-    return found
+    if reason := infer.remote_proof(text, countries.languages(s.where.country)):
+        v.fail(reason)
 
 
 def _check_keywords(o, s: Search, v: _Verdict) -> None:
@@ -139,8 +118,8 @@ def _check_keywords(o, s: Search, v: _Verdict) -> None:
     kws = s.keywords_on(o["board"])
     if kws is None:
         return
-    found_for = set((o["keywords"] or "").split(",")) if "keywords" in o.keys() else set()
-    hay = fold(_text(o, (*_TEXT_FIELDS, "locations")))
+    found_for = set(_optional(o, "keywords").split(","))
+    hay = fold(_text(o, _CARD_FIELDS))
     if not (found_for & set(kws) or any(fold(k) in hay for k in kws)):
         v.fail("no keyword")
 
@@ -156,6 +135,14 @@ def _check_worktime(o, s: Search, v: _Verdict) -> None:
         v.unknown("work time")
     else:
         v.fail(f"work time {o['worktime']} / contracts {','.join(sorted(contracts)) or '-'}")
+
+
+def _check_field_level(o, s: Search, v: _Verdict) -> None:
+    field = _optional(o, "job_field") or "other"
+    if (s.fields and field not in s.fields) or field in s.fields_exclude:
+        v.fail(f"field {field}")
+    if o["level"] in s.levels_exclude:
+        v.fail(f"level {o['level']}")
 
 
 def _check_pay(o, s: Search, v: _Verdict, hours_per_month: int) -> None:
@@ -207,8 +194,7 @@ def check(o, s: Search, today: dt.date | None = None, hours_per_month: int = HOU
         _check_remote_proof(o, s, v)
     _check_keywords(o, s, v)
     _check_worktime(o, s, v)
-    if o["level"] in s.levels_exclude:
-        v.fail(f"level {o['level']}")
+    _check_field_level(o, s, v)
     _check_pay(o, s, v, hours_per_month)
     _check_age(o, s, v, today or dt.date.today())
     _check_patterns(o, s, v)
@@ -246,6 +232,7 @@ def evaluate(store: Store, profile: Profile, run_id: int) -> dict[str, int]:
     earlier verdicts). Returns passed counts per search."""
     passed, rejected, counts = [], [], {s.id: 0 for s in profile.searches}
     hours = profile.country.hours_per_month
+    store.rederive()  # derived fields follow the current vocabularies and policies without a new crawl
     for o in store.current_offers(run_id):
         black, drop = _blacklist_verdict(o, profile)
         for s in profile.searches:
@@ -285,5 +272,7 @@ def explain(store: Store, profile: Profile, offer_id: int, run_id: int | None = 
 def flagged(store: Store, profile: Profile, offer_id: int, run_id: int | None = None) -> list[str]:
     """Blacklist reasons of an offer the profile keeps (`action: flag`)."""
     row = offer_row(store, offer_id, run_id)
-    black, drop = _blacklist_verdict(row, profile) if row is not None else ([], False)
+    if row is None:
+        return []
+    black, drop = _blacklist_verdict(row, profile)
     return [] if drop else black

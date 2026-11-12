@@ -40,7 +40,7 @@ Adapters live in `neetscape/countries/<cc>/boards/` (one module per board) and, 
 (LinkedIn, international feeds), in `neetscape/boards/`, next to the code all adapters use (`base`, `fetch`,
 `pages`). A board declares `Caps`, turns a search into `Request`s,
 builds page URLs and parses raw pages into offers with a pure `parse()` function tested on
-recorded fixtures. A board may also read postings itself (`posting()`, e.g. from its embedded
+recorded fixtures. A board may also read the posting body itself (`posting_body()`, e.g. from its embedded
 data), point to a posting API, declare a CSS selector for the posting body, and declare a minimum
 interval between requests. [CONTRIBUTING.md](../CONTRIBUTING.md) explains how to add or fix one.
 
@@ -62,8 +62,8 @@ A country is a package `neetscape/countries/<cc>/`: `__init__.py` defines a `Cou
 exchange rates, languages, hours per month, LinkedIn location, city aliases such as
 München/Munich, legal-form words for de-duplication, contract words, default boards), `boards/`
 holds its adapters (registered with that country) and `presets/` its profile presets. Free text
-is read with the language packs `neetscape/lang/<code>.py` (vocabularies plus an `EXAMPLES` table
-that the tests check); English is always added.
+is read with the language packs `neetscape/lang/<code>.py` (vocabularies; `neetscape/infer.py` decides
+between their matches); English is always added.
 
 One database holds one country's offers, because pay is stored in that country's currency:
 `neetscape run` refuses a profile of another country than the previous runs in the same `--out`.

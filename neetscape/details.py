@@ -17,7 +17,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
-import re
 import urllib.parse
 from collections import defaultdict
 
@@ -35,37 +34,15 @@ BLOCKED = (401, 403, 429)  # saved as blocked, never rendered: the page would be
 PLACEHOLDER_COMPANIES = {"confidential", "poufne", "anonymous", "anonim", "ogłoszenie zewnętrzne", "n/a", "-"}
 
 
+def _error(e: Exception) -> str:
+    """The posting text saved for a failed fetch."""
+    return f"ERROR {type(e).__name__}: {e}"
+
+
 def _languages(board: str, home: str) -> tuple:
     """Languages of a posting: its board's country, else (boards serving any country) the profile's."""
     b = REGISTRY.get(board)
     return countries.languages(countries.text_country(b.caps.country if b else "", home))
-
-
-def _from_posting(row, text: str, meta: dict, hints: dict, languages) -> dict:
-    """Fields the listing card left unknown, read from the posting. The mode only from strong signals (JSON-LD
-    TELECOMMUTE, "fully remote" phrases, hybrid words): a long posting mentions "remote" for many reasons."""
-    if not text or text.startswith("ERROR"):
-        return {}
-    mode = "remote" if meta.get("remote") or hints.get("fully_remote") else "hybrid" if hints.get("hybrid") else "unknown"
-    found = {"mode": mode, "worktime": infer.worktime_from_text(text, languages)}
-    out = {k: v for k, v in found.items() if row[k] == "unknown" and v != "unknown"}
-    if not row["contracts"] and (cs := _posting_contracts(row, text, languages)):
-        out["contracts"] = ",".join(cs)
-    return out
-
-
-_INTERNSHIP_FIELD = re.compile(r"employment type:\s*internship|rodzaj (?:umowy|zatrudnienia):\s*sta[żz]", re.I)
-
-
-def _posting_contracts(row, text: str, languages) -> list[str]:
-    """Contract types named in the posting. An internship only when the title says so or a labelled field does
-    (LinkedIn's "Employment type: Internship"): free text mentions "staż" and "internships" for other reasons
-    (a company's 37 years of "stażu", "experience from internships", an internship programme as a benefit)."""
-    found = infer.contracts_from_text(text, languages)
-    if "internship" in found and not (_INTERNSHIP_FIELD.search(text)
-                                      or "internship" in infer.contracts_from_text(row["title"] or "", languages)):
-        found.remove("internship")
-    return found
 
 
 def _is_earlier_first_publication(row, meta: dict) -> bool:
@@ -76,20 +53,21 @@ def _is_earlier_first_publication(row, meta: dict) -> bool:
 
 
 def _save(store: Store, row, status: int, text: str, meta: dict, home: str = "pl") -> None:
-    languages = _languages(row["board"], home)
-    hints = infer.hints(text, languages)
-    store.save_detail(row["id"], status, text, meta, hints)
+    """Store one offer's posting, fill the company and publication date the card lacked, and derive the offer's
+    fields again with the posting as a new observation (mode, work time, contracts)."""
+    store.save_detail(row["id"], status, text, meta, infer.hints(text, _languages(row["board"], home)))
     tick()
     if (meta.get("company") or "").strip().lower() in PLACEHOLDER_COMPANIES:
         meta = {**meta, "company": ""}
-    updates = {k: meta[k] for k in ("company", "published") if meta.get(k) and not row[k]} | _from_posting(row, text, meta, hints, languages)
+    updates = {k: meta[k] for k in ("company", "published") if meta.get(k) and not row[k]}
     if _is_earlier_first_publication(row, meta):
         updates["published"] = meta["published"]
     if updates.get("published") and not parse_date(updates["published"]):
         del updates["published"]
     if updates:
-        store.db.execute(f"UPDATE offers SET {', '.join(f'{k}=?' for k in updates)} WHERE id=?", (*updates.values(), row["id"]))
+        store.update_offer(row["id"], updates)
         store.db.commit()
+    store.rederive([row["id"]])
 
 
 async def _posting(fetch, row, render) -> tuple[int, str, dict]:
@@ -117,6 +95,7 @@ async def _posting(fetch, row, render) -> tuple[int, str, dict]:
 
 
 async def _origin(store: Store, origin: str, rows, port: int, limiter: Limiter, retries: int, home: str) -> None:
+    """Postings of one site, one after another in one browser tab; a render tab is opened only when needed."""
     async with contextlib.AsyncExitStack() as stack:
         fetch = await stack.enter_async_context(BrowserFetch(port, origin, limiter, None, retries))
         tab = None
@@ -128,10 +107,6 @@ async def _origin(store: Store, origin: str, rows, port: int, limiter: Limiter, 
 
         for row in rows:
             _save(store, row, *await _posting(fetch, row, render), home)
-
-
-def _error(e: Exception) -> str:
-    return f"ERROR {type(e).__name__}: {e}"
 
 
 async def _over_http(store: Store, rows, limiter: Limiter, retries: int, home: str, accept: str, read) -> None:
@@ -176,14 +151,16 @@ def route(row) -> str:
 
 
 async def fetch_details(store: Store, ids: list[int], port: int, limiter: Limiter, retries: int = 2, home: str = "pl") -> int:
-    """`home`: the profile's country (language of postings on boards serving any country)."""
+    """Fetch and store the postings of the offers `ids`, sites in parallel; returns how many offers were found.
+    `home`: the profile's country (language of postings on boards serving any country)."""
     rows = [r for r in (store.offer(i) for i in ids) if r]
-    groups: dict[str, list] = defaultdict(list)
-    linkedin, api = [], []
+    groups: dict[str, list] = defaultdict(list)  # site -> offers read in the browser
+    linkedin, api, shipped = [], [], 0
     for row in rows:
         how = route(row)
         if how == "text":
             _save(store, row, 200, row["description"], {"source": "feed"}, home)
+            shipped += 1
         elif how == "linkedin":
             linkedin.append(row)
         elif how == "api":
@@ -201,7 +178,7 @@ async def fetch_details(store: Store, ids: list[int], port: int, limiter: Limite
                 log("details error:", type(e).__name__, e)
 
     with Progress(len(rows), "postings") as progress:
-        progress.done = sum(1 for r in rows if route(r) == "text")   # saved above, before the bar existed
+        progress.done = shipped  # saved above, before the bar existed
         await asyncio.gather(*[guarded(_origin(store, o, rs, port, limiter, retries, home)) for o, rs in groups.items()],
                              guarded(_over_http(store, linkedin, limiter, retries, home, "*/*", _linkedin)),
                              guarded(_over_http(store, api, limiter, retries, home, "application/json", _posting_api)))
@@ -210,8 +187,9 @@ async def fetch_details(store: Store, ids: list[int], port: int, limiter: Limite
 
 
 def detail(store: Store, offer_id: int) -> dict | None:
-    row = store.q("SELECT * FROM details WHERE offer_id=?", offer_id)
-    if not row:
+    """An offer's stored posting: status, text, hints and fetch time; None when none was fetched."""
+    rows = store.q("SELECT * FROM details WHERE offer_id=?", offer_id)
+    if not rows:
         return None
-    r = row[0]
+    r = rows[0]
     return {"status": r["http_status"], "text": r["text"], "hints": json.loads(r["hints"] or "{}"), "fetched_at": r["fetched_at"]}

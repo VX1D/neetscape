@@ -102,6 +102,7 @@ en:{review:'Review',all:'All',search:'Search  /',g_auto:'Group: auto',g_category
  p_none:'Posting not fetched',p_empty:'Posting is empty',p_failed:'Fetching the posting failed',p_gone:'Offer removed',p_http:'Posting unavailable',
  other:'other',no_tag:'no tag',not_reviewed:'not reviewed',
  st:{shortlisted:'shortlisted',applied:'applied',interview:'interview',offer:'offer',rejected:'rejected',ignored:'ignored'},
+ g_field:'Group: job field',fd:{ai_automation:'AI & automation',security:'Security',qa:'QA & testing',devops_cloud:'DevOps & cloud',data:'Data & analytics',it_support:'IT support',it_admin:'IT administration',erp_crm:'ERP & CRM',software_dev:'Software development',product_project:'Product & project',design:'Design',ecommerce:'E-commerce',customer_service:'Customer service',sales:'Sales',marketing:'Marketing',hr:'HR & payroll',finance:'Finance & accounting',legal:'Legal',admin_office:'Office & admin',logistics:'Logistics',engineering:'Engineering',manufacturing:'Manufacturing',healthcare:'Healthcare',education:'Education',hospitality:'Hospitality',retail:'Retail',other:'Other'},
  md:{remote:'remote',hybrid:'hybrid',onsite:'on-site',unknown:'unknown'},wt:{full_time:'full time',part_time:'part time',flexible:'flexible'}},
 de:{review:'Auswahl',all:'Alle',search:'Suchen  /',g_auto:'Gruppe: automatisch',g_category:'Gruppe: Notiz-Kategorie',g_status:'Gruppe: Status',g_tag:'Gruppe: Tag',
  g_search:'Gruppe: Suche',g_board:'Gruppe: Börse',g_mode:'Gruppe: Arbeitsort',g_none:'Keine Gruppen',s_score:'Sortierung: Punkte',s_pay:'Sortierung: Gehalt',
@@ -116,6 +117,7 @@ de:{review:'Auswahl',all:'Alle',search:'Suchen  /',g_auto:'Gruppe: automatisch',
  offers:'Angebote',new:'neu',errors:'Börsenfehler',cut:'abgeschnittene Listen',p_none:'Anzeigentext nicht geladen',p_empty:'Anzeigentext leer',p_failed:'Laden des Anzeigentexts fehlgeschlagen',
  p_gone:'Angebot entfernt',p_http:'Anzeigentext nicht verfügbar',other:'sonstige',no_tag:'ohne Tag',not_reviewed:'nicht geprüft',
  st:{shortlisted:'vorgemerkt',applied:'beworben',interview:'Gespräch',offer:'Zusage',rejected:'abgelehnt',ignored:'ignoriert'},
+ g_field:'Gruppe: Berufsfeld',fd:{ai_automation:'KI & Automatisierung',security:'Sicherheit',qa:'QA & Test',devops_cloud:'DevOps & Cloud',data:'Daten & Analyse',it_support:'IT-Support',it_admin:'IT-Administration',erp_crm:'ERP & CRM',software_dev:'Softwareentwicklung',product_project:'Produkt & Projekt',design:'Design',ecommerce:'E-Commerce',customer_service:'Kundenservice',sales:'Vertrieb',marketing:'Marketing',hr:'Personal & Lohn',finance:'Finanzen & Buchhaltung',legal:'Recht',admin_office:'Büro & Verwaltung',logistics:'Logistik',engineering:'Ingenieurwesen',manufacturing:'Produktion',healthcare:'Gesundheit',education:'Bildung',hospitality:'Gastgewerbe',retail:'Einzelhandel',other:'Sonstige'},
  md:{remote:'remote',hybrid:'hybrid',onsite:'vor Ort',unknown:'unbekannt'},wt:{full_time:'Vollzeit',part_time:'Teilzeit',flexible:'flexibel'}},
 pl:{review:'Przegląd',all:'Wszystkie',search:'Szukaj  /',g_auto:'Grupy: auto',g_category:'Grupy: kategoria notatki',g_status:'Grupy: status',g_tag:'Grupy: tag',
  g_search:'Grupy: wyszukiwanie',g_board:'Grupy: portal',g_mode:'Grupy: tryb pracy',g_none:'Bez grup',s_score:'Sortuj: wynik',s_pay:'Sortuj: stawka',
@@ -129,6 +131,7 @@ pl:{review:'Przegląd',all:'Wszystkie',search:'Szukaj  /',g_auto:'Grupy: auto',g
  more:n=>`Pokaż więcej (zostało ${n})`,offers:'ofert',new:'nowych',errors:'błędów portali',cut:'uciętych list',p_none:'Opis niepobrany',p_empty:'Opis pusty',
  p_failed:'Nie udało się pobrać opisu',p_gone:'Oferta usunięta',p_http:'Opis niedostępny',other:'inne',no_tag:'bez tagu',not_reviewed:'nieprzejrzane',
  st:{shortlisted:'na liście',applied:'aplikowano',interview:'rozmowa',offer:'oferta',rejected:'odrzucone',ignored:'pominięte'},
+ g_field:'Grupy: dziedzina',fd:{ai_automation:'AI i automatyzacja',security:'Bezpieczeństwo',qa:'QA i testy',devops_cloud:'DevOps i chmura',data:'Dane i analityka',it_support:'Wsparcie IT',it_admin:'Administracja IT',erp_crm:'ERP i CRM',software_dev:'Programowanie',product_project:'Produkt i projekty',design:'Design',ecommerce:'E-commerce',customer_service:'Obsługa klienta',sales:'Sprzedaż',marketing:'Marketing',hr:'HR i płace',finance:'Finanse i księgowość',legal:'Prawo',admin_office:'Biuro i administracja',logistics:'Logistyka',engineering:'Inżynieria',manufacturing:'Produkcja',healthcare:'Zdrowie',education:'Edukacja',hospitality:'Gastronomia i hotele',retail:'Handel detaliczny',other:'Inne'},
  md:{remote:'zdalna',hybrid:'hybrydowa',onsite:'stacjonarna',unknown:'nieznany'},wt:{full_time:'pełny etat',part_time:'część etatu',flexible:'elastyczny'}}};
 
 const X={en:{view:'View',prev:'Previous (k)',next:'Next (j)',shown:(a,b)=>`${a} of ${b}`,lang:'Language'},
@@ -153,7 +156,7 @@ function i18n(){document.documentElement.lang=lang;document.querySelectorAll('[d
  $('stats').textContent=`${M.n_rows} ${t.offers} · ${M.n_new} ${t.new}`+(M.errors?` · ${M.errors} ${t.errors}`:'')+(M.cut?` · ${M.cut} ${t.cut}`:'');$('lang').value=lang}
 function keyOf(d,g){switch(g){case'category':return d.category||t.other;case'status':return status(d)?st(status(d)):t.not_reviewed;
  case'tag':return M.tags[d.tags[0]]||d.tags[0]||t.no_tag;case'search':return M.searches[d.searches[0]]||d.searches[0]||'—';
- case'board':return d.boards.split(',')[0];case'mode':return t.md[d.mode]||d.mode;default:return''}}
+ case'board':return d.boards.split(',')[0];case'mode':return t.md[d.mode]||d.mode;case'field':return t.fd[d.field]||d.field;default:return''}}
 function rank(g,k){if(g==='status'){const i=[...M.statuses.map(st),t.not_reviewed].indexOf(k);return i<0?99:i}
  if(g==='mode')return MODES.map(m=>t.md[m]).indexOf(k);
  if(g==='category'){let m=1e15;for(const d of D)if(d.category===k)m=Math.min(m,d.marked_at);return m}return 0}
@@ -192,7 +195,7 @@ function fmtPosting(text){const ls=text.split('\n').map(l=>l.trim()).filter(Bool
 function postingState(d){const s=d.posting_state;return s==='not fetched'?t.p_none:s==='empty'?t.p_empty:s==='failed'?t.p_failed:s.startsWith('gone')?t.p_gone:t.p_http}
 function drawDetail(){const d=D.find(x=>x.id===S.sel);if(!d){P.innerHTML=`<div class=empty>${t.select}</div>`;return}
  const i=shown.findIndex(x=>x.id===d.id),h=d.hints||{},cur=dec[d.id]?.s;
- const facts=[t.md[d.mode]||d.mode,t.wt[d.worktime],d.contracts&&d.contracts.replace(/,/g,', '),d.level!=='unknown'&&d.level,
+ const facts=[t.fd[d.field]||d.field,t.md[d.mode]||d.mode,t.wt[d.worktime],d.contracts&&d.contracts.replace(/,/g,', '),d.level!=='unknown'&&d.level,
   d.age!=='?'&&`${d.age} ${t.ago}`,d.boards.replace(/,/g,', ')].filter(Boolean);
  const decs=Object.entries(DECIDE).map(([k,s])=>`<button class="d${cur===s?' on':''}" data-dec="${s}" title="${k}">${esc(st(s))}</button>`).join('');
  P.innerHTML=`<div class=bar><button id=back>${t.back}</button><button id=prev title="${esc(t.prev)}">↑</button><button id=next title="${esc(t.next)}">↓</button>
@@ -247,7 +250,7 @@ _PAGE = """<!doctype html><html lang=en><head><meta charset=utf-8><meta name=vie
 <div class=help id=stats></div>
 <select id=group><option value=auto data-t=g_auto></option><option value=category data-t=g_category></option><option value=status data-t=g_status></option>
 <option value=tag data-t=g_tag></option><option value=search data-t=g_search></option><option value=board data-t=g_board></option>
-<option value=mode data-t=g_mode></option><option value=none data-t=g_none></option></select>
+<option value=field data-t=g_field></option><option value=mode data-t=g_mode></option><option value=none data-t=g_none></option></select>
 <select id=sort><option value=score data-t=s_score></option><option value=pay data-t=s_pay></option><option value=newest data-t=s_newest></option>
 <option value=company data-t=s_company></option></select><hr>
 <label><input type=checkbox id=remote><span data-t=remote_only></span></label>
@@ -292,6 +295,7 @@ def _item(d: dict, listed: bool, mark=None, det: dict | None = None) -> dict:
     v = {"id": d["id"], "score": d.get("score"), "new": bool(d.get("is_new")), "title": d.get("title") or d.get("url") or "",
          "company": d.get("company") or "", "pay": pay_label(d), "pay_sort": d.get("pay_max") or 0, "mode": d.get("mode") or "unknown",
          "worktime": d.get("worktime") or "unknown", "contracts": d.get("contracts") or "", "level": d.get("level") or "unknown",
+         "field": d.get("job_field") or "other",
          "age": age_label(d.get("published")), "age_days": 9999 if days is None else days,
          "boards": d.get("boards") or d.get("board") or "", "searches": d.get("searches") or [], "tags": d.get("tags") or [],
          "url": _href(d.get("url")), "listed": listed, "posting": text, "posting_state": state, "hints": hints,
@@ -305,21 +309,22 @@ def _item(d: dict, listed: bool, mark=None, det: dict | None = None) -> dict:
 def _data(store: Store, run_id: int, rows: list[dict]) -> list[dict]:
     """Every listed offer plus every marked one (rejected and marked-elsewhere offers are not in the listing)."""
     marks = {m["url"]: m for m in store.tracked(run_id)}
+    offers = {url: store.offer(url) for url in marks}
     by_cluster = {}
     for url, m in marks.items():
-        o = store.offer(url)
-        if o:
-            by_cluster.setdefault(o["cluster_id"], m)
+        if offers[url]:
+            by_cluster.setdefault(offers[url]["cluster_id"], m)
     out, seen = [], set()
     for d in rows:
         m = marks.get(d["url"]) or by_cluster.get(d["cluster_id"])
         out.append(_item(d, True, m, detail(store, d["id"])))
-        seen.add(m["url"] if m else d["url"])
         seen.add(d["url"])
+        if m:
+            seen.add(m["url"])
     for url, m in marks.items():
         if url in seen or m["status"] == "ignored":
             continue
-        o = store.offer(url)
+        o = offers[url]
         d = dict(o) if o else {"id": -len(out) - 1, "url": url, "title": m["title"] or url}
         out.append(_item(d, False, m, detail(store, o["id"]) if o else None))
     return out
@@ -330,7 +335,12 @@ def _script_json(value) -> str:
     return json.dumps(value, ensure_ascii=False).replace("<", "\\u003c")
 
 
+def _options(values) -> str:
+    return "".join(f'<option value="{_e(v)}">{_e(v)}</option>' for v in values)
+
+
 def write_html(store: Store, profile: Profile, run_id: int, rows: list[dict], path) -> None:
+    """Write the review page of a run's listing `rows` (and its marked offers) to `path`."""
     run = store.run(run_id)
     data = _data(store, run_id, rows)
     meta = {"key": f"neetscape-{path.parent.name}", "currency": profile.currency, "lang": _LANG.get(profile.country.code, "en"),
@@ -339,8 +349,8 @@ def write_html(store: Store, profile: Profile, run_id: int, rows: list[dict], pa
             # listings this run did not fetch to their end (over a result cap, or a board's max_pages; see REPORT.md)
             "cut": len(store.capped(run_id)) + sum(not c["deliberate"] for c in store.page_limited(run_id)),
             "searches": {s.id: s.label for s in profile.searches}, "tags": {t["id"]: t["label"] for t in profile.tags}}
-    opt = lambda values: "".join(f'<option value="{_e(v)}">{_e(v)}</option>' for v in values)
     path.write_text(_PAGE.format(
         run_id=run_id, css=_CSS, js=_JS, label=_e(profile.raw.get("label") or "neetscape"), started=_e(run["started_at"][:16]),
-        n_marked=sum(1 for d in data if d["mark"]), n_rows=len(rows), modes=opt(["remote", "hybrid", "onsite", "unknown"]),
-        boards=opt(sorted({b for d in data for b in d["boards"].split(",") if b})), meta=_script_json(meta), data=_script_json(data)))
+        n_marked=sum(1 for d in data if d["mark"]), n_rows=len(rows), modes=_options(["remote", "hybrid", "onsite", "unknown"]),
+        boards=_options(sorted({b for d in data for b in d["boards"].split(",") if b})), meta=_script_json(meta),
+        data=_script_json(data)))

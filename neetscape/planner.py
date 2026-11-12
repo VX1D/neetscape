@@ -14,6 +14,7 @@ from .profile import Profile
 
 @dataclass
 class Plan:
+    """The requests of a profile, each once, and the warnings about searches a board cannot serve."""
     requests: list[Request] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
@@ -25,6 +26,7 @@ class Plan:
 
 
 def plan(profile: Profile) -> Plan:
+    """Every search on every board of the profile, identical requests kept once (the first search's)."""
     p = Plan()
     seen: set[str] = set()
     for s in profile.searches:
@@ -39,6 +41,7 @@ def plan(profile: Profile) -> Plan:
 
 
 def describe(p: Plan) -> str:
+    """The plan as `neetscape plan` prints it: requests per board with what each board filters, then warnings."""
     lines = []
     for board, reqs in p.by_board().items():
         b = REGISTRY[board]

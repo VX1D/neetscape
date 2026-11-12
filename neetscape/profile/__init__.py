@@ -34,18 +34,22 @@ from pathlib import Path
 from .. import country as countries
 from ..boards import REGISTRY, expand
 from ..country import Country
-from ..model import CONTRACT_ALIASES, CONTRACTS, LEVELS, WORKTIMES, Search, Where
+from ..model import CONTRACT_ALIASES, CONTRACTS, FIELDS, LEVELS, WORKTIMES, Search, Where
 
 PRESETS = ("focused", "broad", "local", "side")  # shared presets; a country may add or override some
 SORT_KEYS = ("score", "new", "pay", "published")
+_HERE = resources.files(__name__)
+_SCHEMA = _HERE / "schema.json"
 
 
 class ProfileError(ValueError):
-    pass
+    """A profile that does not validate; the message names the offending key."""
 
 
 @dataclass
 class Profile:
+    """A validated profile: the searches and settings the tool reads, plus the raw JSON (`raw`)."""
+
     raw: dict
     searches: list[Search]
     boards: list[str]
@@ -70,6 +74,7 @@ class Profile:
 
 
 def _rx(where: str, patterns) -> tuple:
+    """A pattern or a list of patterns, compiled case-insensitively."""
     if isinstance(patterns, str):
         patterns = [patterns]
     out = []
@@ -82,6 +87,7 @@ def _rx(where: str, patterns) -> tuple:
 
 
 def _choice(where: str, values, allowed, aliases: dict | None = None) -> frozenset:
+    """`values` (aliases mapped) as a set, each checked to be one of `allowed`."""
     values = [(aliases or {}).get(v, v) for v in values or []]
     bad = set(values) - set(allowed)
     if bad:
@@ -90,6 +96,7 @@ def _choice(where: str, values, allowed, aliases: dict | None = None) -> frozens
 
 
 def _where(where: str, value, home: str = "pl") -> Where:
+    """A search's `where`: "remote", "anywhere", a city object or a remote/country object."""
     if value in ("remote", None):
         return Where(remote=True, country=home)
     if value == "anywhere":
@@ -107,6 +114,7 @@ def _where(where: str, value, home: str = "pl") -> Where:
 
 
 def build_search(d: dict, defaults: dict, n: int, home: Country | None = None) -> Search:
+    """Search number `n` of a profile (`d` over `defaults`), checked against the vocabularies of `home`."""
     home = home or countries.get("pl")
     s = {**defaults, **d}
     sid = s.get("id") or f"search{n + 1}"
@@ -119,19 +127,24 @@ def build_search(d: dict, defaults: dict, n: int, home: Country | None = None) -
         raise ProfileError(f"{at}.pay.per must be 'month' or 'hour'")
     if s.get("unknown", "keep") not in ("keep", "drop"):
         raise ProfileError(f"{at}.unknown must be 'keep' or 'drop'")
+
+    def rx(key: str) -> tuple:
+        return _rx(f"{at}.{key}", s.get(key))
+
+    def choice(key: str, allowed, aliases: dict | None = None) -> frozenset:
+        return _choice(f"{at}.{key}", s.get(key), allowed, aliases)
+
     return Search(
         id=sid, label=s.get("label", sid), where=_where(at + ".where", s.get("where", "remote"), home.code),
         keywords=None if what == "all" else tuple(what),
         keywords_for={k: tuple(v) for k, v in (s.get("keywords_for") or {}).items()},
-        worktime=_choice(at + ".worktime", s.get("worktime"), WORKTIMES),
-        contracts=_choice(at + ".contracts", s.get("contracts"), CONTRACTS, {**home.contract_aliases, **CONTRACT_ALIASES}),
-        levels_exclude=_choice(at + ".levels_exclude", s.get("levels_exclude"), LEVELS),
+        worktime=choice("worktime", WORKTIMES),
+        contracts=choice("contracts", CONTRACTS, {**home.contract_aliases, **CONTRACT_ALIASES}),
+        levels_exclude=choice("levels_exclude", LEVELS), fields=choice("fields", FIELDS),
+        fields_exclude=choice("fields_exclude", FIELDS),
         pay_min=pay.get("min"), pay_period=pay.get("per", "month"), require_pay=bool(pay.get("required")),
-        max_age_days=s.get("max_age_days"),
-        title_include=_rx(at + ".title_include", s.get("title_include")),
-        title_exclude=_rx(at + ".title_exclude", s.get("title_exclude")),
-        text_exclude=_rx(at + ".text_exclude", s.get("text_exclude")),
-        category_include=_rx(at + ".category_include", s.get("category_include")),
+        max_age_days=s.get("max_age_days"), title_include=rx("title_include"), title_exclude=rx("title_exclude"),
+        text_exclude=rx("text_exclude"), category_include=rx("category_include"),
         unknown=s.get("unknown", "keep"), boost=int(s.get("boost", 0)), remote_proof=bool(s.get("remote_proof", False)))
 
 
@@ -170,6 +183,7 @@ def _check_shape(value, node: dict, at: str) -> None:
 
 
 def validate(raw: dict) -> Profile:
+    """Check a profile's JSON and build the `Profile`; raises `ProfileError`."""
     raw = copy.deepcopy(raw)
     if raw.get("version") != 2:
         raise ProfileError("profile 'version' must be 2 (see `neetscape init`)")
@@ -193,16 +207,7 @@ def validate(raw: dict) -> Profile:
         raise ProfileError(f"unknown boards {sorted(unknown)}; available: {list(REGISTRY)} or groups "
                            f"{'/'.join(countries.codes())}/intl/all")
     rank = raw.get("rank") or {}
-    rules = []
-    for i, r in enumerate(rank.get("rules") or []):
-        if "pattern" not in r or "weight" not in r:
-            raise ProfileError(f"rank.rules[{i}] needs pattern and weight")
-        if r.get("field", "title") not in ("title", "any"):
-            raise ProfileError(f"rank.rules[{i}].field must be 'title' or 'any'")
-        rules.append({"rx": _rx(f"rank.rules[{i}]", r["pattern"])[0], "weight": int(r["weight"]),
-                      "field": r.get("field", "title"), "label": r.get("label", r["pattern"][:40])})
-    tags = [{"id": t["id"], "label": t.get("label", t["id"]), "rx": _rx(f"rank.tags[{t['id']}]", t["pattern"])[0]}
-            for t in rank.get("tags") or []]
+    rules, tags = _rules(rank.get("rules") or []), _tags(rank.get("tags") or [])
     sort = rank.get("sort") or (["score", "new", "published"] if rules else ["new", "published"])
     if set(sort) - set(SORT_KEYS):
         raise ProfileError(f"rank.sort keys must be from {SORT_KEYS}")
@@ -210,18 +215,42 @@ def validate(raw: dict) -> Profile:
     if review.get("mode", "auto") not in ("auto", "listing"):
         raise ProfileError("review.mode must be 'auto' or 'listing'")
     pol = raw.get("politeness") or {}
-    bl = raw.get("blacklist") or {}
-    if bl.get("action", "drop") not in ("drop", "flag"):
-        raise ProfileError("blacklist.action must be 'drop' or 'flag'")
-    blacklist = {k: _rx(f"blacklist.{k}", bl.get(k)) for k in ("companies", "urls", "text")} | {"action": bl.get("action", "drop")}
     return Profile(raw=raw, searches=searches, boards=boards, rules=rules, tags=tags, sort=sort,
                    review_mode=review.get("mode", "auto" if rules else "listing"),
                    details_top=int(review.get("details_top", 60)), min_score=int(review.get("min_score", 0)),
-                   min_interval=pol.get("min_interval_s") or {}, retries=int(pol.get("retries", 2)), blacklist=blacklist,
-                   fx={**home.fx, **(raw.get("fx") or {})}, country=home)
+                   min_interval=pol.get("min_interval_s") or {}, retries=int(pol.get("retries", 2)),
+                   blacklist=_blacklist(raw.get("blacklist") or {}), fx={**home.fx, **(raw.get("fx") or {})}, country=home)
+
+
+def _rules(rules: list[dict]) -> list[dict]:
+    """`rank.rules` with compiled patterns: {rx, weight, field, label}."""
+    out = []
+    for i, r in enumerate(rules):
+        if "pattern" not in r or "weight" not in r:
+            raise ProfileError(f"rank.rules[{i}] needs pattern and weight")
+        if r.get("field", "title") not in ("title", "any"):
+            raise ProfileError(f"rank.rules[{i}].field must be 'title' or 'any'")
+        out.append({"rx": _rx(f"rank.rules[{i}]", r["pattern"])[0], "weight": int(r["weight"]),
+                    "field": r.get("field", "title"), "label": r.get("label", r["pattern"][:40])})
+    return out
+
+
+def _tags(tags: list[dict]) -> list[dict]:
+    """`rank.tags` with compiled patterns: {id, label, rx}."""
+    return [{"id": t["id"], "label": t.get("label", t["id"]), "rx": _rx(f"rank.tags[{t['id']}]", t["pattern"])[0]}
+            for t in tags]
+
+
+def _blacklist(bl: dict) -> dict:
+    """The blacklist with compiled patterns per key and its action."""
+    action = bl.get("action", "drop")
+    if action not in ("drop", "flag"):
+        raise ProfileError("blacklist.action must be 'drop' or 'flag'")
+    return {k: _rx(f"blacklist.{k}", bl.get(k)) for k in ("companies", "urls", "text")} | {"action": action}
 
 
 def load(path: str | Path) -> Profile:
+    """Read and validate a profile file."""
     try:
         raw = json.loads(Path(path).read_text())
     except FileNotFoundError:
@@ -233,7 +262,7 @@ def load(path: str | Path) -> Profile:
 
 def _preset_dirs(country: str):
     own = resources.files("neetscape.countries").joinpath(country, "presets")
-    return [own, resources.files("neetscape.profile").joinpath("presets")]
+    return [own, _HERE / "presets"]
 
 
 def presets(country: str = "pl") -> list[str]:
@@ -261,23 +290,36 @@ def combine(names: list[str], country: str = "pl") -> dict:
     """Merge presets: searches are concatenated, everything else comes from the first preset that sets it."""
     if country not in countries.codes():
         raise ProfileError(f"unknown country {country!r}; available: {countries.codes()}")
-    out: dict = {"$schema": str(resources.files("neetscape.profile").joinpath("schema.json")), "version": 2, "country": country}
-    for name in names:
-        p = preset(name, country)
+    loaded = [preset(name, country) for name in names]
+    out: dict = {"$schema": str(_SCHEMA), "version": 2, "country": country}
+    for p in loaded:
         out.setdefault("label", p.get("label"))
         out["searches"] = out.get("searches", []) + p.get("searches", [])
         for k in ("candidate", "boards", "defaults", "rank", "blacklist", "review", "politeness"):
-            if k in p and k not in out:
-                out[k] = p[k]
+            if k in p:
+                out.setdefault(k, p[k])
     if len(names) > 1:
-        out["label"] = " + ".join(preset(n, country).get("label", n) for n in names)
+        out["label"] = " + ".join(p.get("label", n) for n, p in zip(names, loaded))
     return out
+
+
+def _resolve(node, defs: dict):
+    """`node` with every `{"$ref": "#/$defs/name", ...}` replaced by that definition (siblings of `$ref` win)."""
+    if isinstance(node, list):
+        return [_resolve(v, defs) for v in node]
+    if not isinstance(node, dict):
+        return node
+    if "$ref" in node:
+        return _resolve(defs[node["$ref"].removeprefix("#/$defs/")] | {k: v for k, v in node.items() if k != "$ref"}, defs)
+    return {k: _resolve(v, defs) for k, v in node.items() if k != "$defs"}
 
 
 @functools.lru_cache(maxsize=1)
 def _schema() -> dict:
-    return json.loads(resources.files("neetscape.profile").joinpath("schema.json").read_text())
+    raw = json.loads(_SCHEMA.read_text())
+    return _resolve(raw, raw.get("$defs", {}))
 
 
 def schema() -> dict:
+    """profile/schema.json with its `$defs` references resolved."""
     return copy.deepcopy(_schema())

@@ -7,13 +7,20 @@ offline on recorded fixtures. Whatever is not pushed to the board is still check
 """
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass, field, replace
 from typing import ClassVar
 
 from ..model import Offer, Search, Where
 from ..posting import parse_posting
-from ..store import request_key
 
+
+
+def request_key(board: str, keyword: str | None, params: dict) -> str:
+    """Identity of a request across runs: a hash of its board, phrase and parameters."""
+    raw = json.dumps([board, keyword, sorted(params.items())], ensure_ascii=False)
+    return hashlib.sha1(raw.encode()).hexdigest()[:16]
 
 @dataclass(frozen=True)
 class Caps:
@@ -55,9 +62,14 @@ class Request:
         return request_key(self.board, self.keyword, self.params)
 
 
+def with_params(r: Request, **params) -> Request:
+    """A copy of `r` with `params` added to (or replacing some of) its parameters."""
+    return replace(r, params={**r.params, **params})
+
+
 def narrowed(r: Request, param: str, values) -> list[Request]:
     """One copy of `r` per value, with `params[param]` set to it: the sub-requests of a `Board.split()`."""
-    return [replace(r, params={**r.params, param: v}) for v in values]
+    return [with_params(r, **{param: v}) for v in values]
 
 
 class Board:
@@ -128,9 +140,17 @@ class Board:
 
     def posting(self, page: str) -> dict:
         """Posting fields from the source of an offer page: `description` (plain text) plus whatever JSON-LD
-        ships (company, published, salary, ...). Default: schema.org JobPosting. Boards whose JSON-LD lacks the
-        posting body (or that have none) override this to read their embedded data; never return page chrome."""
-        return parse_posting(page)
+        ships (company, published, salary, ...), schema.org JobPosting. A `posting_body()` replaces the
+        description (`source` "board")."""
+        meta = parse_posting(page)
+        if body := self.posting_body(page):
+            meta["description"], meta["source"] = body, "board"
+        return meta
+
+    def posting_body(self, page: str) -> str:
+        """Boards whose JSON-LD lacks the posting body (or that have none): the body read from the offer page's
+        embedded data, as plain text; '' when absent. Never page chrome."""
+        return ""
 
     def total(self, raw: str, r: Request) -> int | None:
         """Boards with a `result_cap`: how many results the request matches, read from its first page. None: the

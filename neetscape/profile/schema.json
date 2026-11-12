@@ -14,10 +14,7 @@
       "const": 2
     },
     "country": {
-      "enum": [
-        "de",
-        "pl"
-      ],
+      "$ref": "#/$defs/country",
       "default": "pl",
       "description": "job market of the profile: currency of every amount and of the database, default boards, language of the text"
     },
@@ -36,6 +33,163 @@
       "description": "board names or groups: a country code (its boards plus boards serving any country, e.g. linkedin), \"intl\" (international remote-only boards), \"all\"; `neetscape boards` lists them. Default: the default boards of the profile's country and of every country a search targets"
     },
     "defaults": {
+      "$ref": "#/$defs/search",
+      "description": "merged into every search"
+    },
+    "searches": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/search"
+      }
+    },
+    "rank": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "pattern",
+              "weight"
+            ],
+            "properties": {
+              "pattern": {
+                "$ref": "#/$defs/regex"
+              },
+              "weight": {
+                "type": "integer"
+              },
+              "field": {
+                "enum": [
+                  "title",
+                  "any"
+                ]
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "pattern"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "pattern": {
+                "$ref": "#/$defs/regex"
+              }
+            }
+          }
+        },
+        "sort": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "score",
+              "new",
+              "pay",
+              "published"
+            ]
+          }
+        }
+      }
+    },
+    "blacklist": {
+      "type": "object",
+      "description": "your own list of employers, links and phrases to avoid (scams, agencies, companies you ruled out); neetscape ships none. Regexes, case-insensitive",
+      "properties": {
+        "companies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "regexes on the company name"
+        },
+        "urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "regexes on the offer URL (e.g. a domain)"
+        },
+        "text": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "regexes on title, company, category, skills, pay text, card text, locations and the fetched posting"
+        },
+        "action": {
+          "enum": [
+            "drop",
+            "flag"
+          ],
+          "description": "drop (default): reject in every search; flag: keep, tag '!blacklist' and show the reason"
+        }
+      },
+      "additionalProperties": false
+    },
+    "review": {
+      "type": "object",
+      "description": "stage 2 of a run: fetching full postings of offers that already pass (the postings may settle unknown fields and feed text_exclude and the blacklist)",
+      "properties": {
+        "mode": {
+          "enum": [
+            "auto",
+            "listing"
+          ],
+          "description": "auto: `run` fetches the postings of the top details_top matches and evaluates again; listing: `run` fetches none, pick them with `neetscape details`. Default: auto when rank.rules are set, else listing"
+        },
+        "details_top": {
+          "type": "integer",
+          "description": "auto mode and `details` without --pick: how many of the best matches to open; jobs whose posting is already stored (any run) are skipped. Default 60"
+        },
+        "min_score": {
+          "type": "integer",
+          "description": "auto mode and `details --top`: open only matches scoring at least this. Default 0"
+        }
+      }
+    },
+    "politeness": {
+      "type": "object",
+      "properties": {
+        "min_interval_s": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "per host: seconds between requests, e.g. {\"justjoin.it\": 3}; overrides the board's own minimum"
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "fx": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "units of the profile country's currency per unit of another currency (overrides the country's rates)"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "search": {
       "type": "object",
       "properties": {
         "id": {
@@ -70,10 +224,7 @@
                   "description": "without city: true = remote (default), false = anywhere"
                 },
                 "country": {
-                  "enum": [
-                    "de",
-                    "pl"
-                  ],
+                  "$ref": "#/$defs/country",
                   "description": "country searched (default: the profile's country)"
                 }
               },
@@ -177,65 +328,17 @@
           ]
         },
         "title_include": {
-          "oneOf": [
-            {
-              "type": "string",
-              "description": "Case-insensitive Python regular expression"
-            },
-            {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "description": "Case-insensitive Python regular expression"
-              }
-            }
-          ]
+          "$ref": "#/$defs/patterns"
         },
         "title_exclude": {
-          "oneOf": [
-            {
-              "type": "string",
-              "description": "Case-insensitive Python regular expression"
-            },
-            {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "description": "Case-insensitive Python regular expression"
-              }
-            }
-          ]
+          "$ref": "#/$defs/patterns"
         },
         "text_exclude": {
-          "oneOf": [
-            {
-              "type": "string",
-              "description": "Case-insensitive Python regular expression"
-            },
-            {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "description": "Case-insensitive Python regular expression"
-              }
-            }
-          ],
+          "$ref": "#/$defs/patterns",
           "description": "regexes on title, company, category, skills, pay text, card text, locations and, once fetched, the posting"
         },
         "category_include": {
-          "oneOf": [
-            {
-              "type": "string",
-              "description": "Case-insensitive Python regular expression"
-            },
-            {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "description": "Case-insensitive Python regular expression"
-              }
-            }
-          ]
+          "$ref": "#/$defs/patterns"
         },
         "unknown": {
           "enum": [
@@ -250,379 +353,77 @@
         "remote_proof": {
           "type": "boolean",
           "description": "remote searches: an offer passes only when its fetched posting describes remote work (fully remote, or plain remote wording) and mentions no hybrid model or required presence (client visits, business travel, office days, relocation); before the posting is fetched the field counts as unknown (see `unknown`)"
-        }
-      },
-      "additionalProperties": false,
-      "description": "merged into every search"
-    },
-    "searches": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          },
-          "where": {
-            "oneOf": [
-              {
-                "enum": [
-                  "remote",
-                  "anywhere"
-                ]
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "city": {
-                    "type": "string"
-                  },
-                  "radius_km": {
-                    "type": "integer",
-                    "minimum": 0
-                  },
-                  "or_remote": {
-                    "type": "boolean"
-                  },
-                  "remote": {
-                    "type": "boolean",
-                    "description": "without city: true = remote (default), false = anywhere"
-                  },
-                  "country": {
-                    "enum": [
-                      "de",
-                      "pl"
-                    ],
-                    "description": "country searched (default: the profile's country)"
-                  }
-                },
-                "additionalProperties": false
-              }
-            ],
-            "description": "remote (default), anywhere, a city with optional radius, or an object with a country: {\"remote\": true, \"country\": \"de\"}"
-          },
-          "what": {
-            "oneOf": [
-              {
-                "const": "all"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "minItems": 1
-              }
-            ],
-            "description": "\"all\" or search phrases"
-          },
-          "keywords_for": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "description": "per-board phrase override, e.g. English phrases for linkedin"
-          },
-          "worktime": {
-            "type": "array",
-            "items": {
-              "enum": [
-                "full_time",
-                "part_time",
-                "flexible",
-                "unknown"
-              ]
-            }
-          },
-          "contracts": {
-            "type": "array",
-            "items": {
-              "enum": [
-                "employment",
-                "b2b",
-                "mandate",
-                "specific_task",
-                "internship",
-                "freelance",
-                "mini_job",
-                "working_student",
-                "temp_agency",
-                "other",
-                "uop"
-              ]
-            },
-            "description": "an offer passes when its worktime OR one of its contracts is allowed; \"uop\" is an old name of \"employment\"; local words of the profile's country (e.g. \"minijob\") are accepted too"
-          },
-          "levels_exclude": {
-            "type": "array",
-            "items": {
-              "enum": [
-                "intern",
-                "junior",
-                "mid",
-                "senior",
-                "lead",
-                "manager",
-                "unknown"
-              ]
-            }
-          },
-          "pay": {
-            "type": "object",
-            "properties": {
-              "min": {
-                "type": "number",
-                "description": "in the profile country's currency"
-              },
-              "per": {
-                "enum": [
-                  "month",
-                  "hour"
-                ]
-              },
-              "required": {
-                "type": "boolean"
-              }
-            },
-            "additionalProperties": false
-          },
-          "max_age_days": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "title_include": {
-            "oneOf": [
-              {
-                "type": "string",
-                "description": "Case-insensitive Python regular expression"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "description": "Case-insensitive Python regular expression"
-                }
-              }
-            ]
-          },
-          "title_exclude": {
-            "oneOf": [
-              {
-                "type": "string",
-                "description": "Case-insensitive Python regular expression"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "description": "Case-insensitive Python regular expression"
-                }
-              }
-            ]
-          },
-          "text_exclude": {
-            "oneOf": [
-              {
-                "type": "string",
-                "description": "Case-insensitive Python regular expression"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "description": "Case-insensitive Python regular expression"
-                }
-              }
-            ],
-            "description": "regexes on title, company, category, skills, pay text, card text, locations and, once fetched, the posting"
-          },
-          "category_include": {
-            "oneOf": [
-              {
-                "type": "string",
-                "description": "Case-insensitive Python regular expression"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "description": "Case-insensitive Python regular expression"
-                }
-              }
-            ]
-          },
-          "unknown": {
-            "enum": [
-              "keep",
-              "drop"
-            ],
-            "description": "what to do when a filtered field (mode, pay, worktime, date) is unknown"
-          },
-          "boost": {
-            "type": "integer"
-          },
-          "remote_proof": {
-            "type": "boolean",
-            "description": "remote searches: an offer passes only when its fetched posting describes remote work (fully remote, or plain remote wording) and mentions no hybrid model or required presence (client visits, business travel, office days, relocation); before the posting is fetched the field counts as unknown (see `unknown`)"
-          }
         },
-        "additionalProperties": false
-      }
-    },
-    "rank": {
-      "type": "object",
-      "properties": {
-        "rules": {
+        "fields": {
           "type": "array",
           "items": {
-            "type": "object",
-            "required": [
-              "pattern",
-              "weight"
-            ],
-            "properties": {
-              "pattern": {
-                "type": "string",
-                "description": "Case-insensitive Python regular expression"
-              },
-              "weight": {
-                "type": "integer"
-              },
-              "field": {
-                "enum": [
-                  "title",
-                  "any"
-                ]
-              },
-              "label": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "tags": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": [
-              "id",
-              "pattern"
-            ],
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "label": {
-                "type": "string"
-              },
-              "pattern": {
-                "type": "string",
-                "description": "Case-insensitive Python regular expression"
-              }
-            }
-          }
-        },
-        "sort": {
-          "type": "array",
-          "items": {
-            "enum": [
-              "score",
-              "new",
-              "pay",
-              "published"
-            ]
-          }
-        }
-      }
-    },
-    "blacklist": {
-      "type": "object",
-      "description": "your own list of employers, links and phrases to avoid (scams, agencies, companies you ruled out); neetscape ships none. Regexes, case-insensitive",
-      "properties": {
-        "companies": {
-          "type": "array",
-          "items": {
-            "type": "string"
+            "$ref": "#/$defs/job_field"
           },
-          "description": "regexes on the company name"
+          "description": "allowed job fields, read from the title (then the board's category); 'other' when none matches"
         },
-        "urls": {
+        "fields_exclude": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/job_field"
           },
-          "description": "regexes on the offer URL (e.g. a domain)"
-        },
-        "text": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "regexes on title, company, category, skills, pay text, card text, locations and the fetched posting"
-        },
-        "action": {
-          "enum": [
-            "drop",
-            "flag"
-          ],
-          "description": "drop (default): reject in every search; flag: keep, tag '!blacklist' and show the reason"
+          "description": "job fields to drop"
         }
       },
       "additionalProperties": false
     },
-    "review": {
-      "type": "object",
-      "description": "stage 2 of a run: fetching full postings of offers that already pass (the postings may settle unknown fields and feed text_exclude and the blacklist)",
-      "properties": {
-        "mode": {
-          "enum": [
-            "auto",
-            "listing"
-          ],
-          "description": "auto: `run` fetches the postings of the top details_top matches and evaluates again; listing: `run` fetches none, pick them with `neetscape details`. Default: auto when rank.rules are set, else listing"
+    "patterns": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/regex"
         },
-        "details_top": {
-          "type": "integer",
-          "description": "auto mode and `details` without --pick: how many of the best matches to open; jobs whose posting is already stored (any run) are skipped. Default 60"
-        },
-        "min_score": {
-          "type": "integer",
-          "description": "auto mode and `details --top`: open only matches scoring at least this. Default 0"
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/regex"
+          }
         }
-      }
+      ]
     },
-    "politeness": {
-      "type": "object",
-      "properties": {
-        "min_interval_s": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "number"
-          },
-          "description": "per host: seconds between requests, e.g. {\"justjoin.it\": 3}; overrides the board's own minimum"
-        },
-        "retries": {
-          "type": "integer",
-          "minimum": 0
-        }
-      }
+    "regex": {
+      "type": "string",
+      "description": "Case-insensitive Python regular expression"
     },
-    "fx": {
-      "type": "object",
-      "additionalProperties": {
-        "type": "number"
-      },
-      "description": "units of the profile country's currency per unit of another currency (overrides the country's rates)"
+    "job_field": {
+      "enum": [
+        "ai_automation",
+        "security",
+        "qa",
+        "devops_cloud",
+        "data",
+        "erp_crm",
+        "it_support",
+        "it_admin",
+        "software_dev",
+        "product_project",
+        "design",
+        "ecommerce",
+        "customer_service",
+        "sales",
+        "marketing",
+        "hr",
+        "finance",
+        "legal",
+        "retail",
+        "admin_office",
+        "logistics",
+        "engineering",
+        "manufacturing",
+        "healthcare",
+        "education",
+        "hospitality",
+        "other"
+      ]
+    },
+    "country": {
+      "enum": [
+        "de",
+        "pl"
+      ]
     }
-  },
-  "additionalProperties": false
+  }
 }

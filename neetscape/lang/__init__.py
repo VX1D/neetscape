@@ -7,16 +7,17 @@ Each module `<code>.py` (ISO 639-1) defines
         "worktime": {"part_time": [...], "flexible": [...], "full_time": [...]},
         "contract": {"employment": [...], ...},            # canonical contract names (model.CONTRACTS)
         "level":    {"intern": [...], ...},
-        "first":    {"mode": [(value, regex), ...]},     # optional: checked before the merged tables
+        "function": {"support": [...], "develop": [...], ...},   # what a job title does (infer.FUNCTIONS)
+        "domain":   {"it": [...], "logistics": [...], ...},      # what it is about
+        "explicit": {"mode": {"remote": [...]}},          # optional: statements that settle a field
         "hints":    {"fully_remote": [...], "hybrid": [...], "years": [...], "degree": [...],
                      "languages": [...], "fixed_term": [...],
                      "office": [...]},                  # required presence: client visits, business travel, office days
     }
-    EXAMPLES = [(text, field, expected), ...]           # checked by tests/core/test_lang.py
 
-Patterns are case-insensitive. For one field, the patterns of all active languages are merged per value
-and values are tried in a fixed order (model order below), so adding a language never reorders another
-language's decisions. `first` holds phrases that must win over the order: explicit full remote
+Patterns are case-insensitive. A pack is data, not an order: for one field the patterns of all active
+languages are merged per value and strength, decided by the language-neutral rules in `infer.py`, so adding a language never reorders another language's
+decisions. `explicit` holds statements that settle a field over plain words: explicit full remote
 ("100% zdalnie", "fully remote", "remote or hybrid" as a choice) and phrases a generic word of another
 language would misread (German "Homeoffice möglich" is hybrid although it contains "home office").
 """
@@ -24,14 +25,7 @@ from __future__ import annotations
 
 import importlib
 
-ORDER = {
-    # hybrid before remote: "hybrid, 2 days remote" is hybrid; explicit full-remote phrases sit in `first`
-    "mode": ("hybrid", "remote", "onsite"),
-    "worktime": ("part_time", "flexible", "full_time"),
-    "contract": ("employment", "b2b", "mandate", "specific_task", "internship", "freelance", "mini_job",
-                 "working_student", "temp_agency"),
-    "level": ("intern", "junior", "senior", "lead", "manager", "mid"),
-}
+FIELDS = ("mode", "worktime", "contract", "level", "function", "domain")  # read from free text (infer.ORDER)
 DEFAULT = ("pl", "en")  # free text of unknown origin (historical: the tool started with Polish boards)
 HINTS = ("fully_remote", "hybrid", "years", "degree", "languages", "fixed_term", "office")
 

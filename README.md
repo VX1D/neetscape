@@ -70,7 +70,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 | [How it works](docs/how-it-works.md) | architecture, crawling, postings as a second stage, de-duplication, reports, the database and SQL recipes |
 | [Boards and countries](docs/boards-and-countries.md) | supported boards, country packages, responsible use, limitations |
 | [Reviewing a large crawl](docs/review.md) | the cheap, precise funnel from thousands of offers to a shortlist |
-| [Testing](docs/testing.md) | offline tests, affected-only runs, live checks |
+| [Testing](docs/testing.md) | offline tests, live checks |
 | [AGENTS.md](AGENTS.md) | the workflow a coding agent follows |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | adding or fixing a board, adding a country |
 

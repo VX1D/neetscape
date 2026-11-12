@@ -9,7 +9,7 @@ Setup
 
 Run
   neetscape run [--resume] [--full] [--limit-pages N] [--boards a,b] [--record DIR]
-  neetscape crawl | eval | report                         single steps on the latest run (or --run N)
+  neetscape crawl | eval | report                         single steps (eval, report: the latest run or --run N)
 
 Review (all read the latest run, or --run N; a run's listing is the current state of every board as of it)
   neetscape list [--search ID] [--new] [--group title] [--where SQL] [--limit N] [--format tsv|md|json]
@@ -45,8 +45,6 @@ from .log import log
 from .model import Search, Where
 from .store import MARK_STATUSES, Store
 
-COMMANDS = ["init", "check", "plan", "boards", "probe", "run", "crawl", "eval", "report",
-            "list", "details", "show", "sql", "mark", "tracked"]
 _SIGNALS = (signal.SIGTERM, signal.SIGINT, signal.SIGHUP)
 
 
@@ -133,10 +131,10 @@ def _run_id(store: Store, a) -> int:
     return rid
 
 
-def _open(a, readonly: bool = False, profile: bool = True) -> tuple[Store, prof_mod.Profile | None, int]:
-    """The boilerplate of commands working on one run: store, profile and run id."""
+def _open(a, readonly: bool = False) -> tuple[Store, prof_mod.Profile, int]:
+    """The store, profile and run id of a command working on one run."""
     store = _store(a, readonly)
-    return store, _profile(a) if profile else None, _run_id(store, a)
+    return store, _profile(a), _run_id(store, a)
 
 
 def _report_dir(a, store: Store, run_id: int) -> Path:
@@ -162,7 +160,7 @@ def _ids(a, store: Store, profile, run_id: int) -> list[int]:
 
 def _marked_ids(store: Store, run_id: int) -> list[int]:
     """Marked offers (not rejected/ignored), of any run, whose posting is missing (never fetched or failed)."""
-    offers = (store.offer(m["url"]) for m in store.tracked(run_id, hidden=False))
+    offers = (store.offer(m["url"]) for m in store.tracked(run_id, include_hidden=False))
     return [o["id"] for o in offers if o and store.needs_posting(o["id"])]
 
 
@@ -230,10 +228,12 @@ def cmd_run(a, crawl_only: bool = False) -> None:
         print(f"next: read {path.parent / 'listing.tsv'} (or `neetscape list --new`), then `neetscape details --pick ID,ID,...`")
 
 
+def cmd_crawl(a) -> None:
+    cmd_run(a, crawl_only=True)
+
+
 def cmd_probe(a) -> None:
-    if not a.args:
-        sys.exit("usage: neetscape probe BOARD [--keyword K] [--save-fixture PATH]")
-    name = a.args[0]
+    name = a.board
     board = REGISTRY.get(name)
     if not board:
         sys.exit(f"unknown board; available: {', '.join(REGISTRY)}")
@@ -301,14 +301,17 @@ def cmd_plan(a) -> None:
 def cmd_boards(a) -> None:
     if a.country and a.country not in countries.codes() + ["intl"]:
         sys.exit(f"unknown country {a.country!r}; available: {', '.join(countries.codes())}, intl")
-    yn = lambda v: "yes" if v else "-"
     print(f"{'board':<15}{'country':<8}{'transport':<16}{'keywords':<9}{'remote':<8}{'city':<6}{'part-time':<10}{'newest':<7}pages")
     for n, b in REGISTRY.items():
-        c = b.caps
         if a.country and country_of(b) not in (a.country, "any"):
             continue
-        print(f"{n:<15}{country_of(b):<8}{c.transport:<16}{yn(c.keywords):<9}{c.remote:<8}{yn(c.city):<6}{yn(c.worktime):<10}"
-              f"{yn(c.sort_newest):<7}{c.max_pages}")
+        c = b.caps
+        print(f"{n:<15}{country_of(b):<8}{c.transport:<16}{_yes(c.keywords):<9}{c.remote:<8}{_yes(c.city):<6}"
+              f"{_yes(c.worktime):<10}{_yes(c.sort_newest):<7}{c.max_pages}")
+
+
+def _yes(value) -> str:
+    return "yes" if value else "-"
 
 
 # ---------------------------------------------------------------- steps and review commands
@@ -360,7 +363,10 @@ def _verdict_lines(store: Store, profile, offer_id: int, run_id: int) -> list[st
     """Stored verdict of the run per search, plus the current profile's when it differs."""
     stored = store.verdicts(run_id, offer_id)
     live = ev.explain(store, profile, offer_id, run_id)
-    say = lambda reasons: ", ".join(reasons) or "passes"
+
+    def say(reasons: list[str]) -> str:
+        return ", ".join(reasons) or "passes"
+
     if not stored:
         return [f"searches (not evaluated in run {run_id}; current profile):"] + [f"  {sid}: {say(r)}" for sid, r in live.items()]
     lines = [f"searches (run {run_id}):"]
@@ -373,13 +379,16 @@ def _verdict_lines(store: Store, profile, offer_id: int, run_id: int) -> list[st
 
 
 def cmd_show(a) -> None:
-    if not a.args:
-        sys.exit("usage: neetscape show ID")
     store, profile, rid = _open(a, readonly=True)
-    o = store.offer(a.args[0])
+    o = store.offer(a.id)
     if not o:
         sys.exit("no such offer")
-    print(json.dumps({k: o[k] for k in o.keys() if k not in ("description", "snippet")}, ensure_ascii=False, indent=1))
+    print(json.dumps({k: o[k] for k in o.keys() if k not in ("description", "snippet", "evidence")}, ensure_ascii=False, indent=1))
+    evidence = json.loads(o["evidence"] or "{}")
+    if evidence:
+        print("\nwhy (field: value <- source \"phrase\"):")
+        for col, (source, phrase) in sorted(evidence.items()):
+            print(f"  {col}: {o[col]} <- {source} \"{phrase}\"")
     print("", *_verdict_lines(store, profile, o["id"], rid), sep="\n")
     flagged = ev.flagged(store, profile, o["id"], rid)
     if flagged:
@@ -395,10 +404,8 @@ def cmd_show(a) -> None:
 
 
 def cmd_sql(a) -> None:
-    if not a.args:
-        sys.exit('usage: neetscape sql "SELECT ..."  (:run is bound to --run or the latest run)')
     store = _store(a, readonly=True)
-    query = " ".join(a.args)
+    query = " ".join(a.query)
     params = {"run": _run_id(store, a)} if ":run" in query or a.run is not None else {}
     cur = store.db.execute(query, params)
     print("\t".join(c[0] for c in cur.description or []))
@@ -407,10 +414,8 @@ def cmd_sql(a) -> None:
 
 
 def cmd_mark(a) -> None:
-    if len(a.args) != 2:
-        sys.exit(f"usage: neetscape mark ID|URL STATUS [--note TEXT]; statuses: {', '.join(MARK_STATUSES)}")
     try:
-        m = _store(a).mark(a.args[0], a.args[1], a.note)
+        m = _store(a).mark(a.ref, a.status, a.note)
     except ValueError as e:
         sys.exit(str(e))
     print(f"{m['status']}: {m['url']}")
@@ -424,46 +429,90 @@ def cmd_tracked(a) -> None:
               f"[{m['listed']}]  {m['note'] or ''}")
 
 
+def _paths(defaults: bool) -> argparse.ArgumentParser:
+    """--profile and --out, accepted before and after the command; after it, SUPPRESS keeps a value given before."""
+    p = argparse.ArgumentParser(add_help=False)
+    p.add_argument("--profile", default="profile.json" if defaults else argparse.SUPPRESS,
+                   help="the search profile, default ./profile.json")
+    p.add_argument("--out", default="runs" if defaults else argparse.SUPPRESS,
+                   help="data directory (database and reports), default ./runs")
+    return p
+
+
+def _option(*args, **kwargs) -> argparse.ArgumentParser:
+    """A parent parser with one option several commands share."""
+    p = argparse.ArgumentParser(add_help=False)
+    p.add_argument(*args, **kwargs)
+    return p
+
+
 def _parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(prog="neetscape", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=COMMANDS)
-    ap.add_argument("args", nargs="*")
-    ap.add_argument("--profile", default="profile.json")
-    ap.add_argument("--out", default="runs", help="data directory (database and reports), default ./runs")
-    ap.add_argument("--preset", action="append", default=[], help="for init: preset name, repeatable")
-    ap.add_argument("--country", help="init: the profile's country (default pl); boards: only this country's boards")
-    ap.add_argument("--boards", help="comma-separated boards or groups (a country code such as pl or de, intl, all)")
-    ap.add_argument("--run", type=int, help="run id for eval, report, list, details, show, sql, tracked (default: latest)")
-    ap.add_argument("--resume", action="store_true")
-    ap.add_argument("--full", action="store_true", help="disable incremental stops")
-    ap.add_argument("--limit-pages", type=int)
-    ap.add_argument("--record", help="save raw pages to this directory")
-    ap.add_argument("--search", help="list: only this search id")
-    ap.add_argument("--new", action="store_true", help="list: only jobs first seen in this run")
-    ap.add_argument("--group", choices=["title"], help="list: one row per normalised title, with counts")
-    ap.add_argument("--where", help="list: extra SQL condition on offers o, e.g. \"o.pay_max > 10000\"")
-    ap.add_argument("--limit", type=int)
-    ap.add_argument("--format", default="tsv", choices=["tsv", "md", "json"])
-    ap.add_argument("--pick", help="details: offer ids, comma separated")
-    ap.add_argument("--pick-file", help="details: file with an offer id at the start of each line")
-    ap.add_argument("--top", type=int, help="details: open the best N matches whose job has no stored posting (default review.details_top)")
-    ap.add_argument("--marked", action="store_true", help="details: open the marked offers whose posting is missing (never fetched or failed)")
-    ap.add_argument("--note", default="")
-    ap.add_argument("--keyword", help="probe: search phrase")
-    ap.add_argument("--save-fixture", help="probe: write the raw first page to this file (for tests/fixtures/<cc>/)")
-    ap.add_argument("--port", type=int, default=9334, help="CDP port of the private browser")
+    ap = argparse.ArgumentParser(prog="neetscape", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
+                                 parents=[_paths(defaults=True)])
+    paths = _paths(defaults=False)
+    boards = _option("--boards", help="comma-separated boards or groups (a country code such as pl or de, intl, all)")
+    run = _option("--run", type=int, help="run id (default: the latest)")
+    port = _option("--port", type=int, default=9334, help="CDP port of the private browser")
+    sub = ap.add_subparsers(dest="command", required=True, metavar="command")
+
+    def command(name: str, handler, summary: str, *parents) -> argparse.ArgumentParser:
+        p = sub.add_parser(name, parents=[paths, *parents], help=summary, description=summary)
+        p.set_defaults(handler=handler)
+        return p
+
+    p = command("init", cmd_init, "write profile.json from presets (they combine)")
+    p.add_argument("--preset", action="append", default=[], help="preset name, repeatable")
+    p.add_argument("--country", help="the profile's country (default pl)")
+    command("check", cmd_check, "validate the profile", boards)
+    command("plan", cmd_plan, "show what would be fetched (no network)", boards)
+    command("boards", cmd_boards, "board capabilities").add_argument("--country", help="only this country's boards")
+
+    p = command("probe", cmd_probe, "fetch one page of a board, show field coverage", port)
+    p.add_argument("board")
+    p.add_argument("--keyword", help="search phrase")
+    p.add_argument("--save-fixture", help="write the raw first page to this file (for tests/fixtures/<cc>/)")
+    p.add_argument("--country", help="the country searched on a board serving several (default pl)")
+
+    for name, handler, summary in (("run", cmd_run, "crawl, evaluate, fetch the best postings, write the reports"),
+                                   ("crawl", cmd_crawl, "only crawl (a run's first step)")):
+        p = command(name, handler, summary, boards, port)
+        p.add_argument("--resume", action="store_true", help="continue the last interrupted run")
+        p.add_argument("--full", action="store_true", help="disable incremental stops")
+        p.add_argument("--limit-pages", type=int, help="at most this many pages per request")
+        p.add_argument("--record", help="save raw pages to this directory")
+
+    command("eval", cmd_eval, "judge the stored offers again", boards, run)
+    command("report", cmd_report, "write the reports again", boards, run)
+
+    p = command("list", cmd_list, "the passing offers", boards, run)
+    p.add_argument("--search", help="only this search id")
+    p.add_argument("--new", action="store_true", help="only jobs first seen in this run")
+    p.add_argument("--group", choices=["title"], help="one row per normalised title, with counts")
+    p.add_argument("--where", help="extra SQL condition on offers o, e.g. \"o.pay_max > 10000\"")
+    p.add_argument("--limit", type=int)
+    p.add_argument("--format", default="tsv", choices=["tsv", "md", "json"])
+
+    p = command("details", cmd_details, "fetch postings, evaluate again, rewrite the reports", boards, run, port)
+    p.add_argument("--pick", help="offer ids, comma separated")
+    p.add_argument("--pick-file", help="file with an offer id at the start of each line")
+    p.add_argument("--top", type=int, help="open the best N matches whose job has no stored posting (default review.details_top)")
+    p.add_argument("--marked", action="store_true", help="open the marked offers whose posting is missing (never fetched or failed)")
+
+    command("show", cmd_show, "an offer, why it passes or fails each search, its posting", boards, run).add_argument("id")
+    command("sql", cmd_sql, "read-only SQL on the database (:run is bound to the run)", run).add_argument("query", nargs="+")
+    p = command("mark", cmd_mark, f"record a decision: {' '.join(MARK_STATUSES)}")
+    p.add_argument("ref", metavar="ID|URL")
+    p.add_argument("status")
+    p.add_argument("--note", default="")
+    command("tracked", cmd_tracked, "marked offers and whether they are still listed", run)
     return ap
 
 
 def main(argv: list[str] | None = None) -> None:
     a = _parser().parse_args(argv)
-    handlers = {"init": cmd_init, "check": cmd_check, "plan": cmd_plan, "boards": cmd_boards, "probe": cmd_probe,
-                "run": cmd_run, "crawl": lambda a: cmd_run(a, crawl_only=True), "eval": cmd_eval, "report": cmd_report,
-                "list": cmd_list, "details": cmd_details, "show": cmd_show, "sql": cmd_sql, "mark": cmd_mark,
-                "tracked": cmd_tracked}
     with _signals_unwind():
         try:
-            handlers[a.command](a)
+            a.handler(a)
         except sqlite3.Error as e:
             sys.exit(f"database error: {e}")
 

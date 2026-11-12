@@ -34,6 +34,7 @@ Search fields:
 | `what` | `"all"` or a list of phrases; `keywords_for` overrides phrases per board |
 | `worktime`, `contracts` | allowed values; an offer passes if its work time **or** one of its contracts is allowed. Contracts: `employment` (old name `uop` still accepted), `b2b`, `mandate`, `specific_task`, `internship`, `freelance`, `mini_job`, `working_student`, `temp_agency`, `other`; local words of the profile's country (`minijob`, `werkstudent`) are accepted too |
 | `levels_exclude` | `intern junior mid senior lead manager unknown` |
+| `fields`, `fields_exclude` | job fields (`ai_automation security qa devops_cloud data erp_crm it_support it_admin software_dev product_project design ecommerce customer_service sales marketing hr finance legal retail admin_office logistics engineering manufacturing healthcare education hospitality other`), read from the title, then the board's category, with the language packs' `field` vocabularies (first match in that order wins: "HR Automation Specialist" is `ai_automation`, "Test Automation Engineer" `qa`). `neetscape eval` re-reads them, so a vocabulary change needs no crawl |
 | `pay` | `{"min", "per": "month"\|"hour", "required"}`; amounts are in the profile country's currency (PLN, EUR), compared against the top of the offer's range |
 | `max_age_days` | drop offers published earlier |
 | `title_include`, `title_exclude`, `text_exclude`, `category_include` | case-insensitive Python regexes; `text_exclude` reads title, company, category, skills, pay text, card text and, once fetched, the posting |
