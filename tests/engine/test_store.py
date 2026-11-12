@@ -259,6 +259,14 @@ def test_same_job_with_a_qualified_title_shares_a_cluster(tmp_path):
     assert cid["5"] not in (cid["3"], cid["4"])                   # the bare title matches both: ambiguous, kept apart
 
 
+def test_a_level_in_the_qualifier_is_another_job():
+    from neetscape.model import norm
+    from neetscape.store import same_job_title
+    assert same_job_title(norm("Magister Farmacji"), norm("Magister Farmacji (k/m)"))
+    assert not same_job_title(norm("Tester Manualny"), norm("Tester Manualny (Senior)"))
+    assert not same_job_title(norm("Data Analyst"), norm("Data Analyst - Junior"))
+
+
 def test_migration_merges_existing_qualified_duplicates(tmp_path):
     from neetscape import store as st
     db = Store(tmp_path / "j.db")

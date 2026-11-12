@@ -16,6 +16,7 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+import re
 import sqlite3
 from pathlib import Path
 
@@ -33,11 +34,19 @@ def _rename_contracts(db: sqlite3.Connection) -> None:
 MIN_PREFIX = 12  # a normalised title this long that starts another one of the same company names the same job
 
 
+# a qualifier naming a level makes another job ("Tester Manualny" / "Tester Manualny (Senior)"); titles are normalised
+# without spaces, so these are matched as substrings of the qualifier
+_LEVEL_QUALIFIER = re.compile(r"senior|junior|mid|regular|lead|principal|staff|expert|ekspert|starsz|mlodsz|intern|staz"
+                              r"|trainee|manager|kierownik|head|director|dyrektor")
+
+
 def same_job_title(a: str, b: str) -> bool:
     """Normalised titles of one company that name the same job: equal, or one extends the other with a qualifier
-    ("seniorfullstackdeveloper" / "seniorfullstackdeveloperjavareact")."""
+    ("seniorfullstackdeveloper" / "seniorfullstackdeveloperjavareact") that does not name a level."""
     short, long_ = sorted((a, b), key=len)
-    return short == long_ or (len(short) >= MIN_PREFIX and long_.startswith(short))
+    if short == long_:
+        return True
+    return len(short) >= MIN_PREFIX and long_.startswith(short) and not _LEVEL_QUALIFIER.search(long_[len(short):])
 
 
 def _cluster_columns(db: sqlite3.Connection) -> None:
