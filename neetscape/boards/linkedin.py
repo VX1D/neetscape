@@ -104,6 +104,11 @@ def geo_id(city: str, cc: str = "pl") -> str | None:
     return found
 
 
+def _cc(r: Request) -> str:
+    """The searched country of a request (the board serves every country)."""
+    return r.params.get("country") or "pl"
+
+
 @register
 class LinkedIn(Board):
     name = "linkedin"
@@ -118,7 +123,7 @@ class LinkedIn(Board):
         out = []
         for r in reqs:
             if r.keyword is None and s.where.remote and not r.params.get("city"):
-                phrases = REMOTE_PHRASES.get(r.params.get("country") or "pl", DEFAULT_REMOTE_PHRASES)
+                phrases = REMOTE_PHRASES.get(_cc(r), DEFAULT_REMOTE_PHRASES)
                 out += [Request(r.board, r.search_id, p, r.params, r.pushed | {"keyword"}) for p in phrases]
                 warnings.append(f"{self.name}: no remote filter; '{s.id}' is sent as the phrases {', '.join(phrases)}")
             else:
@@ -128,7 +133,7 @@ class LinkedIn(Board):
     def page_url(self, r: Request, page: int) -> str | None:
         if page > self.caps.max_pages:
             return None
-        cc = r.params.get("country") or "pl"
+        cc = _cc(r)
         place = r.params.get("city") or r.params.get("region")
         geo = geo_id(place, cc) if place else None
         q = {"keywords": r.keyword or ""}
@@ -144,7 +149,7 @@ class LinkedIn(Board):
         cards are common (every part would repeat them and stay capped)."""
         if r.params.get("city") or not seen:
             return []
-        names = {fold(n) for n in country.get(r.params.get("country") or "pl").place_names}
+        names = {fold(n) for n in country.get(_cc(r)).place_names}
         places = [[p.strip() for p in o.locations[0].split(",")] for o in seen if o.locations]
         national = sum(len(p) == 1 and fold(p[0]) in names for p in places)
         if national >= MAX_NATIONAL * len(seen):
