@@ -4,6 +4,13 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
 
 ## Unreleased
 
+- The listing (`list`, listing.tsv, offers.csv, REPORT.md/html, `details --top`) is the current state of every
+  board, not only the offers sighted in the run: offers its board's latest crawl saw, or that a request
+  stopped early (incremental, page limit, error) did not reach, not marked gone. `eval` judges that whole
+  state, so `run --boards X` keeps the other boards' offers; `new` is still "first seen in this run". After
+  upgrading, run `neetscape eval` once (`list` and `report` warn otherwise).
+- REPORT.md lists requests stopped at a page limit next to "Capped", labelled `--limit-pages (deliberate)` or
+  `the board's max_pages`; REPORT.html shows the number of cut listings.
 - Result caps: a board that shows at most N results per search declares `result_cap`; when a request
   matches more, the crawler splits it into narrower requests built from its first page (recursively) and
   fetches each to its end; requests that cannot be narrowed are listed as "Capped" in `REPORT.md`.
