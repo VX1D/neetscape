@@ -106,6 +106,12 @@ def _observation_columns(db: sqlite3.Connection) -> None:
         db.execute("UPDATE offers SET facts=? WHERE id=?", (json.dumps(facts, sort_keys=True), oid))
 
 
+def _domains_column(db: sqlite3.Connection) -> None:
+    """v7: `job_domains`, every domain the title and the category name (comma-joined, sorted; derived by
+    `rederive`, which `neetscape eval` runs, so offers stored earlier get theirs at the next evaluation)."""
+    db.execute("ALTER TABLE offers ADD COLUMN job_domains TEXT DEFAULT ''")
+
+
 MIGRATIONS = [
     """
     CREATE TABLE runs(id INTEGER PRIMARY KEY, started_at TEXT, finished_at TEXT, status TEXT,
@@ -145,6 +151,7 @@ MIGRATIONS = [
     """,
     _cluster_columns,
     _observation_columns,
+    _domains_column,
 ]
 
 # The current state as of run :run, as CTEs ending in `cur(offer_id)`. A board's latest crawl is the latest run

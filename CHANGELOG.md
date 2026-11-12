@@ -4,6 +4,24 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
 
 ## Unreleased
 
+- Job domains: every offer gets `job_domains`, the set of domains its title (head and qualifier) and the
+  board's category name, read in the offer's own languages ("AI Gateway Product Owner": `ai, product`;
+  "Sachbearbeiter (m/w/d) Buchhaltung": `finance`); the weak `tech` domain counts only alone. Schema v7 adds
+  the column; `neetscape eval` fills it. `job_field`, `job_function` and `job_domain` are unchanged. New search
+  filters `domains` (any of the offer's domains), `functions` and `functions_exclude`; a `domains` column in
+  listing.tsv / offers.csv after `field`, and among the facts in REPORT.html; `neetscape show` lists each
+  domain's source and phrase.
+- A missing job field, domain or function is unknown, not a failure: an include filter (`fields`, `domains`,
+  `functions`) follows the search's `unknown` policy for an offer with field `other`, no domain or no function
+  (before, `fields` dropped `other` always); exclude filters never drop it. Set `"unknown": {"field": "drop"}`
+  to keep the old behaviour.
+- `unknown` per dimension: a search's `unknown` may be a mapping, e.g. `{"default": "keep", "domain": "drop"}`,
+  over the dimensions `location`, `mode`, `remote_proof`, `worktime`, `pay`, `date`, `field`, `domain`,
+  `function`. `defaults` and a search merge per dimension (a string is `{"default": ...}`).
+- Language packs may declare `qualifier` (words that open a title's qualifier: "with", "z", "mit") and
+  `gender` (gender markers in words: "all genders"); `infer.py` keeps only punctuation. Bracketed gender
+  markers made of letters ("(m/w/d)", "(k/m)", "(f/m/x)") no longer end a title's head in any language.
+
 - Derived fields are re-derived from stored observations: offers keep the adapter's structured values
   (`facts`), the requests that found them and the fetched posting apart from mode, work time, contracts,
   level and job field, which `neetscape eval` derives again (a vocabulary change needs no crawl).

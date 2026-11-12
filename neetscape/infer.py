@@ -110,8 +110,12 @@ COLUMNS = {"mode": "mode", "worktime": "worktime", "contracts": "contract", "lev
 _SENTENCES = re.compile(r"(?<=[.!?;])\s+|\n+|\s+[•▪·]\s+")
 _CHOICE = re.compile(r"\b(?:lub|albo|bądź|or|either)\b|\s/\s|zdalnie/|/hybryd|remote/|/hybrid", re.I)
 _HYBRID_WORD = re.compile(r"hybry\w*|hybrid\w*", re.I)
-# where a title's head ends: "Senior .NET Developer (GenAI)", "Specjalista ds. obsługi klienta z j. niemieckim"
-_QUALIFIER = re.compile(r"\s[-–—|/]\s|[(\[]|\s(?:with|z|mit|for|dla)\s", re.I)
+# A title's head ends at a qualifier: "Senior .NET Developer (GenAI)", "Data Analyst - Remote", and at the words
+# of the active packs' `qualifier` ("Customer Support Specialist with German"). A gender marker says nothing about
+# the job and must not end the head ("Sachbearbeiter (m/w/d) Buchhaltung"): a bracketed list of single letters
+# ("(m/w/d)", "(k/m)", "(f/m/x)") in any language, and the bracketed words of the packs' `gender` ("(all genders)").
+_QUALIFIER_MARKS = r"\s[-–—|/]\s|[(\[]"
+_GENDER_LETTERS = r"[^\W\d_](?:\s*[/|,]\s*[^\W\d_]){1,3}"
 
 
 def _langs(languages) -> tuple:
@@ -120,7 +124,8 @@ def _langs(languages) -> tuple:
 
 @functools.lru_cache(maxsize=32)
 def _lexicon(languages: tuple) -> dict:
-    """{field: [(value, explicit, regex)]} merged over the packs, and {"hints": {key: regex}}."""
+    """{field: [(value, explicit, regex)]} merged over the packs, {"hints": {key: regex}}, and the title's
+    "qualifier" and "gender" regexes (generic punctuation plus the packs' words)."""
     packs = [lang.pack(code).VOCAB for code in languages]
     out: dict = {}
     for fld in lang.FIELDS:
@@ -130,6 +135,10 @@ def _lexicon(languages: tuple) -> dict:
             for value in dict.fromkeys(v for t in tables for v in t):
                 rows.append((value, explicit, re.compile("|".join(f"(?:{p})" for t in tables for p in t.get(value, [])), re.I)))
         out[fld] = rows
+    words = [f"(?:{p})" for pk in packs for p in pk.get("qualifier", [])]
+    out["qualifier"] = re.compile(_QUALIFIER_MARKS + (rf"|\s(?:{'|'.join(words)})\s" if words else ""), re.I)
+    genders = [_GENDER_LETTERS] + [f"(?:{p})" for pk in packs for p in pk.get("gender", [])]
+    out["gender"] = re.compile(rf"[(\[]\s*(?:{'|'.join(genders)})\s*[)\]]", re.I)
     out["hints"] = {}
     for key in lang.HINTS:
         pats = [f"(?:{p})" for pk in packs for p in pk.get("hints", {}).get(key, [])]
@@ -243,10 +252,25 @@ def _job_field(function: tuple, domain: tuple) -> tuple[str, str]:
     return "other", ""
 
 
+def _domains(matches: list[tuple]) -> dict:
+    """Every domain the title (head and qualifier) and the category name: {domain: (source, phrase)}, each from
+    its strongest match. The weak `tech` domain ("system") counts only when no other domain is named."""
+    out: dict = {}
+    for m in sorted((m for m in matches if m[0] == "domain"), key=_rank):
+        out.setdefault(m[1], (m[2], m[4]))
+    if len(out) > 1:
+        out.pop("tech", None)
+    return out
+
+
 def derive(*, title: str = "", card: str = "", facts: dict | None = None, request_remote: bool = False,
            posting: str = "", posting_remote: bool = False, category: str = "", languages=None) -> dict:
-    """Derived offer columns (mode, worktime, contracts, level, job_function, job_domain, job_field) and
-    `evidence` (json: column -> [source, phrase]).
+    """Derived offer columns (mode, worktime, contracts, level, job_function, job_domain, job_field, job_domains)
+    and `evidence` (json: column -> [source, phrase]; `job_domains` -> {domain: [source, phrase]}).
+
+    `job_domains`: the set of every domain the title and the category name (comma-joined, sorted), so an offer
+    has AI as a domain whatever its function ("AI Gateway Product Owner": ai, product); `job_domain` is the
+    leading one and `job_field` the single field read from the function and the leading domain.
 
     `card`: Offer.text(); `request_remote`: a request that found the offer had the board's remote filter;
     `posting_remote`: the posting's JSON-LD says TELECOMMUTE; `category`: the board's category and the
@@ -260,8 +284,10 @@ def derive(*, title: str = "", card: str = "", facts: dict | None = None, reques
     if posting_remote:
         ms.append(("mode", "remote", "posting_struct", True, "JSON-LD TELECOMMUTE"))
     ms += _scan("level", title, languages, "title")
-    m = _QUALIFIER.search(title)
-    head, qualifiers = (title[:m.start()], title[m.start():]) if m and m.start() > 0 else (title, "")
+    lexicon = _lexicon(_langs(languages))
+    plain = lexicon["gender"].sub(" ", title)
+    m = lexicon["qualifier"].search(plain)
+    head, qualifiers = (plain[:m.start()], plain[m.start():]) if m and m.start() > 0 else (plain, "")
     for fld in ("function", "domain"):
         ms += (_scan(fld, head, languages, "title") + _scan(fld, qualifiers, languages, "qualifier")
                + _scan(fld, category.replace("-", " "), languages, "category"))
@@ -293,6 +319,10 @@ def derive(*, title: str = "", card: str = "", facts: dict | None = None, reques
     out["job_field"] = field
     if source:
         evidence["job_field"] = [source, " + ".join(x[2] for x in (tf, td, cf, cd) if x[2])]
+    domains = _domains(in_title + in_category)
+    out["job_domains"] = ",".join(sorted(domains))
+    if domains:
+        evidence["job_domains"] = {d: [src, phrase] for d, (src, phrase) in sorted(domains.items())}
     out["evidence"] = json.dumps(evidence, ensure_ascii=False, sort_keys=True)
     return out
 

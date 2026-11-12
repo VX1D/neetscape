@@ -1,6 +1,8 @@
 """English: used for every country (always the last pack) and alone for international boards."""
 
 VOCAB = {
+    "qualifier": [r"with", r"for"],  # words that open a title's qualifier ("Support Specialist with German")
+    "gender": [r"all\s+genders?"],     # bracketed gender markers in words ("(all genders)")
     "explicit": {
         "contract": {
             "internship": [r"employment type:\s*internship"],  # a labelled field; free text says "staż"/"internship" for other reasons

@@ -341,11 +341,48 @@
           "$ref": "#/$defs/patterns"
         },
         "unknown": {
-          "enum": [
-            "keep",
-            "drop"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/unknown_policy"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "default": {
+                  "$ref": "#/$defs/unknown_policy"
+                },
+                "location": {
+                  "$ref": "#/$defs/unknown_policy"
+                },
+                "mode": {
+                  "$ref": "#/$defs/unknown_policy"
+                },
+                "remote_proof": {
+                  "$ref": "#/$defs/unknown_policy"
+                },
+                "worktime": {
+                  "$ref": "#/$defs/unknown_policy"
+                },
+                "pay": {
+                  "$ref": "#/$defs/unknown_policy"
+                },
+                "date": {
+                  "$ref": "#/$defs/unknown_policy"
+                },
+                "field": {
+                  "$ref": "#/$defs/unknown_policy"
+                },
+                "domain": {
+                  "$ref": "#/$defs/unknown_policy"
+                },
+                "function": {
+                  "$ref": "#/$defs/unknown_policy"
+                }
+              },
+              "additionalProperties": false
+            }
           ],
-          "description": "what to do when a filtered field (mode, pay, worktime, date) is unknown"
+          "description": "what to do when a filtered field is unknown: \"keep\" (default) or \"drop\" for every dimension, or per dimension, e.g. {\"default\": \"keep\", \"domain\": \"drop\"}. Dimensions: location, mode (where), remote_proof (no fetched posting), worktime (work time or contracts), pay, date (max_age_days), field, domain, function (nothing read from the title or category). Set in `defaults` and in a search, they merge per dimension (a string X is {\"default\": X}); the search's win"
         },
         "boost": {
           "type": "integer"
@@ -359,14 +396,35 @@
           "items": {
             "$ref": "#/$defs/job_field"
           },
-          "description": "allowed job fields, read from the title (then the board's category); 'other' when none matches"
+          "description": "allowed job fields, read from the title (then the board's category). An offer with none ('other') follows `unknown` (dimension field)"
         },
         "fields_exclude": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/job_field"
           },
-          "description": "job fields to drop"
+          "description": "job fields to drop; an offer with none ('other') passes"
+        },
+        "domains": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/job_domain"
+          },
+          "description": "job domains (what the work is about), read from the title and the board's category in the offer's languages; an offer passes when any of its domains is listed. An offer with none follows `unknown` (dimension domain)"
+        },
+        "functions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/job_function"
+          },
+          "description": "allowed job functions (what the person does), read from the title, then the category. An offer with none follows `unknown` (dimension function)"
+        },
+        "functions_exclude": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/job_function"
+          },
+          "description": "job functions to drop; an offer with no function passes"
         }
       },
       "additionalProperties": false
@@ -423,6 +481,72 @@
       "enum": [
         "de",
         "pl"
+      ]
+    },
+    "unknown_policy": {
+      "enum": [
+        "keep",
+        "drop"
+      ]
+    },
+    "job_domain": {
+      "enum": [
+        "ai",
+        "security",
+        "erp",
+        "data",
+        "cloud",
+        "software",
+        "it",
+        "tech",
+        "ecommerce",
+        "industrial",
+        "construction",
+        "manufacturing",
+        "logistics",
+        "hr",
+        "finance",
+        "legal",
+        "health",
+        "education",
+        "hospitality",
+        "retail",
+        "customer",
+        "sales",
+        "marketing",
+        "office",
+        "design",
+        "product"
+      ]
+    },
+    "job_function": {
+      "enum": [
+        "assist",
+        "test",
+        "automate",
+        "develop",
+        "design",
+        "teach",
+        "care",
+        "serve",
+        "sell",
+        "market",
+        "people",
+        "account",
+        "transport",
+        "operate",
+        "build",
+        "manage_project",
+        "cook_clean",
+        "shop",
+        "law",
+        "support",
+        "administer",
+        "engineer",
+        "analyse",
+        "consult",
+        "manage",
+        "specialist"
       ]
     }
   }

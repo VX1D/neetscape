@@ -131,6 +131,23 @@ def test_migration_merges_existing_qualified_duplicates(tmp_path):
     assert len({row[0] for row in s.q("SELECT cluster_id FROM offers")}) == 1
 
 
+def test_migration_adds_job_domains_and_eval_fills_them(tmp_path):
+    s = Store(old_database(tmp_path / "old.db", MIGRATIONS.index(store._domains_column), [
+        "INSERT INTO offers(board, key, url, title, cluster_id) VALUES ('x', '1', 'u1', 'AI Gateway Product Owner', 1)"]))
+    assert s.q("PRAGMA user_version")[0][0] == len(MIGRATIONS) and s.offer("u1")["job_domains"] == ""
+    s.rederive()
+    assert s.offer("u1")["job_domains"] == "ai,product"
+
+
+def test_job_domains_are_read_in_each_offers_language(db):
+    ingest(db, job("arbeitnow", "1", "Sachbearbeiter (m/w/d) Buchhaltung"),          # a German board
+           job("justjoin", "2", "Sachbearbeiter Buchhaltung"),                         # a Polish board: not Polish words
+           job("justjoin", "3", "Sachbearbeiter Buchhaltung", country="de"),           # ...unless the text is German
+           job("justjoin", "4", "Specjalista ds. logistyki"))
+    assert [db.offer(f"https://{b}/{k}")["job_domains"] for b, k in
+            (("arbeitnow", "1"), ("justjoin", "2"), ("justjoin", "3"), ("justjoin", "4"))] == ["finance", "", "finance", "logistics"]
+
+
 def test_readonly_store_sees_the_current_schema(tmp_path):
     s = Store(old_database(tmp_path / "old.db", 2), readonly=True)
     assert s.q("SELECT COUNT(*) FROM rejections")[0][0] == 0

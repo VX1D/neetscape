@@ -106,8 +106,17 @@ All of them follow the same rules.
    (`neetscape/model.py: CONTRACTS`; propose a new canonical value only when no existing one fits),
    and `default_boards` (usually `("<cc>",)`, the group of the country's boards plus LinkedIn).
    This module must not import boards.
-2. Add a language pack `neetscape/lang/<code>.py` if the language is new: `VOCAB` (mode, work time,
-   contracts, level, job function and domain, hints; `explicit` for statements that settle a field).
+2. Add a language pack `neetscape/lang/<code>.py` if the language is new; a language needs no change
+   outside its own module. `VOCAB` declares regexes (case-insensitive) per key:
+   - required: `mode`, `worktime`, `contract`, `level` (per canonical value), `function` and `domain` (per
+     language-neutral key of `infer.FUNCTIONS` / `infer.DOMAINS`: what a title does and what it is about), and
+     `hints` (`fully_remote`, `hybrid`, `years`, `degree`, `languages`, `fixed_term`, `office`);
+   - optional: `explicit` (per field and value, statements that settle a field: "fully remote"), `qualifier`
+     (words after which a title's head ends: "with", "z", "mit"; punctuation splits titles in every
+     language) and `gender` (gender markers in words inside brackets: "all genders", "gn"; letter lists
+     such as "(m/w/d)" or "(k/m)" are recognised without it).
+
+   See the docstring of `neetscape/lang/__init__.py` for the details.
    Check a vocabulary change on a real database rather than with unit tests:
    `python tests/infer_audit.py COPY.db --dump-stored before.json`, change, then `--rederive before.json`
    lists every changed decision with sample titles.

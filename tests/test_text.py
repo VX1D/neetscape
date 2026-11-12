@@ -1,4 +1,6 @@
 """Reading text: pay, the offer's fields from its card and posting (infer, lang packs), JSON-LD postings, hints."""
+import json
+
 import pytest
 
 from conftest import FIXTURES
@@ -103,3 +105,36 @@ def test_jsonld_posting():
 def test_hints():
     h = infer.hints("Praca w 100% zdalna. Wymagamy 3+ lata doświadczenia, bachelor degree. German C1. hybrid possible")
     assert h["fully_remote"] and h["years"] and "degree" in h["degree"] and h["languages"] == ["german"] and h["hybrid"]
+
+
+@pytest.mark.parametrize("title,category,languages,domains,function", [
+    ("AI Gateway Product Owner", "", ("pl", "en"), {"ai", "product"}, "manage_project"),   # AI in any role
+    ("AI Content Creator", "", ("en",), {"ai", "marketing"}, "market"),
+    ("Logistics Support Specialist", "", ("pl", "en"), {"logistics"}, "support"),
+    ("System Administrator", "", ("en",), {"tech"}, "administer"),             # the weak domain when alone
+    ("IT System Administrator", "", ("en",), {"it"}, "administer"),            # ...and not beside another one
+    ("Support Specialist", "IT support", ("en",), {"it"}, "support"),          # the board's category
+    ("Engineer (AI/ML)", "", ("en",), {"ai"}, "engineer"),                     # the qualifier
+    ("Konsultant", "", ("pl", "en"), set(), "consult"),
+    ("Sachbearbeiter Buchhaltung", "", ("de", "en"), {"finance"}, "account"),
+    ("Sachbearbeiter (m/w/d) Buchhaltung", "", ("de", "en"), {"finance"}, "account"),  # a gender marker is no qualifier
+])
+def test_job_domains_from_title_and_category(title, category, languages, domains, function):
+    got = infer.derive(title=title, category=category, languages=languages)
+    assert set(filter(None, got["job_domains"].split(","))) == domains and got["job_function"] == function
+    evidence = json.loads(got["evidence"]).get("job_domains", {})
+    assert set(evidence) == domains and all(len(why) == 2 for why in evidence.values())
+
+
+def test_job_domains_ignore_the_posting_and_keep_the_single_field():
+    got = infer.derive(title="AI Gateway Product Owner", posting="We build logistics software for retail.", languages=("en",))
+    assert got["job_domains"] == "ai,product"
+    assert (got["job_function"], got["job_domain"], got["job_field"]) == ("manage_project", "ai", "product_project")
+
+
+def test_gender_markers_are_generic_and_qualifier_words_come_from_the_packs():
+    def domains(title, langs):
+        return json.loads(infer.derive(title=title, languages=langs)["evidence"])["job_domains"]
+    assert domains("Specjalista (k/m) ds. IT", ("pl",)) == {"it": ["title", "IT"]}          # letters: any language
+    assert domains("Data Engineer (all genders)", ("en",)) == {"data": ["title", "Data"]}   # English words
+    assert domains("Support Specialist with AI", ("en",)) == {"ai": ["qualifier", "AI"]}   # "with" opens a qualifier

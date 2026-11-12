@@ -9,6 +9,8 @@ employment contract. "B2B" in German postings is usually a sales segment ("B2B-V
 _HO = r"home[- ]?office"
 
 VOCAB = {
+    "qualifier": [r"mit"],  # words that open a title's qualifier ("Sachbearbeiter mit Englisch")
+    "gender": [r"gn", r"[a-z](?:\s*/\s*[a-z])*\s*/\s*div(?:ers[ea]?)?"],  # "(gn)", "(m/w/div)"
     "explicit": {
         "mode": {
             "remote": [

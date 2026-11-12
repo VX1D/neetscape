@@ -18,6 +18,12 @@ FIELDS = ("ai_automation", "security", "qa", "devops_cloud", "data", "erp_crm", 
           "product_project", "design", "ecommerce", "customer_service", "sales", "marketing", "hr", "finance", "legal",
           "retail", "admin_office", "logistics", "engineering", "manufacturing", "healthcare", "education", "hospitality")
 
+# what a search's `unknown` policy may name per dimension: the fields a filter needs and an offer may lack
+# (location, mode: `where`; remote_proof: no fetched posting; field/domain/function: nothing read from the title or
+# category). "default" applies to every dimension not named.
+UNKNOWN_DIMENSIONS = ("location", "mode", "remote_proof", "worktime", "pay", "date", "field", "domain", "function")
+UNKNOWN_POLICIES = ("keep", "drop")
+
 
 def canonical_contract(value: str) -> str:
     """The current name of a contract type (`uop` -> `employment`)."""
@@ -97,7 +103,7 @@ class Offer:
     snippet: str = ""             # card text from the result page
     description: str = ""         # full text when the source ships it (feeds)
     facts: dict | None = None     # the adapter's structured values (infer.board_facts); None: its current values
-    evidence: dict = field(default_factory=dict)  # derived column -> [source, phrase] (infer.derive)
+    evidence: dict = field(default_factory=dict)  # derived column -> [source, phrase]; job_domains -> {domain: [...]}
     country: str = ""             # the country the offer's text is in (its language)
 
     @property
@@ -138,6 +144,9 @@ class Search:
     levels_exclude: frozenset = frozenset()
     fields: frozenset = frozenset()             # allowed job fields (FIELDS); empty = any
     fields_exclude: frozenset = frozenset()
+    domains: frozenset = frozenset()            # job domains (infer.DOMAINS); passes when any of the offer's matches
+    functions: frozenset = frozenset()          # allowed job functions (infer.FUNCTIONS); empty = any
+    functions_exclude: frozenset = frozenset()
     pay_min: int | None = None                  # profile currency, in `pay_period` units
     pay_period: str = "month"                   # "month" or "hour"
     require_pay: bool = False
@@ -146,9 +155,14 @@ class Search:
     title_exclude: tuple = ()
     text_exclude: tuple = ()
     category_include: tuple = ()
-    unknown: str = "keep"                       # keep or drop offers whose filtered field is unknown
+    unknown: str = "keep"                       # keep or drop offers whose filtered field is unknown (the default)
+    unknown_for: tuple = ()                     # ((dimension, policy), ...): UNKNOWN_DIMENSIONS overriding `unknown`
     boost: int = 0
     remote_proof: bool = False                  # the fetched posting must state fully remote work, with no hybrid or required presence
+
+    def unknown_policy(self, dimension: str) -> str:
+        """"keep" or "drop" for an offer lacking the field of `dimension` (UNKNOWN_DIMENSIONS)."""
+        return dict(self.unknown_for).get(dimension, self.unknown)
 
     def keywords_on(self, board: str) -> tuple[str, ...] | None:
         """The phrases sent to `board` (its `keywords_for` override, else `keywords`); None = everything."""

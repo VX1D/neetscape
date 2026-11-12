@@ -387,8 +387,11 @@ def cmd_show(a) -> None:
     evidence = json.loads(o["evidence"] or "{}")
     if evidence:
         print("\nwhy (field: value <- source \"phrase\"):")
-        for col, (source, phrase) in sorted(evidence.items()):
-            print(f"  {col}: {o[col]} <- {source} \"{phrase}\"")
+        for col, why in sorted(evidence.items()):
+            if isinstance(why, dict):  # a set of values (job_domains): value -> [source, phrase]
+                print(f"  {col}: {o[col]} <- " + ", ".join(f"{v}: {s} \"{p}\"" for v, (s, p) in why.items()))
+            else:
+                print(f"  {col}: {o[col]} <- {why[0]} \"{why[1]}\"")
     print("", *_verdict_lines(store, profile, o["id"], rid), sep="\n")
     flagged = ev.flagged(store, profile, o["id"], rid)
     if flagged:

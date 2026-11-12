@@ -1,6 +1,7 @@
 """Polish."""
 
 VOCAB = {
+    "qualifier": [r"z", r"dla"],  # words that open a title's qualifier ("Konsultant z j. niemieckim")
     "explicit": {
         "contract": {
             "internship": [r"rodzaj (?:umowy|zatrudnienia):\s*sta[żz]"],  # a labelled field; free text says "staż"/"internship" for other reasons

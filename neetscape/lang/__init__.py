@@ -13,7 +13,24 @@ Each module `<code>.py` (ISO 639-1) defines
         "hints":    {"fully_remote": [...], "hybrid": [...], "years": [...], "degree": [...],
                      "languages": [...], "fixed_term": [...],
                      "office": [...]},                  # required presence: client visits, business travel, office days
+        "qualifier": [regex, ...],                     # optional: words that open a title's qualifier
+        "gender":    [regex, ...],                     # optional: bracketed gender markers written as words
     }
+
+Required keys: `mode`, `worktime`, `contract`, `level`, `function`, `domain` (`lang.FIELDS`; a value with no
+words in a language may be left out, and a field may be `{}`) and `hints` (`lang.HINTS`; a missing key matches
+nothing). Optional keys:
+- `explicit`: per field and value, statements that settle the field over plain words (below);
+- `qualifier`: words between spaces after which a job title's head ends and its qualifier begins
+  (English "with", "for"; Polish "z", "dla"; German "mit"). Without them only punctuation splits a title:
+  " - ", " | ", " / " and an opening bracket. The head names the job; a function or domain read from the
+  qualifier ranks below one read from the head;
+- `gender`: gender markers in words, matched inside brackets ("all genders", German "gn", "m/w/div").
+  Bracketed lists of single letters ("(m/w/d)", "(k/m)", "(f/m/x)") are recognised in every language. A
+  gender marker is removed before the split, so it never ends the head ("Sachbearbeiter (m/w/d) Buchhaltung").
+
+The keys of `function` and `domain` are language-neutral (`infer.FUNCTIONS`, `infer.DOMAINS`); a new language
+maps its words onto them and needs no change outside its own module.
 
 Patterns are case-insensitive. A pack is data, not an order: for one field the patterns of all active
 languages are merged per value and strength, decided by the language-neutral rules in `infer.py`, so adding a language never reorders another language's

@@ -2,8 +2,8 @@
 import pytest
 
 from neetscape import evaluate as ev
-from neetscape import country, planner, profile
-from neetscape.model import CONTRACTS
+from neetscape import country, infer, planner, profile
+from neetscape.model import CONTRACTS, UNKNOWN_DIMENSIONS
 
 
 def validate(**raw):
@@ -51,10 +51,29 @@ def one(**search):
     (one(pay={"min": "8000"}), "pay.min"),
     (one(max_age_days="30"), "max_age_days"),
     (one(boost="high"), "boost"),
+    (one(domains=["artificial_intelligence"]), r"domains: unknown values"),
+    (one(functions_exclude=["sales"]), r"functions_exclude: unknown values"),       # a field, not a function
+    (one(unknown="maybe"), r"unknown must be 'keep' or 'drop'"),
+    (one(unknown={"salary": "drop"}), r"unknown: unknown key"),
+    (one(unknown={"pay": "maybe"}), r"unknown.pay must be"),
+    (one(unknown=["drop"]), "unknown"),
+    ({"defaults": {"unknown": {"domian": "drop"}}}, r"defaults.unknown: unknown key"),
 ])
 def test_profile_errors(raw, msg):
     with pytest.raises(profile.ProfileError, match=msg):
         validate(**raw)
+
+
+@pytest.mark.parametrize("defaults,own,policy", [
+    ("drop", None, {"default": "drop"}),
+    ({"domain": "drop"}, None, {"default": "keep", "domain": "drop"}),
+    ({"domain": "drop"}, "keep", {"default": "keep", "domain": "drop"}),       # a string sets the search's default
+    ("drop", {"pay": "keep"}, {"default": "drop", "pay": "keep"}),
+    ({"default": "drop", "pay": "keep"}, {"pay": "drop", "date": "keep"}, {"default": "drop", "pay": "drop", "date": "keep"}),
+])
+def test_unknown_policies_merge_per_dimension(defaults, own, policy):
+    s = validate(defaults={"unknown": defaults}, **one(**({} if own is None else {"unknown": own}))).searches[0]
+    assert {d: s.unknown_policy(d) for d in UNKNOWN_DIMENSIONS} == {d: policy.get(d, policy["default"]) for d in UNKNOWN_DIMENSIONS}
 
 
 def test_contract_aliases_and_country():
@@ -83,6 +102,12 @@ def test_schema_enums_match_the_registry():
     assert sorted(s["properties"]["country"]["enum"]) == sorted(search["where"]["oneOf"][1]["properties"]["country"]["enum"]) \
         == country.codes()
     assert search["contracts"]["items"]["enum"] == list(CONTRACTS) + ["uop"]
+    for key in ("searches", "defaults"):   # both read $defs/search
+        node = s["properties"][key]
+        props = (node["items"] if key == "searches" else node)["properties"]
+        assert props["domains"]["items"]["enum"] == list(infer.DOMAINS)
+        assert props["functions"]["items"]["enum"] == props["functions_exclude"]["items"]["enum"] == list(infer.FUNCTIONS)
+        assert list(props["unknown"]["oneOf"][1]["properties"]) == ["default", *UNKNOWN_DIMENSIONS]
 
 
 def test_plan_pushdown_and_warnings():
