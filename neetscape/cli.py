@@ -11,7 +11,7 @@ Run
   neetscape run [--resume] [--full] [--limit-pages N] [--boards a,b] [--record DIR]
   neetscape crawl | eval | report                         single steps on the latest run (or --run N)
 
-Review (all read the latest run, or --run N)
+Review (all read the latest run, or --run N; a run's listing is the current state of every board as of it)
   neetscape list [--search ID] [--new] [--group title] [--where SQL] [--limit N] [--format tsv|md|json]
   neetscape details --pick 12,40 | --pick-file F | --top N | --marked
   neetscape show ID                                       offer, why it passes/fails each search, posting text
@@ -317,13 +317,23 @@ def cmd_eval(a) -> None:
     print(ev.evaluate(store, profile, rid))
 
 
+def _warn_unevaluated(store: Store, run_id: int) -> None:
+    """The listing reads the run's stored verdicts: say so when some current offers have none."""
+    n = store.unevaluated(run_id)
+    if n:
+        log(f"{n} offers of the current state have no verdict of run {run_id} and are left out; "
+            f"run `neetscape eval{f' --run {run_id}' if run_id != store.last_run() else ''}` first")
+
+
 def cmd_report(a) -> None:
     store, profile, rid = _open(a, readonly=True)
+    _warn_unevaluated(store, rid)
     print(report.write_reports(store, profile, rid, _report_dir(a, store, rid)))
 
 
 def cmd_list(a) -> None:
     store, profile, rid = _open(a, readonly=True)
+    _warn_unevaluated(store, rid)
     rows = report.listing(store, profile, rid, search=a.search, new_only=a.new, where_sql=a.where)
     if a.group == "title":
         groups = report.group_by_title(rows)
@@ -429,7 +439,7 @@ def _parser() -> argparse.ArgumentParser:
     ap.add_argument("--limit-pages", type=int)
     ap.add_argument("--record", help="save raw pages to this directory")
     ap.add_argument("--search", help="list: only this search id")
-    ap.add_argument("--new", action="store_true", help="list: only offers new in this run")
+    ap.add_argument("--new", action="store_true", help="list: only jobs first seen in this run")
     ap.add_argument("--group", choices=["title"], help="list: one row per normalised title, with counts")
     ap.add_argument("--where", help="list: extra SQL condition on offers o, e.g. \"o.pay_max > 10000\"")
     ap.add_argument("--limit", type=int)

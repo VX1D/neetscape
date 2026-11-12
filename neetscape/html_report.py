@@ -98,7 +98,7 @@ en:{review:'Review',all:'All',search:'Search  /',g_auto:'Group: auto',g_category
  pay:'pay / month',mode:'mode',time:'time',contract:'contract',level:'level',posted:'posted',on:'on',score:'score',ago:'ago',fully_remote:'fully remote',
  open:'Open offer ↗',back:'← list',note_ph:'Note: why · risk (saved with the decision)',copy:n=>`Copy ${n} command${n==1?'':'s'}`,clear:'Clear',
  copied:n=>`Copied ${n} command${n==1?'':'s'}: paste them in the terminal`,confirm_clear:'Forget the decisions made on this page?',
- decided:(a,b)=>`${a} / ${b} decided`,more:n=>`Show more (${n} left)`,offers:'offers',new:'new',errors:'board errors',
+ decided:(a,b)=>`${a} / ${b} decided`,more:n=>`Show more (${n} left)`,offers:'offers',new:'new',errors:'board errors',cut:'cut listings',
  p_none:'Posting not fetched',p_empty:'Posting is empty',p_failed:'Fetching the posting failed',p_gone:'Offer removed',p_http:'Posting unavailable',
  other:'other',no_tag:'no tag',not_reviewed:'not reviewed',
  st:{shortlisted:'shortlisted',applied:'applied',interview:'interview',offer:'offer',rejected:'rejected',ignored:'ignored'},
@@ -113,7 +113,7 @@ de:{review:'Auswahl',all:'Alle',search:'Suchen  /',g_auto:'Gruppe: automatisch',
  fully_remote:'voll remote',open:'Angebot öffnen ↗',back:'← Liste',note_ph:'Notiz: warum · Risiko (wird mit der Entscheidung gespeichert)',
  copy:n=>`${n} Befehl${n==1?'':'e'} kopieren`,clear:'Leeren',copied:n=>`${n} Befehl${n==1?'':'e'} kopiert: im Terminal einfügen`,
  confirm_clear:'Die Entscheidungen auf dieser Seite verwerfen?',decided:(a,b)=>`${a} / ${b} entschieden`,more:n=>`Mehr zeigen (${n} übrig)`,
- offers:'Angebote',new:'neu',errors:'Börsenfehler',p_none:'Anzeigentext nicht geladen',p_empty:'Anzeigentext leer',p_failed:'Laden des Anzeigentexts fehlgeschlagen',
+ offers:'Angebote',new:'neu',errors:'Börsenfehler',cut:'abgeschnittene Listen',p_none:'Anzeigentext nicht geladen',p_empty:'Anzeigentext leer',p_failed:'Laden des Anzeigentexts fehlgeschlagen',
  p_gone:'Angebot entfernt',p_http:'Anzeigentext nicht verfügbar',other:'sonstige',no_tag:'ohne Tag',not_reviewed:'nicht geprüft',
  st:{shortlisted:'vorgemerkt',applied:'beworben',interview:'Gespräch',offer:'Zusage',rejected:'abgelehnt',ignored:'ignoriert'},
  md:{remote:'remote',hybrid:'hybrid',onsite:'vor Ort',unknown:'unbekannt'},wt:{full_time:'Vollzeit',part_time:'Teilzeit',flexible:'flexibel'}},
@@ -126,7 +126,7 @@ pl:{review:'Przegląd',all:'Wszystkie',search:'Szukaj  /',g_auto:'Grupy: auto',g
  pay:'stawka / mies.',mode:'tryb',time:'wymiar',contract:'umowa',level:'poziom',posted:'dodana',on:'na',score:'wynik',ago:'temu',fully_remote:'w pełni zdalna',
  open:'Otwórz ofertę ↗',back:'← lista',note_ph:'Notatka: dlaczego · ryzyko (zapisywana z decyzją)',copy:n=>`Kopiuj komendy (${n})`,clear:'Wyczyść',
  copied:n=>`Skopiowano ${n}: wklej w terminalu`,confirm_clear:'Zapomnieć decyzje podjęte na tej stronie?',decided:(a,b)=>`${a} / ${b} z decyzją`,
- more:n=>`Pokaż więcej (zostało ${n})`,offers:'ofert',new:'nowych',errors:'błędów portali',p_none:'Opis niepobrany',p_empty:'Opis pusty',
+ more:n=>`Pokaż więcej (zostało ${n})`,offers:'ofert',new:'nowych',errors:'błędów portali',cut:'uciętych list',p_none:'Opis niepobrany',p_empty:'Opis pusty',
  p_failed:'Nie udało się pobrać opisu',p_gone:'Oferta usunięta',p_http:'Opis niedostępny',other:'inne',no_tag:'bez tagu',not_reviewed:'nieprzejrzane',
  st:{shortlisted:'na liście',applied:'aplikowano',interview:'rozmowa',offer:'oferta',rejected:'odrzucone',ignored:'pominięte'},
  md:{remote:'zdalna',hybrid:'hybrydowa',onsite:'stacjonarna',unknown:'nieznany'},wt:{full_time:'pełny etat',part_time:'część etatu',flexible:'elastyczny'}}};
@@ -150,7 +150,7 @@ const flags=d=>{const h=d.hints||{};return[...(h.years||[]),...(h.degree||[]),..
 const payTxt=d=>d.pay==='—'?'':d.pay+(d.pay_sort?' '+M.currency:'');
 function i18n(){document.documentElement.lang=lang;document.querySelectorAll('[data-t]').forEach(e=>{e.textContent=t[e.dataset.t]});
  $('q').placeholder=t.search;$('mode').querySelectorAll('option').forEach(o=>{o.textContent=o.value?(t.md[o.value]||o.value):t.any_mode});
- $('stats').textContent=`${M.n_rows} ${t.offers} · ${M.n_new} ${t.new}`+(M.errors?` · ${M.errors} ${t.errors}`:'');$('lang').value=lang}
+ $('stats').textContent=`${M.n_rows} ${t.offers} · ${M.n_new} ${t.new}`+(M.errors?` · ${M.errors} ${t.errors}`:'')+(M.cut?` · ${M.cut} ${t.cut}`:'');$('lang').value=lang}
 function keyOf(d,g){switch(g){case'category':return d.category||t.other;case'status':return status(d)?st(status(d)):t.not_reviewed;
  case'tag':return M.tags[d.tags[0]]||d.tags[0]||t.no_tag;case'search':return M.searches[d.searches[0]]||d.searches[0]||'—';
  case'board':return d.boards.split(',')[0];case'mode':return t.md[d.mode]||d.mode;default:return''}}
@@ -336,6 +336,9 @@ def write_html(store: Store, profile: Profile, run_id: int, rows: list[dict], pa
     meta = {"key": f"neetscape-{path.parent.name}", "currency": profile.currency, "lang": _LANG.get(profile.country.code, "en"),
             "statuses": [s for s in MARK_STATUSES if s != "ignored"], "n_rows": len(rows), "n_new": sum(d["is_new"] for d in rows),
             "errors": sum(r["errors"] or 0 for r in store.board_stats(run_id)),
+            # listings this run did not fetch to their end (over a result cap, or a board's max_pages; see REPORT.md)
+            "cut": len(store.capped(run_id)) + sum(not c["deliberate"] for c in store.page_limited(run_id)),
+            "cut_deliberate": sum(c["deliberate"] for c in store.page_limited(run_id)),
             "searches": {s.id: s.label for s in profile.searches}, "tags": {t["id"]: t["label"] for t in profile.tags}}
     opt = lambda values: "".join(f'<option value="{_e(v)}">{_e(v)}</option>' for v in values)
     path.write_text(_PAGE.format(

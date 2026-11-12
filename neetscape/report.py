@@ -1,8 +1,17 @@
 """Listings and reports, all read from the store.
 
-`listing()` is the single source for `neetscape list`, listing.tsv, offers.csv, REPORT.md and REPORT.html: offers of a
-run that pass at least one search, one row per cluster (the same job on several boards), clusters whose
-latest mark is rejected/ignored removed, sorted by the profile's sort keys. Pay is shown per month in the
+`listing()` is the single source for `neetscape list`, listing.tsv, offers.csv, REPORT.md, REPORT.html and
+`details --top`. The listing of run N is the current state as of run N, judged by the profile:
+
+    every offer presumed still listed after run N (its board's latest crawl up to run N saw it, or repeated
+    a request that saw it before without reaching that request's end, and it is not marked gone), from every
+    board, not only those run N crawled, that passes at least one search in the verdicts `eval` stored for
+    run N; one row per cluster (the same job on several boards), clusters whose latest mark is
+    rejected/ignored removed, sorted by the profile's sort keys.
+
+`new` means the cluster was first seen in run N. The rest of a report is about run N itself: its board
+table (requests, pages, errors) and its cut listings (capped, or stopped at a page limit). `--run N` shows
+that run's stored state; `eval --run N` judges the state as of run N again. Pay is shown per month in the
 profile country's currency, in a column named after it (`pay_pln_month`, `pay_eur_month`).
 `group_by_title()` folds a listing into one row per normalised title, for triaging thousands of offers.
 """
@@ -25,9 +34,9 @@ _LISTING_SQL = """
     SELECT o.*, e.search_id, e.score, e.why, c.first_seen_run = :run AS is_new,
            (SELECT t.status FROM tracked t JOIN offers o3 ON o3.url = t.url
             WHERE o3.cluster_id = o.cluster_id ORDER BY t.id DESC LIMIT 1) AS mark,
-           (SELECT GROUP_CONCAT(DISTINCT o2.board) FROM offers o2 WHERE o2.cluster_id = o.cluster_id AND EXISTS (
-                SELECT 1 FROM sightings s JOIN requests r ON r.id = s.request_id
-                WHERE s.offer_id = o2.id AND r.run_id = :run)) AS boards
+           (SELECT GROUP_CONCAT(DISTINCT o2.board) FROM offers o2 WHERE o2.cluster_id = o.cluster_id AND (
+                EXISTS (SELECT 1 FROM evals e2 WHERE e2.run_id = :run AND e2.offer_id = o2.id) OR
+                EXISTS (SELECT 1 FROM rejections j WHERE j.run_id = :run AND j.offer_id = o2.id))) AS boards
     FROM evals e JOIN offers o ON o.id = e.offer_id JOIN clusters c ON c.id = o.cluster_id
     WHERE e.run_id = :run {conditions} ORDER BY o.id"""
 
@@ -41,8 +50,9 @@ _SORT_KEYS = {
 
 def listing(store: Store, profile: Profile, run_id: int, *, search: str | None = None, new_only: bool = False,
             where_sql: str | None = None) -> list[dict]:
-    """Passing offers of a run, one per cluster: the best-scored row, with every search the cluster passes.
-    The cluster's mark is the latest mark on any of its offers."""
+    """Passing offers of the current state as of a run, one per cluster: the best-scored row, with every search
+    the cluster passes and the boards of its current offers. The cluster's mark is the latest mark on any of
+    its offers. `new_only`: clusters first seen in the run."""
     conditions = ("AND e.search_id = :search " if search else "") + (f"AND ({where_sql})" if where_sql else "")
     best: dict[int, dict] = {}
     for r in store.db.execute(_LISTING_SQL.format(conditions=conditions), {"run": run_id, "search": search}):
@@ -132,10 +142,15 @@ def _run_stats(store: Store, run_id: int) -> list[str]:
     errs = store.q("SELECT board, keyword, error FROM requests WHERE run_id=? AND error != ''", run_id)
     if errs:
         out += ["", "Errors:"] + [f"- {e['board']} {e['keyword'] or '*'}: {e['error'][:160]}" for e in errs]
-    capped = store.q("SELECT board, keyword, params_json, stop_reason FROM requests WHERE run_id=? AND stop_reason LIKE '%capped:%'", run_id)
+    capped = store.capped(run_id)
     if capped:  # the board shows fewer results than the request matches and could not narrow it: offers are missing
         out += ["", "Capped (offers beyond the board's result limit are missing):"] + [
             f"- {c['board']} {c['keyword'] or '*'} {c['params_json']}: {c['stop_reason'].split('capped: ')[-1]}" for c in capped]
+    cut = store.page_limited(run_id)
+    if cut:  # the request ended at its last allowed page, so the listing may go on: offers beyond it are missing
+        out += ["", "Page limit (the listing may go on beyond the last page fetched):"] + [
+            f"- {c['board']} {c['keyword'] or '*'} {c['params_json']}: {c['pages']} pages, "
+            + ("--limit-pages (deliberate)" if c["deliberate"] else "the board's max_pages") for c in cut]
     return out
 
 
@@ -189,8 +204,11 @@ def write_reports(store: Store, profile: Profile, run_id: int, out_dir: Path, ro
     L = [f"# neetscape report — run {run_id} ({run['started_at'][:16]})", ""]
     if profile.raw.get("label"):
         L += [f"Profile: **{profile.raw['label']}**", ""]
+    crawled = ", ".join(r["board"] for r in store.board_stats(run_id)) or "no board"
+    L += [f"Run {run_id} crawled {crawled}. The listing is the current state: every offer still listed on any board "
+          "as of that board's latest crawl, judged by the profile; new = first seen in this run.", ""]
     L += _run_stats(store, run_id) + [""]
-    L += [f"Offers passing the profile: **{len(rows)}** ({sum(d['is_new'] for d in rows)} new). "
+    L += [f"Offers passing the profile: **{len(rows)}** ({sum(d['is_new'] for d in rows)} new in this run). "
           + "Per search: " + ", ".join(f"{s.label} {per_search.get(s.id, 0)}" for s in profile.searches), ""]
     for s in profile.searches:
         top = [d for d in rows if s.id in d["searches"]][:15]

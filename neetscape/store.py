@@ -5,8 +5,9 @@ per month in that country's currency (use a separate `--out` per country). Schem
 migrations (SQL scripts or functions) applied according to `PRAGMA user_version`; existing migrations are
 never edited, new ones are appended.
 
-Verdicts of a run: `evals` holds the offers that pass a search (score, matched rules, tags), `rejections`
-(v3) the ones that fail it with their reasons joined by `; `, e.g.
+Current state as of run N: the offers presumed still listed after run N (`current_offers`). Verdicts of a run
+cover that whole state, not only the run's sightings: `evals` holds the offers that pass a search (score,
+matched rules, tags), `rejections` (v3) the ones that fail it with their reasons joined by `; `, e.g.
 
     SELECT reasons, COUNT(*) FROM rejections WHERE run_id = (SELECT MAX(id) FROM runs) GROUP BY 1 ORDER BY 2 DESC
 """
@@ -76,9 +77,38 @@ _POSTING_OK = "d.http_status = 200 AND d.text != ''"  # a stored posting with te
 
 _EMPTY = (None, "", "unknown", "[]")  # stored values that mean "the board did not say"
 
+# The current state as of run :run, as CTEs ending in `cur(offer_id)`. A board's latest crawl is the latest run
+# <= :run with requests to it. An offer is current when it is not marked gone (by the start of the next run)
+# and that crawl saw it, or that crawl repeated a request that saw it earlier without reaching the request's end
+# (an incremental, age or page-limit stop or an error says nothing about the offers further down). A request
+# replaced by its split carries nothing: its narrower requests cover its listing.
+_CURRENT_CTE = """
+    latest(board, run) AS (SELECT board, MAX(run_id) FROM requests WHERE run_id <= :run GROUP BY board),
+    carried(req_key) AS (SELECT r.req_key FROM requests r JOIN latest l ON l.board = r.board AND l.run = r.run_id
+                         WHERE r.complete = 0 AND COALESCE(r.stop_reason, '') NOT LIKE 'split into%'),
+    seen(offer_id) AS (SELECT DISTINCT s.offer_id FROM sightings s JOIN requests r ON r.id = s.request_id
+                       JOIN latest l ON l.board = r.board
+                       WHERE r.run_id = l.run OR (r.run_id < l.run AND r.req_key IN (SELECT req_key FROM carried))),
+    cur(offer_id) AS (SELECT o.id FROM offers o JOIN seen ON seen.offer_id = o.id
+                      WHERE o.gone_at IS NULL OR o.gone_at >= COALESCE((SELECT MIN(started_at) FROM runs WHERE id > :run), '~'))"""
+
 
 def now() -> str:
     return dt.datetime.now().isoformat(timespec="seconds")
+
+
+def _limit_pages(argv_json: str | None) -> int | None:
+    """`--limit-pages N` of a run's stored command line, if it had one."""
+    try:
+        argv = [str(x) for x in json.loads(argv_json or "[]")]
+    except (ValueError, TypeError):
+        return None
+    for i, arg in enumerate(argv):
+        value = argv[i + 1] if arg == "--limit-pages" and i + 1 < len(argv) else (
+            arg.split("=", 1)[1] if arg.startswith("--limit-pages=") else None)
+        if value is not None and value.isdigit():
+            return int(value)
+    return None
 
 
 def request_key(board: str, keyword: str | None, params: dict) -> str:
@@ -241,6 +271,26 @@ class Store:
         self.db.commit()
         return gone
 
+    def current_offers(self, run_id: int, offer_id: int | None = None) -> list[sqlite3.Row]:
+        """The current state as of `run_id` (see `_CURRENT_CTE`), optionally one offer, in `run_offers`' shape;
+        `keywords` are those of every request up to the run that found the offer."""
+        return self.db.execute(f"""
+            WITH {_CURRENT_CTE}
+            SELECT o.*, (SELECT GROUP_CONCAT(DISTINCT r.keyword) FROM sightings s JOIN requests r ON r.id = s.request_id
+                         WHERE s.offer_id = o.id AND r.run_id <= :run) AS keywords,
+                   c.first_seen_run AS cluster_first_run, (SELECT d.text FROM details d WHERE d.offer_id = o.id) AS posting
+            FROM offers o JOIN cur ON cur.offer_id = o.id JOIN clusters c ON c.id = o.cluster_id
+            {"WHERE o.id = :offer" if offer_id else ""} ORDER BY o.id""", {"run": run_id, "offer": offer_id}).fetchall()
+
+    def unevaluated(self, run_id: int) -> int:
+        """Offers of the current state as of `run_id` with no verdict of that run (stored before they became
+        current, or by a neetscape that evaluated only the run's sightings); `neetscape eval` settles them."""
+        return self.db.execute(f"""
+            WITH {_CURRENT_CTE} SELECT COUNT(*) FROM cur
+            WHERE NOT EXISTS (SELECT 1 FROM evals e WHERE e.run_id = :run AND e.offer_id = cur.offer_id)
+              AND NOT EXISTS (SELECT 1 FROM rejections j WHERE j.run_id = :run AND j.offer_id = cur.offer_id)""",
+                               {"run": run_id}).fetchone()[0]
+
     def run_offers(self, run_id: int | None, offer_id: int | None = None) -> list[sqlite3.Row]:
         """Offers sighted in a run (any run when `run_id` is None), optionally one offer, with the keywords of
         the requests that found them (`keywords`), their cluster's first run (`cluster_first_run`) and the fetched
@@ -294,6 +344,21 @@ class Store:
         return self.q("""SELECT board, COUNT(*) n, SUM(pages) pages, SUM(found) found, SUM(complete) complete,
                          SUM(error != '') errors FROM requests WHERE run_id=? GROUP BY board""", run_id)
 
+    def page_limited(self, run_id: int) -> list[dict]:
+        """Requests of a run that stopped at a page limit, so the board's listing may go on beyond the last page
+        fetched (requests also over a board's result cap are left to `capped`). `deliberate`: the run's own
+        `--limit-pages N` was the limit (the request fetched N pages); otherwise the board's `max_pages` was."""
+        run = self.run(run_id)
+        limit = _limit_pages(run["argv"]) if run else None
+        rows = self.q("SELECT board, keyword, params_json, pages FROM requests WHERE run_id=? AND stop_reason LIKE 'page limit%' "
+                      "AND stop_reason NOT LIKE '%capped:%' ORDER BY id", run_id)
+        return [dict(r) | {"deliberate": limit is not None and r["pages"] >= limit} for r in rows]
+
+    def capped(self, run_id: int) -> list[sqlite3.Row]:
+        """Requests of a run over the board's result cap that could not be split: offers beyond the cap are missing."""
+        return self.q("SELECT board, keyword, params_json, stop_reason FROM requests WHERE run_id=? AND stop_reason LIKE '%capped:%'",
+                      run_id)
+
     @staticmethod
     def _is_id(ref: str | int) -> bool:
         return isinstance(ref, int) or str(ref).isdigit()
@@ -318,12 +383,13 @@ class Store:
         return self.db.execute("SELECT * FROM tracked WHERE url=?", (url,)).fetchone()
 
     def tracked(self, run_id: int | None = None, hidden: bool = True) -> list[sqlite3.Row]:
-        """Latest mark per URL with the offer's title and company; `listed` says whether it was seen in
-        `run_id` ("yes", "gone", "not seen in this run"). `hidden=False` leaves out rejected/ignored marks."""
-        return self.q(f"""
+        """Latest mark per URL with the offer's title and company; `listed` says whether it is in the current
+        state as of `run_id` ("yes"), marked "gone", or "no longer seen" (its board's latest crawl did not find
+        it). `hidden=False` leaves out rejected/ignored marks."""
+        hide = "" if hidden else "WHERE t.status NOT IN (" + ",".join(f"'{s}'" for s in HIDDEN) + ")"
+        return self.db.execute(f"""
+            WITH {_CURRENT_CTE}
             SELECT t.*, o.title, o.company,
-                   CASE WHEN o.gone_at IS NOT NULL THEN 'gone' WHEN o.last_seen_run = ? THEN 'yes'
-                        ELSE 'not seen in this run' END AS listed
-            FROM tracked t LEFT JOIN offers o ON o.url = t.url
-            {"" if hidden else f"WHERE t.status NOT IN ({','.join('?' * len(HIDDEN))})"} ORDER BY t.at""",
-                      run_id, *(() if hidden else HIDDEN))
+                   CASE WHEN o.id IN (SELECT offer_id FROM cur) THEN 'yes' WHEN o.gone_at IS NOT NULL THEN 'gone'
+                        ELSE 'no longer seen' END AS listed
+            FROM tracked t LEFT JOIN offers o ON o.url = t.url {hide} ORDER BY t.at""", {"run": run_id or 0}).fetchall()
