@@ -15,7 +15,10 @@ Verified live 2026-11-12:
   offers listed today were first published up to 30 days earlier, so `published` is the posting date and refreshed
   offers count as `promoted` (they never decide a newest-first stop). `isSuperOffer` (a paid product on 30-90% of a
   page) keeps its date order: not promoted;
-- the offer page's JSON-LD carries only the employer's blurb; the posting is in its Next.js `sections`.
+- the offer page's JSON-LD carries only the employer's blurb; the posting is in its Next.js `sections`;
+- no category per offer in the listing (2026-11-12, remote page 1, all 50 grouped offers): the `groupedOffers`
+  objects carry no category, specialisation or technology field (`primaryAttributes` holds flags such as
+  "Szukamy wielu kandydatów"); the page's `dictionary/categories` query is the filter list, not linked to offers.
 """
 from __future__ import annotations
 

@@ -1,714 +1,1443 @@
-[
 {
-"url": "https://www.olx.pl/oferta/praca/content-creator-tiktok-instagram-praca-dodatkowa-gdansk-CID4-ID1devLK.html",
-"title": "Content Creator – TikTok & Instagram | Praca dodatkowa | Gdańsk",
-"isPromoted": false,
-"lastRefreshTime": "2026-11-12T14:28:14+01:00",
-"createdTime": "2026-11-12T14:25:51+01:00",
-"salary": {
-"from": 32,
-"to": 0,
-"currencyCode": "PLN",
-"period": "hourly"
-},
-"params": [
-{
-"key": "type",
-"normalizedValue": "halftime"
-},
-{
-"key": "agreement",
-"normalizedValue": [
-"zlecenie"
-]
-},
-{
-"key": "special_requirements",
-"normalizedValue": [
-"student_status"
-]
-},
-{
-"key": "experience",
-"normalizedValue": "exp_no"
-},
-{
-"key": "mandatory_cv",
-"normalizedValue": "optional"
-},
-{
-"key": "availability",
-"normalizedValue": [
-"flexible_work",
-"shift_work"
-]
-},
-{
-"key": "workplace",
-"normalizedValue": [
-"remote_work_possibility"
-]
+ "total": 1000,
+ "categories": [
+  {
+   "path": "praca",
+   "parent": ""
+  },
+  {
+   "path": "praca/edukacja",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/informatyka",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/inne-oferty-pracy",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/ochrona",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/administracja-biurowa",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/finanse-ksiegowosc",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/hr",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/gastronomia",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/hotelarstwo",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/budowa-remonty",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/produkcja",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/sprzatanie",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/praktyki-staze",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/gastronomia/kucharz",
+   "parent": "praca/gastronomia"
+  },
+  {
+   "path": "praca/gastronomia/pomoc-kuchenna-zmywak",
+   "parent": "praca/gastronomia"
+  },
+  {
+   "path": "praca/gastronomia/pozostale",
+   "parent": "praca/gastronomia"
+  },
+  {
+   "path": "praca/praca-za-granica",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/franczyza-wlasna-firma",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/kadra-kierownicza",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/e-commerce-handel-internetowy",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/rolnictwo-i-ogrodnictwo",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/edukacja/szkolnictwo",
+   "parent": "praca/edukacja"
+  },
+  {
+   "path": "praca/edukacja/kursy-zajecia-dodatkowe",
+   "parent": "praca/edukacja"
+  },
+  {
+   "path": "praca/edukacja/nauczanie-jezykow-obcych",
+   "parent": "praca/edukacja"
+  },
+  {
+   "path": "praca/informatyka/programista",
+   "parent": "praca/informatyka"
+  },
+  {
+   "path": "praca/informatyka/tester",
+   "parent": "praca/informatyka"
+  },
+  {
+   "path": "praca/informatyka/analityk",
+   "parent": "praca/informatyka"
+  },
+  {
+   "path": "praca/informatyka/wsparcie-techniczne",
+   "parent": "praca/informatyka"
+  },
+  {
+   "path": "praca/informatyka/administrator-systemow",
+   "parent": "praca/informatyka"
+  },
+  {
+   "path": "praca/informatyka/administrator-baz-danych",
+   "parent": "praca/informatyka"
+  },
+  {
+   "path": "praca/informatyka/administrator-sieci",
+   "parent": "praca/informatyka"
+  },
+  {
+   "path": "praca/informatyka/zarzadzanie-projektami",
+   "parent": "praca/informatyka"
+  },
+  {
+   "path": "praca/administracja-biurowa/sekretariat-recepcja",
+   "parent": "praca/administracja-biurowa"
+  },
+  {
+   "path": "praca/finanse-ksiegowosc/ksiegowosc",
+   "parent": "praca/finanse-ksiegowosc"
+  },
+  {
+   "path": "praca/finanse-ksiegowosc/pozostale-w-finanse-i-ksiegowosc",
+   "parent": "praca/finanse-ksiegowosc"
+  },
+  {
+   "path": "praca/hr/kadry-i-place",
+   "parent": "praca/hr"
+  },
+  {
+   "path": "praca/hr/rekrutacja",
+   "parent": "praca/hr"
+  },
+  {
+   "path": "praca/hr/pozostale-w-hr",
+   "parent": "praca/hr"
+  },
+  {
+   "path": "praca/gastronomia/manager-restauracji",
+   "parent": "praca/gastronomia"
+  },
+  {
+   "path": "praca/gastronomia/pracownik-restauracji-fast-food",
+   "parent": "praca/gastronomia"
+  },
+  {
+   "path": "praca/gastronomia/cukiernik-piekarz",
+   "parent": "praca/gastronomia"
+  },
+  {
+   "path": "praca/hotelarstwo/obsluga-hotelowa",
+   "parent": "praca/hotelarstwo"
+  },
+  {
+   "path": "praca/hotelarstwo/zarzadzanie-hotelem",
+   "parent": "praca/hotelarstwo"
+  },
+  {
+   "path": "praca/produkcja/obsluga-produkcji",
+   "parent": "praca/produkcja"
+  },
+  {
+   "path": "praca/produkcja/praca-inzynieryjna-techniczna",
+   "parent": "praca/produkcja"
+  },
+  {
+   "path": "praca/produkcja/zarzadzanie-produkcja",
+   "parent": "praca/produkcja"
+  },
+  {
+   "path": "praca/prace-magazynowe",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/gastronomia/kelner-barman-barista",
+   "parent": "praca/gastronomia"
+  },
+  {
+   "path": "praca/fryzjerstwo-kosmetyka",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/opieka",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/zdrowie",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/fryzjerstwo-kosmetyka/fryzjer-barber",
+   "parent": "praca/fryzjerstwo-kosmetyka"
+  },
+  {
+   "path": "praca/fryzjerstwo-kosmetyka/kosmetolog-kosmetyczka",
+   "parent": "praca/fryzjerstwo-kosmetyka"
+  },
+  {
+   "path": "praca/fryzjerstwo-kosmetyka/pozostale-we-fryzjerstwo-kosmetyka",
+   "parent": "praca/fryzjerstwo-kosmetyka"
+  },
+  {
+   "path": "praca/opieka/opieka-nad-dziecmi",
+   "parent": "praca/opieka"
+  },
+  {
+   "path": "praca/opieka/opieka-nad-seniorami-chorymi",
+   "parent": "praca/opieka"
+  },
+  {
+   "path": "praca/zdrowie/pracownicy-ochrony-zdrowia",
+   "parent": "praca/zdrowie"
+  },
+  {
+   "path": "praca/zdrowie/rehabilitacja-i-masaz",
+   "parent": "praca/zdrowie"
+  },
+  {
+   "path": "praca/zdrowie/dietetyka",
+   "parent": "praca/zdrowie"
+  },
+  {
+   "path": "praca/zdrowie/farmacja",
+   "parent": "praca/zdrowie"
+  },
+  {
+   "path": "praca/zdrowie/pozostale-w-zdrowie",
+   "parent": "praca/zdrowie"
+  },
+  {
+   "path": "praca/kierowca",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/dostawca-kurier-miejski",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/logistyka-zakupy-spedycja",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/wykladanie-ekspozycja-towaru",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/montaz-serwis",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/hostessa-roznoszenie-ulotek",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/zdrowie/rejestracja-obsluga-pacjentow",
+   "parent": "praca/zdrowie"
+  },
+  {
+   "path": "praca/zdrowie/trener-personalny-instruktor-fitness",
+   "parent": "praca/zdrowie"
+  },
+  {
+   "path": "praca/logistyka-zakupy-spedycja/logistyka",
+   "parent": "praca/logistyka-zakupy-spedycja"
+  },
+  {
+   "path": "praca/logistyka-zakupy-spedycja/zakupy",
+   "parent": "praca/logistyka-zakupy-spedycja"
+  },
+  {
+   "path": "praca/logistyka-zakupy-spedycja/spedycja",
+   "parent": "praca/logistyka-zakupy-spedycja"
+  },
+  {
+   "path": "praca/hostessa-roznoszenie-ulotek/hostessa-host",
+   "parent": "praca/hostessa-roznoszenie-ulotek"
+  },
+  {
+   "path": "praca/hostessa-roznoszenie-ulotek/roznoszenie-ulotek",
+   "parent": "praca/hostessa-roznoszenie-ulotek"
+  },
+  {
+   "path": "praca/sprzedaz",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/obsluga-klienta-call-center",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/sprzedaz/doradca-klienta-sprzedawca",
+   "parent": "praca/sprzedaz"
+  },
+  {
+   "path": "praca/obsluga-klienta-call-center/specjalista-ds-obslugi-klienta",
+   "parent": "praca/obsluga-klienta-call-center"
+  },
+  {
+   "path": "praca/sprzedaz/przedstawiciel-handlowy",
+   "parent": "praca/sprzedaz"
+  },
+  {
+   "path": "praca/obsluga-klienta-call-center/call-center-konsultant-telefoniczny",
+   "parent": "praca/obsluga-klienta-call-center"
+  },
+  {
+   "path": "praca/sprzedaz/key-account-manager",
+   "parent": "praca/sprzedaz"
+  },
+  {
+   "path": "praca/sprzedaz/zarzadzanie-sprzedaza",
+   "parent": "praca/sprzedaz"
+  },
+  {
+   "path": "praca/administracja-biurowa/administracja-prace-biurowe",
+   "parent": "praca/administracja-biurowa"
+  },
+  {
+   "path": "praca/mechanika-lakiernictwo",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/mechanika-lakiernictwo/mechanik-elektromechanik-wulkanizator",
+   "parent": "praca/mechanika-lakiernictwo"
+  },
+  {
+   "path": "praca/mechanika-lakiernictwo/lakiernik-blacharz",
+   "parent": "praca/mechanika-lakiernictwo"
+  },
+  {
+   "path": "praca/marketing-pr",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/marketing-pr/marketing",
+   "parent": "praca/marketing-pr"
+  },
+  {
+   "path": "praca/marketing-pr/social-media",
+   "parent": "praca/marketing-pr"
+  },
+  {
+   "path": "praca/marketing-pr/copywriting",
+   "parent": "praca/marketing-pr"
+  },
+  {
+   "path": "praca/marketing-pr/media-i-pr",
+   "parent": "praca/marketing-pr"
+  },
+  {
+   "path": "praca/marketing-pr/grafika",
+   "parent": "praca/marketing-pr"
+  },
+  {
+   "path": "praca/marketing-pr/badania-praca-w-domu",
+   "parent": "praca/marketing-pr"
+  },
+  {
+   "path": "praca/produkcja/utrzymanie-ruchu",
+   "parent": "praca/produkcja"
+  },
+  {
+   "path": "praca/produkcja/kontrola-jakosci",
+   "parent": "praca/produkcja"
+  },
+  {
+   "path": "praca/energetyka",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/energetyka/konwencjonalna",
+   "parent": "praca/energetyka"
+  },
+  {
+   "path": "praca/energetyka/odnawialna",
+   "parent": "praca/energetyka"
+  },
+  {
+   "path": "praca/pracownik-sklepu",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/pracownik-sklepu/kasjer-pracownik-sklepu",
+   "parent": "praca/pracownik-sklepu"
+  },
+  {
+   "path": "praca/pracownik-sklepu/zarzadzanie-sklepem",
+   "parent": "praca/pracownik-sklepu"
+  },
+  {
+   "path": "praca/badania-rozwoj",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/inzynieria",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/energetyka/pozostale-w-energetyka",
+   "parent": "praca/energetyka"
+  },
+  {
+   "path": "praca/praca-sezonowa",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/praca-dodatkowa",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/zapraszamy-seniorow",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/bhp-ochrona-srodowiska",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/organizacja-obsluga-impres",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/sluzby-mundurowe",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/bankowosc",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/ubezpieczenia",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/finanse-ksiegowosc/finanse",
+   "parent": "praca/finanse-ksiegowosc"
+  },
+  {
+   "path": "praca/budowa-remonty/architekt",
+   "parent": "praca/budowa-remonty"
+  },
+  {
+   "path": "praca/budowa-remonty/ciesla",
+   "parent": "praca/budowa-remonty"
+  },
+  {
+   "path": "praca/budowa-remonty/dekarz",
+   "parent": "praca/budowa-remonty"
+  },
+  {
+   "path": "praca/budowa-remonty/glazurnik",
+   "parent": "praca/budowa-remonty"
+  },
+  {
+   "path": "praca/budowa-remonty/hydraulik",
+   "parent": "praca/budowa-remonty"
+  },
+  {
+   "path": "praca/budowa-remonty/kierownik-budowy-inzynier-brygadzista",
+   "parent": "praca/budowa-remonty"
+  },
+  {
+   "path": "praca/budowa-remonty/malarz",
+   "parent": "praca/budowa-remonty"
+  },
+  {
+   "path": "praca/budowa-remonty/murarz",
+   "parent": "praca/budowa-remonty"
+  },
+  {
+   "path": "praca/budowa-remonty/operator-maszyn-budowlanych",
+   "parent": "praca/budowa-remonty"
+  },
+  {
+   "path": "praca/budowa-remonty/pracownik-ogolnobudowlany",
+   "parent": "praca/budowa-remonty"
+  },
+  {
+   "path": "praca/budowa-remonty/robotnik-drogowy",
+   "parent": "praca/budowa-remonty"
+  },
+  {
+   "path": "praca/budowa-remonty/spawacz-slusarz",
+   "parent": "praca/budowa-remonty"
+  },
+  {
+   "path": "praca/budowa-remonty/stolarz",
+   "parent": "praca/budowa-remonty"
+  },
+  {
+   "path": "praca/praca-od-zaraz",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/nieruchomosci",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/prawo",
+   "parent": "praca"
+  },
+  {
+   "path": "praca/nieruchomosci/agent-nieruchomosci",
+   "parent": "praca/nieruchomosci"
+  },
+  {
+   "path": "praca/prawo/prawnik-radca-prawny-notariusz",
+   "parent": "praca/prawo"
+  },
+  {
+   "path": "praca/nieruchomosci/utrzymanie-zarzadzanie-nieruchomosciami",
+   "parent": "praca/nieruchomosci"
+  },
+  {
+   "path": "praca/prawo/specjalisci-aplikanci",
+   "parent": "praca/prawo"
+  },
+  {
+   "path": "praca/prawo/windykacja",
+   "parent": "praca/prawo"
+  },
+  {
+   "path": "praca/zdrowie/lekarz",
+   "parent": "praca/zdrowie"
+  },
+  {
+   "path": "praca/zdrowie/optyka-okulistyka-optometria",
+   "parent": "praca/zdrowie"
+  },
+  {
+   "path": "praca/zdrowie/pielegniarka-pielegniarz",
+   "parent": "praca/zdrowie"
+  },
+  {
+   "path": "praca/zdrowie/psychologia-psychoterapia",
+   "parent": "praca/zdrowie"
+  },
+  {
+   "path": "praca/zdrowie/stomatologia",
+   "parent": "praca/zdrowie"
+  },
+  {
+   "path": "praca/zdrowie/weterynaria",
+   "parent": "praca/zdrowie"
+  }
+ ],
+ "ads": [
+  {
+   "url": "https://www.olx.pl/oferta/praca/specjalista-ds-wynajmow-i-sprzedazy-nieruchomosci-w-trojmiescie-CID4-ID14SCVA.html",
+   "title": "Specjalista Ds. Wynajmów i Sprzedaży Nieruchomości w Trójmieście",
+   "category": "Nieruchomości - Agent nieruchomości",
+   "isPromoted": true,
+   "lastRefreshTime": "2026-11-11T19:19:52+01:00",
+   "createdTime": "2025-03-12T15:49:50+01:00",
+   "salary": {
+    "from": 3000,
+    "to": 65000,
+    "currencyCode": "PLN",
+    "period": "monthly"
+   },
+   "params": [
+    {
+     "key": "type",
+     "normalizedValue": "fulltime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "contract",
+      "other",
+      "part",
+      "selfemployment",
+      "zlecenie"
+     ]
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_no"
+    },
+    {
+     "key": "availability",
+     "normalizedValue": [
+      "flexible_work",
+      "shift_work",
+      "weekends_work"
+     ]
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "hybrid",
+      "remote_work_possibility"
+     ]
+    },
+    {
+     "key": "remote_recruitment",
+     "normalizedValue": "1"
+    }
+   ],
+   "location": {
+    "cityName": "Gdańsk",
+    "districtName": "Aniołki"
+   },
+   "user": {
+    "company_name": "LEVEL INVEST",
+    "name": "Aleksy"
+   },
+   "description": "<p><strong>Wyobraź sobie pracę w Trójmieście</strong>, w której nie musisz mieć doświadczenia, żeby zacząć zarabiać w <strong>jednej z najbardziej dochodowych branż</strong>. Od ponad <strong>10 lat skutecznie działamy w sprzedaży</strong>, wykorzystując <strong>zaawansowany marketing, sprawdzone procesy i strategie pozyskiwania klientów</strong>, które realnie przekładają się na wyniki.</p><p>Dziś rozwijamy zespół i szukamy <strong>ambitnych osób</strong>, które chcą uczyć się od ekspertów, szybko wejść na wyższy poziom i budować zarobki zależne od <strong>własnego zaangażowania</strong>. Jeś"
+  },
+  {
+   "url": "https://www.olx.pl/oferta/praca/praca-do-spedytora-3-5t-b2b-uz-uop-CID4-ID1dcDvB.html",
+   "title": "Praca do Spedytora, 3,5t, B2B, UZ, UoP",
+   "category": "Logistyka, zakupy, spedycja - Spedycja",
+   "isPromoted": true,
+   "lastRefreshTime": "2026-11-12T16:54:07+01:00",
+   "createdTime": "2026-11-10T16:47:20+01:00",
+   "salary": null,
+   "params": [
+    {
+     "key": "type",
+     "normalizedValue": "fulltime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "part",
+      "selfemployment",
+      "zlecenie"
+     ]
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_yes"
+    },
+    {
+     "key": "mandatory_cv",
+     "normalizedValue": "mandatory"
+    },
+    {
+     "key": "availability",
+     "normalizedValue": [
+      "flexible_work"
+     ]
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "hybrid",
+      "remote_work_possibility"
+     ]
+    },
+    {
+     "key": "ua_friendly",
+     "normalizedValue": [
+      "ua_people_welcome",
+      "without_polish"
+     ]
+    }
+   ],
+   "location": {
+    "cityName": "Brzesko",
+    "districtName": null
+   },
+   "user": {
+    "company_name": "",
+    "name": "Piotr"
+   },
+   "description": "<p>Zatrudnimy Spedytora z doświadczeniem do prowadzenia i pozyskiwania ładunków dla pojazdów 3,5t. Mile widziana własna baza klientów. Warunki wynagrodzenia: podstawa plus prowizja lub prowizyjne. Praca zdalna. Poszukujemy osoby z małopolski, ale nie jest to warunek konieczny.    </p><p>  </p>"
+  },
+  {
+   "url": "https://www.olx.pl/oferta/praca/-CID4-ID1bEcgu.html",
+   "title": "Онлайн-ведуча / оператор чату",
+   "category": "Hostessa, roznoszenie ulotek - Hostessa, host",
+   "isPromoted": true,
+   "lastRefreshTime": "2026-11-12T22:34:28+01:00",
+   "createdTime": "2026-07-29T21:33:03+02:00",
+   "salary": {
+    "from": 6000,
+    "to": 12000,
+    "currencyCode": "PLN",
+    "period": "monthly"
+   },
+   "params": [
+    {
+     "key": "type",
+     "normalizedValue": "fulltime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "contract",
+      "zlecenie"
+     ]
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_no"
+    },
+    {
+     "key": "availability",
+     "normalizedValue": [
+      "shift_work",
+      "flexible_work",
+      "weekends_work"
+     ]
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "on_site",
+      "remote_work_possibility",
+      "hybrid",
+      "traveling"
+     ]
+    },
+    {
+     "key": "ua_friendly",
+     "normalizedValue": [
+      "ua_people_welcome",
+      "without_polish"
+     ]
+    }
+   ],
+   "location": {
+    "cityName": "Kraków",
+    "districtName": "Stare Miasto"
+   },
+   "user": {
+    "company_name": "",
+    "name": "Olena"
+   },
+   "description": "Запрошуємо дівчат до роботи в комфортній студії.<br />\n<br />\nОбов’язки:<br />\n• спілкування з користувачами в онлайн-чатах;<br />\n• підтримання діалогу;<br />\n• створення приємної атмосфери.<br />\n<br />\nВимоги:<br />\n• комунікабельність;<br />\n• грамотна мова;<br />\n• приємна манера спілкування;<br />\n• досвід не обов’язковий — навчаємо з нуля.<br />\n<br />\nМи пропонуємо:<br />\n• комфортні умови роботи в студії;<br />\n• гнучкий графік;<br />\n• навчання та підтримку на старті;<br />\n• своєчасні виплати;<br />\n• можливість добре заробляти залежно від активності.<br />\n<br />\nДосвід у сфері не "
+  },
+  {
+   "url": "https://www.olx.pl/oferta/praca/partner-handlowy-okna-drzwi-rolety-itd-30-marzy-CID4-ID1deVC4.html",
+   "title": "Partner handlowy - okna drzwi rolety itd.  30% marży",
+   "category": "Sprzedaż - Przedstawiciel handlowy",
+   "isPromoted": false,
+   "lastRefreshTime": "2026-11-12T22:35:58+01:00",
+   "createdTime": "2026-11-12T22:29:12+01:00",
+   "salary": {
+    "from": 5000,
+    "to": 20000,
+    "currencyCode": "PLN",
+    "period": "monthly"
+   },
+   "params": [
+    {
+     "key": "type",
+     "normalizedValue": "halftime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "other",
+      "selfemployment",
+      "zlecenie"
+     ]
+    },
+    {
+     "key": "industry",
+     "normalizedValue": "ind_re"
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_no"
+    },
+    {
+     "key": "remuneration_system",
+     "normalizedValue": "commission_only"
+    },
+    {
+     "key": "availability",
+     "normalizedValue": [
+      "flexible_work"
+     ]
+    },
+    {
+     "key": "company_car",
+     "normalizedValue": "company_car_no"
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "hybrid",
+      "remote_work_possibility",
+      "traveling"
+     ]
+    },
+    {
+     "key": "remote_recruitment",
+     "normalizedValue": "1"
+    }
+   ],
+   "location": {
+    "cityName": "Nysa",
+    "districtName": null
+   },
+   "user": {
+    "company_name": "",
+    "name": "Okna 360"
+   },
+   "description": "<p>TY ZDOBYWASZ KLIENTA. MY ROBIMY RESZTĘ. ZYSKIEM DZIELIMY SIĘ 70/30.</p><p>Nie szukamy kolejnego pracownika z pięknym CV.</p><p>Szukamy ludzi, którzy potrafią rozmawiać z innymi, nawiązywać kontakty i dostrzegać okazje do sprzedaży.</p><p>Może znasz kogoś, kto buduje dom? Może pracujesz w branży budowlanej, remontowej albo po prostu potrafisz skutecznie docierać do nowych klientów?</p><p>Jeśli tak, możemy razem zarabiać.</p><p>OKNA360 zaprasza do współpracy osoby zainteresowane pozyskiwaniem zamówień na okna, drzwi i rolety.</p><p>NASZA ZASADA JEST PROSTA: 70% MARŻY DLA NAS, 30% DLA CIEBIE.<"
+  },
+  {
+   "url": "https://www.olx.pl/oferta/praca/praca-w-finansach-zdalnie-lub-hybrydowo-doradca-finansowy-CID4-ID19G2qM.html",
+   "title": "Praca w Finansach zdalnie lub hybrydowo Doradca Finansowy",
+   "category": "Finanse / księgowość - Finanse",
+   "isPromoted": true,
+   "lastRefreshTime": "2026-11-12T22:07:52+01:00",
+   "createdTime": "2026-03-06T21:45:35+01:00",
+   "salary": {
+    "from": 2000,
+    "to": 10000,
+    "currencyCode": "PLN",
+    "period": "monthly"
+   },
+   "params": [
+    {
+     "key": "salary_visibility",
+     "normalizedValue": "true"
+    },
+    {
+     "key": "type",
+     "normalizedValue": "halftime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "selfemployment",
+      "zlecenie"
+     ]
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_no"
+    },
+    {
+     "key": "availability",
+     "normalizedValue": [
+      "flexible_work"
+     ]
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "hybrid",
+      "remote_work_possibility"
+     ]
+    },
+    {
+     "key": "remote_recruitment",
+     "normalizedValue": "1"
+    }
+   ],
+   "location": {
+    "cityName": "Lublin",
+    "districtName": null
+   },
+   "user": {
+    "company_name": "",
+    "name": "rekrutacja.ovballfinanz55"
+   },
+   "description": "<p><strong>Opis</strong></p><p><strong>Współpracownik ds. Rozwiązań Finansowych | OVB Allfinanz</strong> </p><p>Dołącz do lidera rynku finansowego w Europie. Szukamy osób ambitnych, które chcą realnie wpływać na swoje zarobki i pracować na własnych zasadach. </p><p><strong>Twoje zadania:</strong> </p><ul><li><p>Doradztwo finansowe i audyt umów klientów. </p></li><li><p>Przygotowywanie i finalizacja rozwiązań finansowych. </p></li><li><p>Aktywne pozyskiwanie klientów (wraz z naszym wsparciem i materiałami). </p></li></ul><p><strong>Co zyskujesz?</strong> </p><ul><li><p><strong>Zarobki bez limit"
+  },
+  {
+   "url": "https://www.olx.pl/oferta/praca/sprzatanie-biura-komorniki-ul-platynowa-CID4-ID1deTPC.html",
+   "title": "Sprzątanie biura Komorniki ul. Platynowa",
+   "category": "Sprzątanie",
+   "isPromoted": false,
+   "lastRefreshTime": "2026-11-12T21:32:16+01:00",
+   "createdTime": "2026-11-12T21:26:46+01:00",
+   "salary": null,
+   "params": [
+    {
+     "key": "type",
+     "normalizedValue": "parttime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "zlecenie"
+     ]
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_yes"
+    },
+    {
+     "key": "mandatory_cv",
+     "normalizedValue": "mandatory"
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "remote_work_possibility"
+     ]
+    }
+   ],
+   "location": {
+    "cityName": "Komorniki",
+    "districtName": null
+   },
+   "user": {
+    "company_name": "",
+    "name": "Gloss"
+   },
+   "description": "<p>lPoszukujemy sumiennej i dokładnej Pani do sprzątania biura.</p><p>Godziny pracy:</p><p>Wtorki: 10:30–15:30</p><p>Czwartki: 10:30–15:30</p><p>Łącznie 10 godzin tygodniowo.</p><p>Oczekujemy:</p><p>Dokładności i staranności,</p><p>Punktualności i odpowiedzialności,</p><p>Dbałości o czystość i porządek.</p><p>Oferujemy stałą współpracę w miłej atmosferze.</p><p>Osoby zainteresowane prosimy o kontakt poprzez wiadomość OLX lub telefonicznie.</p><p>Zapraszamy do współpracy!</p>"
+  },
+  {
+   "url": "https://www.olx.pl/oferta/praca/konsultant-obslugi-klienta-obsluga-pisemna-100-zdalnie-CID4-ID1cEcpH.html",
+   "title": "Konsultant Obsługi Klienta – obsługa pisemna (100% zdalnie)",
+   "category": "Obsługa klienta i call center - Specjalista ds. obsługi klienta",
+   "isPromoted": false,
+   "lastRefreshTime": "2026-11-12T18:34:18+01:00",
+   "createdTime": "2026-10-06T15:26:05+02:00",
+   "salary": {
+    "from": 5700,
+    "to": 7800,
+    "currencyCode": "PLN",
+    "period": "monthly"
+   },
+   "params": [
+    {
+     "key": "type",
+     "normalizedValue": "halftime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "other"
+     ]
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_no"
+    },
+    {
+     "key": "availability",
+     "normalizedValue": [
+      "flexible_work",
+      "weekends_work"
+     ]
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "remote_work_possibility"
+     ]
+    },
+    {
+     "key": "remote_recruitment",
+     "normalizedValue": "1"
+    }
+   ],
+   "location": {
+    "cityName": "Szczecin",
+    "districtName": "Centrum"
+   },
+   "user": {
+    "company_name": "",
+    "name": "Sandra"
+   },
+   "description": "<p>Poszukujemy osób do obsługi zgłoszeń i zapytań klientów przesyłanych online. Praca odbywa się w pełni zdalnie, a kontakt z klientami prowadzony jest wyłącznie w formie pisemnej - przez czat oraz e-mail.</p><p>Co zapewniamy?</p><p>\t•\tWynagrodzenie: 5 000 - 6 400 zł brutto miesięcznie</p><p>\t•\tPracę z domu w modelu Home Office</p><p>\t•\tElastyczny grafik dopasowany do Twojej dyspozycyjności</p><p>\t•\tPłatne szkolenie przygotowujące do wykonywania obowiązków </p><p>Twoje zadania:</p><p>\t•\tPrzyjmowanie i obsługa bieżących zgłoszeń</p><p>\t•\tUdzielanie odpowiedzi na wiadomości klientów </p><p>\t•\tOb"
+  },
+  {
+   "url": "https://www.olx.pl/oferta/praca/pisemna-obsluga-klienta-w-trybie-zdalnym-praca-zdalna-biurowa-z-domu-elastyczne-godziny-CID4-ID1cSW6P.html",
+   "title": "Pisemna obsługa klienta w trybie zdalnym | Praca zdalna biurowa z domu | Elastyczne godziny",
+   "category": "Administracja biurowa - Administracja, prace biurowe",
+   "isPromoted": true,
+   "lastRefreshTime": "2026-11-12T18:27:12+01:00",
+   "createdTime": "2026-10-21T17:41:11+02:00",
+   "salary": {
+    "from": 4900,
+    "to": 8100,
+    "currencyCode": "PLN",
+    "period": "monthly"
+   },
+   "params": [
+    {
+     "key": "type",
+     "normalizedValue": "halftime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "other",
+      "selfemployment",
+      "zlecenie"
+     ]
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_no"
+    },
+    {
+     "key": "availability",
+     "normalizedValue": [
+      "flexible_work"
+     ]
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "remote_work_possibility"
+     ]
+    },
+    {
+     "key": "remote_recruitment",
+     "normalizedValue": "1"
+    }
+   ],
+   "location": {
+    "cityName": "Tychy",
+    "districtName": null
+   },
+   "user": {
+    "company_name": "",
+    "name": "Aleksander"
+   },
+   "description": "<p>Poszukujemy komunikatywnych i zaangażowanych osób do współpracy przy <strong>zdalnej obsłudze klienta</strong>. Praca odbywa się w 100% online — do rozpoczęcia wystarczy komputer lub smartfon z dostępem do Internetu. Oferujemy <strong>elastyczny grafik</strong>, który bez problemu dopasujesz do swojego stylu życia i innych obowiązków.</p><p>Nie wymagamy wcześniejszego doświadczenia — zapewniamy pełne wdrożenie i wsparcie na każdym etapie współpracy. Liczą się chęci oraz pozytywne nastawienie do kontaktu z klientami.</p><p><strong>Zakres obowiązków:</strong></p><ul><li><p>  Odpowiadanie na z"
+  },
+  {
+   "url": "https://www.olx.pl/oferta/praca/agent-ubezpieczeniowy-agentka-ubezpieczeniowa-CID4-ID1d6LAw.html",
+   "title": "Agent Ubezpieczeniowy/Agentka Ubezpieczeniowa",
+   "category": "Ubezpieczenia",
+   "isPromoted": true,
+   "lastRefreshTime": "2026-11-11T10:42:53+01:00",
+   "createdTime": "2026-11-04T10:37:36+01:00",
+   "salary": {
+    "from": 7000,
+    "to": 15000,
+    "currencyCode": "PLN",
+    "period": "monthly"
+   },
+   "params": [
+    {
+     "key": "type",
+     "normalizedValue": "fulltime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "selfemployment"
+     ]
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_no"
+    },
+    {
+     "key": "availability",
+     "normalizedValue": [
+      "flexible_work"
+     ]
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "hybrid",
+      "on_site",
+      "remote_work_possibility"
+     ]
+    },
+    {
+     "key": "remote_recruitment",
+     "normalizedValue": "1"
+    }
+   ],
+   "location": {
+    "cityName": "Warszawa",
+    "districtName": "Mokotów"
+   },
+   "user": {
+    "company_name": "",
+    "name": "Hubert Krawczyk"
+   },
+   "description": "<p><strong>O nas</strong></p><p>Jesteśmy kameralnym, ale ambitnym zespołem tworzonym przez doświadczonych ludzi – doradców i menadżerów ubezpieczeniowych, którzy od lat pomagają klientom świadomie zadbać o swoje bezpieczeństwo finansowe. Pracujemy w Warszawie, jednak dzięki rozwiązaniom online obsługujemy również klientów z innych części Polski. Skupiamy się na tym, by ubezpieczenia były dla naszych klientów zrozumiałe, przejrzyste i realnie dopasowane do ich potrzeb, a nie tylko kolejnym dokumentem do podpisania.</p><p>Nasze podejście opiera się na rozmowie i uważnym słuchaniu. Nie sprzedajem"
+  },
+  {
+   "url": "https://www.olx.pl/oferta/praca/elektromonter-k-m-z-uprawnieniami-sep-i-udt-pl-ua-CID4-ID1deE77.html",
+   "title": "Elektromonter (K/M) z uprawnieniami SEP i UDT  | PL / UA",
+   "category": "Energetyka - Pozostałe w Energetyka",
+   "isPromoted": true,
+   "lastRefreshTime": "2026-11-12T16:53:53+01:00",
+   "createdTime": "2026-11-12T16:45:42+01:00",
+   "salary": {
+    "from": 41,
+    "to": 70,
+    "currencyCode": "PLN",
+    "period": "hourly"
+   },
+   "params": [
+    {
+     "key": "type",
+     "normalizedValue": "fulltime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "part",
+      "selfemployment",
+      "zlecenie"
+     ]
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_yes"
+    },
+    {
+     "key": "mandatory_cv",
+     "normalizedValue": "optional"
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "remote_work_possibility"
+     ]
+    },
+    {
+     "key": "ua_friendly",
+     "normalizedValue": [
+      "ua_people_welcome"
+     ]
+    }
+   ],
+   "location": {
+    "cityName": "Nowy Sącz",
+    "districtName": null
+   },
+   "user": {
+    "company_name": "",
+    "name": "Eryk"
+   },
+   "description": "<p><strong>Elektromonter (K/M) z uprawnieniami SEP i UDT</strong></p><p>Jesteśmy firmą z doświadczeniem na rynku, zajmującą się montażem instalacji elektrycznych i wykonywaniem podłączeń. Realizujemy obiekty przemysłowe, usługowe, budowlane, drogowe. Szukamy elektromontera, który dołączy do naszego zespołu na stałe i będzie miał realny wpływ na jakość realizacji.</p><p><strong>Czym będziesz się zajmować</strong></p><ul><li><p>montaż i podłączanie instalacji elektrycznych, rozdzielnic i szaf sterowniczych zgodnie ze schematami i dokumentacją,</p></li><li><p>układanie tras kablowych wraz z kabla"
+  },
+  {
+   "url": "https://www.olx.pl/oferta/praca/samodzielna-ksiegowa-samodzielny-ksiegowy-CID4-ID1bIzL4.html",
+   "title": "Samodzielna księgowa/ Samodzielny księgowy",
+   "category": "Finanse / księgowość - Księgowość",
+   "isPromoted": false,
+   "lastRefreshTime": "2026-11-12T18:24:41+01:00",
+   "createdTime": "2026-08-04T13:59:11+02:00",
+   "salary": {
+    "from": 7000,
+    "to": 10000,
+    "currencyCode": "PLN",
+    "period": "monthly"
+   },
+   "params": [
+    {
+     "key": "type",
+     "normalizedValue": "fulltime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "part"
+     ]
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_yes"
+    },
+    {
+     "key": "mandatory_cv",
+     "normalizedValue": "mandatory"
+    },
+    {
+     "key": "availability",
+     "normalizedValue": [
+      "flexible_work"
+     ]
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "hybrid",
+      "remote_work_possibility"
+     ]
+    },
+    {
+     "key": "remote_recruitment",
+     "normalizedValue": "1"
+    }
+   ],
+   "location": {
+    "cityName": "Kraków",
+    "districtName": "Grzegórzki"
+   },
+   "user": {
+    "company_name": "",
+    "name": "Renata"
+   },
+   "description": "<p><strong>Obowiązki:</strong></p><p></p><ul><li><p>Księgowanie przedsiębiorców prowadzących KPIR (PIT, VAT),</p></li><li><p>Księgowanie przedsiębiorców prowadzących ewidencję przychodów (PIT, VAT),</p></li><li><p>Księgowanie klientów prowadzących KH (CIT, PIT, VAT), w tym sporządzanie sprawozdań finansowych,</p></li><li><p>Przygotowywanie deklaracji podatkowych (PIT, VAT, JPK i innych),</p></li><li><p>Bieżący kontakt z klientami,</p></li><li><p>Współpraca z działem księgowym i prawnym,</p></li><li><p>Komunikacja z klientami i instytucjami zewnętrznymi,</p><p></p></li></ul><p><strong>Wymagania"
+  },
+  {
+   "url": "https://www.olx.pl/oferta/praca/opiekun-osob-starszych-na-terenie-miasta-turek-CID4-ID1d7xJS.html",
+   "title": "Opiekun Osób Starszych na terenie miasta Turek",
+   "category": "Opieka - Opieka nad seniorami i chorymi",
+   "isPromoted": false,
+   "lastRefreshTime": "2026-11-12T18:23:23+01:00",
+   "createdTime": "2026-11-05T10:06:00+01:00",
+   "salary": {
+    "from": 4950,
+    "to": 5150,
+    "currencyCode": "PLN",
+    "period": "monthly"
+   },
+   "params": [
+    {
+     "key": "type",
+     "normalizedValue": "fulltime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "part"
+     ]
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_yes"
+    },
+    {
+     "key": "availability",
+     "normalizedValue": [
+      "shift_work",
+      "weekends_work"
+     ]
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "remote_work_possibility"
+     ]
+    },
+    {
+     "key": "senior_friendly",
+     "normalizedValue": "1"
+    }
+   ],
+   "location": {
+    "cityName": "Turek",
+    "districtName": null
+   },
+   "user": {
+    "company_name": "",
+    "name": "Medis24"
+   },
+   "description": "<p><strong>Zakres obowiązków:</strong></p><ul><li><p>Opieka nad osobami starszymi w ich domach.</p></li><li><p>Pomoc w codziennych czynnościach życiowych, takich jak ubieranie się, higiena osobista.</p></li><li><p>Podawanie leków zgodnie z zaleceniami lekarskimi i przypilnowanie przyjęcia leków.</p></li><li><p>Pomoc w poruszaniu się, w tym wsparcie przy transferze i spacerach.</p></li><li><p>Wykonywanie niezbędnych prac domowych, takich jak sprzątanie, pranie, gotowanie.</p></li><li><p>Towarzyszenie podopiecznym, rozmowa i aktywizacja.</p></li><li><p>Pomoc w zakupach i załatwianiu codziennych "
+  },
+  {
+   "url": "https://www.olx.pl/oferta/praca/zdalna-praca-biurowa-dla-kazdego-bez-doswiadczenia-elastyczne-godziny-CID4-ID1d81SW.html",
+   "title": "Zdalna praca biurowa dla każdego - bez doświadczenia | elastyczne godziny",
+   "category": "Marketing i PR - Media i PR",
+   "isPromoted": false,
+   "lastRefreshTime": "2026-11-12T18:04:33+01:00",
+   "createdTime": "2026-11-05T17:57:33+01:00",
+   "salary": {
+    "from": 5200,
+    "to": 7000,
+    "currencyCode": "PLN",
+    "period": "monthly"
+   },
+   "params": [
+    {
+     "key": "type",
+     "normalizedValue": "halftime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "zlecenie"
+     ]
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_no"
+    },
+    {
+     "key": "availability",
+     "normalizedValue": [
+      "flexible_work"
+     ]
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "remote_work_possibility"
+     ]
+    },
+    {
+     "key": "remote_recruitment",
+     "normalizedValue": "1"
+    }
+   ],
+   "location": {
+    "cityName": "Kielce",
+    "districtName": null
+   },
+   "user": {
+    "company_name": "",
+    "name": "Adam"
+   },
+   "description": "<p>Poszukujemy osób do współpracy na stanowisku opiekun/pomoc klienta online. Praca jest w pełni zdalna, z elastycznym grafikiem, dzięki czemu można łatwo łączyć ją z innymi obowiązkami.</p><p><strong>Zakres zadań:</strong></p><ul><li><p>wykonywanie prostych czynności administracyjnych i wprowadzanie danych,</p></li><li><p>kontakt z klientami oraz współpracownikami,</p></li><li><p>korzystanie z gotowych szablonów i materiałów (zgodnie z instrukcją),</p></li></ul><p> </p><p><strong>Oferujemy:</strong></p><ul><li><p>pracę w pełni zdalną,</p></li><li><p>elastyczne godziny – możliwość pogodzenia z"
+  },
+  {
+   "url": "https://www.olx.pl/oferta/praca/praca-zdalna-w-call-center-edukacyjnym-zacznij-prace-w-listopadzie-CID4-ID1dcGgj.html",
+   "title": "Praca zdalna w call center edukacyjnym - zacznij pracę w listopadzie!",
+   "category": "Obsługa klienta i call center - Call center, konsultant telefoniczny",
+   "isPromoted": true,
+   "lastRefreshTime": "2026-11-12T17:48:45+01:00",
+   "createdTime": "2026-11-10T17:48:30+01:00",
+   "salary": {
+    "from": 4806,
+    "to": 10000,
+    "currencyCode": "PLN",
+    "period": "monthly"
+   },
+   "params": [
+    {
+     "key": "type",
+     "normalizedValue": "fulltime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "zlecenie"
+     ]
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_yes"
+    },
+    {
+     "key": "availability",
+     "normalizedValue": [
+      "flexible_work"
+     ]
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "remote_work_possibility"
+     ]
+    },
+    {
+     "key": "remote_recruitment",
+     "normalizedValue": "1"
+    }
+   ],
+   "location": {
+    "cityName": "Łódź",
+    "districtName": "Śródmieście"
+   },
+   "user": {
+    "company_name": "",
+    "name": "EduGo"
+   },
+   "description": "<p><strong>O nas:</strong> Jesteśmy jedną z najszybciej rozwijających się szkół online oferujących zajęcia dodatkowe dla dzieci i młodzieży. Od 2021 roku zmieniamy branżę edukacyjną, udowadniając, że dzięki kreatywności i technologii wiedzę można przekazywać w sposób nowatorski, przyjazny i przede wszystkim skuteczny.</p><p>Nasze kursy cieszą się ogromną popularnością, ponieważ tworzymy je z pasją i nastawieniem na rozwój najmłodszych. Wierzymy, że edukacja może być fascynująca i inspirująca. Jeśli nasza misja jest Ci bliska – dołącz do naszego zespołu!</p><p><strong>Twój zakres obowiązków:</s"
+  },
+  {
+   "url": "https://www.olx.pl/oferta/praca/kochasz-rysowac-to-swietnie-nauczaj-rysunku-online-dla-dzieci-CID4-ID1d1uj9.html",
+   "title": "Kochasz rysować? To świetnie! Nauczaj rysunku online dla dzieci",
+   "category": "Edukacja - Kursy, zajęcia dodatkowe",
+   "isPromoted": false,
+   "lastRefreshTime": "2026-11-12T17:40:41+01:00",
+   "createdTime": "2026-10-29T17:40:37+01:00",
+   "salary": {
+    "from": 2200,
+    "to": 6000,
+    "currencyCode": "PLN",
+    "period": "monthly"
+   },
+   "params": [
+    {
+     "key": "type",
+     "normalizedValue": "parttime"
+    },
+    {
+     "key": "agreement",
+     "normalizedValue": [
+      "selfemployment",
+      "zlecenie"
+     ]
+    },
+    {
+     "key": "experience",
+     "normalizedValue": "exp_yes"
+    },
+    {
+     "key": "availability",
+     "normalizedValue": [
+      "flexible_work",
+      "weekends_work"
+     ]
+    },
+    {
+     "key": "workplace",
+     "normalizedValue": [
+      "remote_work_possibility"
+     ]
+    },
+    {
+     "key": "remote_recruitment",
+     "normalizedValue": "1"
+    }
+   ],
+   "location": {
+    "cityName": "Kraków",
+    "districtName": "Czyżyny"
+   },
+   "user": {
+    "company_name": "",
+    "name": "EduGo"
+   },
+   "description": "<p>Jesteśmy jedną z najszybciej rozwijających się szkół online z zajęciami dodatkowymi dla dzieci i młodzieży.</p><p>Od 2021 roku zmieniamy branżę edukacyjną i pokazujemy, że dzięki kreatywności oraz odpowiedniemu wykorzystaniu technologii jesteśmy w stanie przekazywać wiedzę w sposób nowatorski, przyjazny i przede wszystkim skuteczny. Nasze kursy cieszą się bardzo dużą popularnością. Nic dziwnego - tworzymy je z pasją i z nastawieniem na rozwój dzieci. Wierzymy, że edukacja może być fascynująca i inspirująca. Jeśli nasza misja jest Ci bliska - dołącz do naszego zespołu!</p><p></p><p>Masz zami"
+  }
+ ]
 }
-],
-"location": {
-"cityName": "Gdańsk",
-"districtName": "Śródmieście"
-},
-"user": {
-"company_name": "",
-"name": ""
-},
-"description": "<p><strong>Wynagrodzenie: 500 zł brutto miesięcznie na start + możliwość premii i podwyżek</strong></p><p>Cześć!</p><p>Tworzę DreamScent – markę świec i wosków zapachowych z charakterem! Łączę piękne zapachy, estetykę, humor i odrobinę bezczelności.</p><p>DreamScent to projekt, w który wkładam mnóstwo serca, pracy i pomysłów. Chciałabym rozwijać go dalej, docierać do nowych osób i budować rozpoznawalną markę. Tylko że prowadzenie wszystkiego samodzielnie, szczególnie social mediów, nie jest takie proste.</p><p>Dlatego szukam kreatywnej osoby z Gdańska lub okolic, która pomoże mi rozwijać DreamScent i z czasem stanie się ważną częścią tego projektu.</p><p>Nie szukam agencji ani specjalisty z "
-},
-{
-"url": "https://www.olx.pl/oferta/praca/konsultant-ka-ds-sprzedazy-telefonicznej-linia-wychodzaca-start-16-11-CID4-ID1d7NTD.html",
-"title": "Konsultant/ka ds. Sprzedaży Telefonicznej - linia wychodząca start 16.11",
-"isPromoted": false,
-"lastRefreshTime": "2026-11-12T14:04:01+01:00",
-"createdTime": "2026-11-05T14:03:37+01:00",
-"salary": {
-"from": 5500,
-"to": 9500,
-"currencyCode": "PLN",
-"period": "monthly"
-},
-"params": [
-{
-"key": "type",
-"normalizedValue": "fulltime"
-},
-{
-"key": "agreement",
-"normalizedValue": [
-"selfemployment",
-"zlecenie"
-]
-},
-{
-"key": "experience",
-"normalizedValue": "exp_no"
-},
-{
-"key": "mandatory_cv",
-"normalizedValue": "optional"
-},
-{
-"key": "availability",
-"normalizedValue": [
-"shift_work"
-]
-},
-{
-"key": "workplace",
-"normalizedValue": [
-"remote_work_possibility"
-]
-},
-{
-"key": "remote_recruitment",
-"normalizedValue": "1"
-}
-],
-"location": {
-"cityName": "Warszawa",
-"districtName": "Śródmieście"
-},
-"user": {
-"company_name": "",
-"name": ""
-},
-"description": "<p>Szukasz współpracy, którą możesz realizować z dowolnego miejsca? Lubisz sprzedaż i swobodnie czujesz się w rozmowach z klientami? A może dopiero rozpoczynasz swoją przygodę w tym obszarze, ale chcesz zdobywać nowe umiejętności i rozwijać się w sprzedaży?</p><p>Dołącz do naszego zespołu współpracowników!</p><p><strong>Planowany termin Assessmentu: 16 listopada</strong></p><p>Co oferujemy w ramach współpracy?</p><ul><li><p><strong>Stawkę 31,40 zł brutto za każdą godzinę realizacji zlecenia</strong> – w przypadku osób posiadających status studenta kwota brutto może być równa kwocie netto.</p></li><li><p><strong>Prowizję od 4% do 14% od zrealizowanej sprzedaży</strong> – wysokość dodatkowego "
-},
-{
-"url": "https://www.olx.pl/oferta/praca/praca-w-sprzedazy-przyjmowanie-zamowien-przez-telefon-studenci-mile-widziani-w-wiekszosci-zdalnie-biuro-ursynow-warszawa-CID4-ID1d7JsC.html",
-"title": "praca w sprzedaży, przyjmowanie zamówień przez telefon, studenci mile widziani, w większości zdalnie, biuro Ursynów/Warszawa",
-"isPromoted": false,
-"lastRefreshTime": "2026-11-12T13:05:56+01:00",
-"createdTime": "2026-11-05T13:02:28+01:00",
-"salary": {
-"from": 35,
-"to": 45,
-"currencyCode": "PLN",
-"period": "hourly"
-},
-"params": [
-{
-"key": "type",
-"normalizedValue": "parttime"
-},
-{
-"key": "agreement",
-"normalizedValue": [
-"practice",
-"zlecenie"
-]
-},
-{
-"key": "industry",
-"normalizedValue": "ind_food"
-},
-{
-"key": "special_requirements",
-"normalizedValue": [
-"student_status"
-]
-},
-{
-"key": "experience",
-"normalizedValue": "exp_no"
-},
-{
-"key": "remuneration_system",
-"normalizedValue": "base_and_commission"
-},
-{
-"key": "availability",
-"normalizedValue": [
-"flexible_work"
-]
-},
-{
-"key": "company_car",
-"normalizedValue": "company_car_no"
-},
-{
-"key": "workplace",
-"normalizedValue": [
-"remote_work_possibility"
-]
-}
-],
-"location": {
-"cityName": "Warszawa",
-"districtName": "Ursynów"
-},
-"user": {
-"company_name": "",
-"name": ""
-},
-"description": "<p><strong>Telefoniczna obsługa klienta i zamówień, praca większość czasu zdalna.</strong></p><p><strong>Zaaplikować można tylko mailowo na kontakt.biuroslm[małpa]gmail.com.</strong></p><p><strong>Aplikacji przesłanych przez formularz OLX nie rozpatrujemy.</strong></p><p> </p><p><strong>Kogo szukamy?</strong></p><p>·        osoby energicznej,</p><p>·        lubiącej rozmawiać przez telefon z klientem (większość pracy na tym polega)</p><p>·        odpowiedzianej i zorganizowanej, nie spóźniającej się</p><p>·        lubiącej prowadzenie i wykonywanie listy zadań</p><p>·        samodzielnie wykonującej pracę i dociekającej jak coś prawidłowo wykonać.</p><p>·        sumiennej i uczciwej, zaangaż"
-},
-{
-"url": "https://www.olx.pl/oferta/praca/praca-zdalna-i-pisemna-obsluga-klienta-elastyczne-godziny-CID4-ID1d42ej.html",
-"title": "Praca Zdalna I Pisemna obsługa klienta, Elastyczne godziny",
-"isPromoted": true,
-"lastRefreshTime": "2026-11-08T18:27:32+01:00",
-"createdTime": "2026-11-01T16:57:17+01:00",
-"salary": {
-"from": 5800,
-"to": 7800,
-"currencyCode": "PLN",
-"period": "monthly"
-},
-"params": [
-{
-"key": "type",
-"normalizedValue": "halftime"
-},
-{
-"key": "agreement",
-"normalizedValue": [
-"other",
-"part",
-"selfemployment",
-"zlecenie"
-]
-},
-{
-"key": "experience",
-"normalizedValue": "exp_no"
-},
-{
-"key": "availability",
-"normalizedValue": [
-"flexible_work"
-]
-},
-{
-"key": "workplace",
-"normalizedValue": [
-"remote_work_possibility"
-]
-},
-{
-"key": "remote_recruitment",
-"normalizedValue": "1"
-}
-],
-"location": {
-"cityName": "Radom",
-"districtName": null
-},
-"user": {
-"company_name": "",
-"name": ""
-},
-"description": "<p>W związku z dynamicznym rozwojem naszego zespołu poszukujemy otwartych i zaangażowanych osób do zdalnej obsługi klientów. Praca odbywa się w całości online, więc do jej rozpoczęcia wystarczy komputer lub smartfon z dostępem do internetu.</p><p><strong>Czym się zajmiesz?</strong></p><ul><li><p>odpowiadaniem na wiadomości i zapytania klientów oraz partnerów,</p></li><li><p>udzielaniem podstawowych informacji i umawianiem rozmów,</p></li><li><p>tworzeniem prostych materiałów marketingowych,</p></li><li><p>aktualizacją i uzupełnianiem danych w systemie,</p></li><li><p>współpracą z zespołem przy bieżących projektach.</p></li></ul><p><strong>Czego oczekujemy?</strong></p><ul><li><p>swobodnej ob"
-},
-{
-"url": "https://www.olx.pl/oferta/praca/student-assistant-for-it-team-CID4-ID1dbeBa.html",
-"title": "Student Assistant for IT Team",
-"isPromoted": true,
-"lastRefreshTime": "2026-11-11T15:41:29+01:00",
-"createdTime": "2026-11-09T15:38:50+01:00",
-"salary": null,
-"params": [
-{
-"key": "type",
-"normalizedValue": "halftime"
-},
-{
-"key": "agreement",
-"normalizedValue": [
-"zlecenie"
-]
-},
-{
-"key": "special_requirements",
-"normalizedValue": [
-"student_status"
-]
-},
-{
-"key": "experience",
-"normalizedValue": "exp_no"
-},
-{
-"key": "availability",
-"normalizedValue": [
-"flexible_work"
-]
-},
-{
-"key": "workplace",
-"normalizedValue": [
-"on_site",
-"remote_work_possibility"
-]
-}
-],
-"location": {
-"cityName": "Szczecin",
-"districtName": "Gumieńce"
-},
-"user": {
-"company_name": "Global Wind Service Poland Spółka z o.o.",
-"name": "Global Wind Service Polska Sp. z o.o."
-},
-"description": "<p>An exciting opportunity awaits – are you ready to step into the wind industry?</p><p>Assist the <strong>IT Department</strong> on a part-time basis at the local Global Wind Service office in Szczecin, Poland. This role will provide you with the flexible schedule to complete your studies while gaining professional experience. We therefore invite you to step into one of the fastest growing industries worldwide. We are seeking for a proactive and <strong>tech-savvy IT Assistant</strong> to join. </p><p><strong>Typical Task</strong></p><ul><li><p>Recycle of IT equipment and asset management (cleaning, preparing, packing, sending of laptops, accessories etc.)</p></li><li><p>Mobile phones recyc"
-},
-{
-"url": "https://www.olx.pl/oferta/praca/human-resources-assistant-english-speakers-cv-in-english-CID4-ID1d4roN.html",
-"title": "Human Resources Assistant - English Speakers (CV in English)",
-"isPromoted": true,
-"lastRefreshTime": "2026-11-09T10:35:22+01:00",
-"createdTime": "2026-11-02T10:32:24+01:00",
-"salary": {
-"from": 6888,
-"to": 7056,
-"currencyCode": "PLN",
-"period": "monthly"
-},
-"params": [
-{
-"key": "type",
-"normalizedValue": "fulltime"
-},
-{
-"key": "agreement",
-"normalizedValue": [
-"part",
-"zlecenie"
-]
-},
-{
-"key": "experience",
-"normalizedValue": "exp_yes"
-},
-{
-"key": "mandatory_cv",
-"normalizedValue": "mandatory"
-},
-{
-"key": "workplace",
-"normalizedValue": [
-"hybrid",
-"on_site",
-"remote_work_possibility"
-]
-}
-],
-"location": {
-"cityName": "Białystok",
-"districtName": "Przydworcowe"
-},
-"user": {
-"company_name": "",
-"name": ""
-},
-"description": "<p>Are you looking to kick-start your HR career in an international environment?   </p><p> </p><p>We are seeking a proactive, organised and detail-oriented Human Resources Assistant to join our team in Poland, supporting our HR operations across the United Kingdom, Republic of Ireland, France and other countries as required.</p><p> </p><p>Interr is an international security company providing security services to various clients in the United Kingdom as well as internationally. As part of our ongoing expansion, we are looking for a motivated HR assistant to support our HR teams in Europe.  </p><p> </p><p>This is a full-time permanent position starting as soon as possible.  The successful cand"
-},
-{
-"url": "https://www.olx.pl/oferta/praca/content-creator-social-media-specialist-CID4-ID1dcrX7.html",
-"title": "Content Creator/Social Media Specialist",
-"isPromoted": true,
-"lastRefreshTime": "2026-11-12T14:35:32+01:00",
-"createdTime": "2026-11-10T14:32:41+01:00",
-"salary": {
-"from": 35,
-"to": 50,
-"currencyCode": "PLN",
-"period": "hourly"
-},
-"params": [
-{
-"key": "type",
-"normalizedValue": "parttime"
-},
-{
-"key": "agreement",
-"normalizedValue": [
-"selfemployment",
-"zlecenie"
-]
-},
-{
-"key": "experience",
-"normalizedValue": "exp_yes"
-},
-{
-"key": "workplace",
-"normalizedValue": [
-"hybrid",
-"remote_work_possibility"
-]
-},
-{
-"key": "remote_recruitment",
-"normalizedValue": "1"
-}
-],
-"location": {
-"cityName": "Warszawa",
-"districtName": "Śródmieście"
-},
-"user": {
-"company_name": "",
-"name": ""
-},
-"description": "<p>Masz oko do estetycznych kadrów, czujesz trendy na Instagramie i Tik Toku, a tworzenie angażujących treści to Twoja mocna strona? Szukamy właśnie Ciebie!</p><p><strong>Laser DeLux</strong> to ogólnopolska sieć salonów kosmetologii laserowej z 18-letnim doświadczeniem.<strong> Szukamy kreatywnej, samodzielnej osoby, która kompleksowo zaopiekuje się naszymi mediami społecznościowymi</strong> - od pomysłu, przez nagrania, aż po publikację i analizę efektów.</p><p><strong>Twoje zadania:</strong></p><ul><li><p>Kompleksowe prowadzenie profili marki na Instagramie, Facebooku i TikToku.</p></li><li><p>Regularne wizyty w naszych warszawskich salonach w celu tworzenia materiałów foto i wideo.</p></"
-},
-{
-"url": "https://www.olx.pl/oferta/praca/osoby-ds-obslugi-klienta-z-jezykiem-litewskim-lub-estonskim-CID4-ID18jN06.html",
-"title": "Osoby ds. obsługi Klienta z językiem litewskim lub estońskim",
-"isPromoted": false,
-"lastRefreshTime": "2026-11-11T09:07:55+01:00",
-"createdTime": "2025-11-18T09:26:11+01:00",
-"salary": {
-"from": 0,
-"to": 35,
-"currencyCode": "PLN",
-"period": "hourly"
-},
-"params": [
-{
-"key": "type",
-"normalizedValue": "fulltime"
-},
-{
-"key": "agreement",
-"normalizedValue": [
-"zlecenie"
-]
-},
-{
-"key": "experience",
-"normalizedValue": "exp_no"
-},
-{
-"key": "workplace",
-"normalizedValue": [
-"hybrid",
-"remote_work_possibility"
-]
-}
-],
-"location": {
-"cityName": "Pruszcz Gdański",
-"districtName": null
-},
-"user": {
-"company_name": "OUTWORKING SA",
-"name": ""
-},
-"description": "<p><strong>Opis</strong></p><p>Do biura w Pruszczu Gdańskim poszukujemy osób ds. obsługi Klienta z językiem litewskim lub estońskim.</p><p>Opis stanowiska:</p><p>• Bieżąca obsługa zgłoszeń telefonicznych, mailowych, czat od klientów sklepu internetowego</p><p>• Współpraca z firmami zewnętrznymi (m.in. firmą przewozową oraz kooperantami systemów płatności)</p><p>• Współpraca z Magazynem e-sklepu oraz działem Logistyki</p><p>Oczekujemy:</p><p>• Znajomości języka litewskiego lub estońskiego minimum na poziomie B2</p><p>• Wysokiej kultury osobistej i komunikatywności</p><p>• Dobrej znajomości obsługi komputera (w tym pakietu MS Office), szybkiego przyswajania obsługi nowych programów i aplikacji"
-},
-{
-"url": "https://www.olx.pl/oferta/praca/sprzedawca-sprzedawczyni-w-sklepie-new-yorker-krakow-serenada-CID4-ID1d7Gve.html",
-"title": "Sprzedawca/sprzedawczyni w sklepie NEW YORKER - Kraków - Serenada",
-"isPromoted": false,
-"lastRefreshTime": "2026-11-12T12:24:59+01:00",
-"createdTime": "2026-11-05T12:24:54+01:00",
-"salary": null,
-"params": [
-{
-"key": "type",
-"normalizedValue": "halftime"
-},
-{
-"key": "agreement",
-"normalizedValue": [
-"part"
-]
-},
-{
-"key": "experience",
-"normalizedValue": "exp_no"
-},
-{
-"key": "availability",
-"normalizedValue": [
-"shift_work",
-"weekends_work"
-]
-}
-],
-"location": {
-"cityName": "Kraków",
-"districtName": "Mistrzejowice"
-},
-"user": {
-"company_name": "NEW YORKER Polska",
-"name": ""
-},
-"description": "<p>Wyobraź sobie lata 70-te, niewielkie portowe miasto na północy Niemiec. To właśnie tam powstał nasz pierwszy sklep. Początkowo sprzedawano w nim jedynie jeansy. A dziś?</p><p>Dziś jesteśmy prężnie rozwijającą się firmą odnoszącą sukcesy w branży Young Fashion. Posiadamy ponad 1 300 filii w prawie 50 krajach i na tym na pewno nie poprzestaniemy. W naszym zespole liczącym przeszło 25 000 pracowników dokładamy wszelkich starań aby być na bieżąco z obowiązującymi trendami. Dzięki naszej pasji, spontaniczności oraz błyskawicznym działaniom od 50 lat jesteśmy integralną częścią świata mody.</p><p>Chciałbyś dołączyć do naszego zespołu, w którym liczy się przede wszystkim praca w przyjaznej atmos"
-},
-{
-"url": "https://www.olx.pl/oferta/praca/asystent-klienta-drogerii-dobczyce-ul-zarabie-6-j-m-k-CID4-ID1dep0p.html",
-"title": "Asystent Klienta Drogerii Dobczyce ul. Zarabie 6 j (M/K)",
-"isPromoted": false,
-"lastRefreshTime": "2026-11-12T11:57:05+01:00",
-"createdTime": "2026-11-12T11:53:31+01:00",
-"salary": null,
-"params": [
-{
-"key": "type",
-"normalizedValue": "parttime"
-},
-{
-"key": "agreement",
-"normalizedValue": [
-"part"
-]
-},
-{
-"key": "experience",
-"normalizedValue": "exp_no"
-}
-],
-"location": {
-"cityName": "Dobczyce",
-"districtName": null
-},
-"user": {
-"company_name": "Rossmann SDP sp. z o.o.",
-"name": ""
-},
-"description": "Lokalizacja:<p>Dobczyce ul. Zarabie 6 j</p>Wymiar etatu:<p>1/2</p>Rodzaj umowy:<p>Umowa o pracę</p><br />\n<p><strong>Twój zakres obowiązków:</strong></p><ul><li>aktywna i życzliwa obsługa Klientów na sali sprzedaży oraz przy kasie,</li><li>doradzanie w wyborze produktów i dbanie o pozytywne doświadczenia zakupowe Klientów,</li><li>przyjmowanie dostaw oraz wykładanie towaru (czasami również podczas godzin nocnych),</li><li>prowadzenie zmiany oraz organizowanie pracy własnej i zespołu,</li><li>dbanie o estetyczny wygląd drogerii,</li><li>współpraca z zespołem w celu wspólnej realizacji celów i tworzenia przyjaznej atmosfery,</li><li>praca od poniedziałku do soboty oraz w niedziele handlowe.</l"
-},
-{
-"url": "https://www.olx.pl/oferta/praca/asystentka-administracyjno-medyczna-CID4-ID1bzZkN.html",
-"title": "Asystentka administracyjno - medyczna",
-"isPromoted": true,
-"lastRefreshTime": "2026-11-12T14:00:41+01:00",
-"createdTime": "2026-07-24T17:59:32+02:00",
-"salary": {
-"from": 31.4,
-"to": 31.5,
-"currencyCode": "PLN",
-"period": "hourly"
-},
-"params": [
-{
-"key": "type",
-"normalizedValue": "parttime"
-},
-{
-"key": "agreement",
-"normalizedValue": [
-"zlecenie"
-]
-},
-{
-"key": "experience",
-"normalizedValue": "exp_yes"
-},
-{
-"key": "availability",
-"normalizedValue": [
-"flexible_work",
-"shift_work"
-]
-}
-],
-"location": {
-"cityName": "Kraków",
-"districtName": "Bieżanów-Prokocim"
-},
-"user": {
-"company_name": "",
-"name": ""
-},
-"description": "<p><strong>Czubek Igły</strong> to jednoosobowa działalność gospodarcza poszukująca <strong>rzetelnej i pozytywnej osoby</strong> do pracy na stanowisku AsystentkI administracyjno - medycznej (<strong>recepcjonistki i administratorki biurowej)</strong>.</p><p>Oferujemy <strong>pracę w niepełnym wymiarze godzin</strong>, około <strong>80-120 godzin miesięcznie</strong>, na podstawie <strong>umowy zlecenie</strong>.</p><p><strong>Godziny pracy</strong></p><ul><li><p><strong>Poniedziałki, wtorki i środy:</strong> 08:30 – 15:30</p></li><li><p><strong>Co drugi czwartek i piątek:</strong> 08:30 – 15:30</p></li><li><p><strong>Elastyczność i gotowość do pracy w dodatkowych godzinach:</strong> w razi"
-},
-{
-"url": "https://www.olx.pl/oferta/praca/jestes-osoba-kontaktowa-ta-praca-jest-dla-ciebie-CID4-ID1d04sW.html",
-"title": "Jesteś osobą kontaktową ? Ta praca jest dla ciebie",
-"isPromoted": true,
-"lastRefreshTime": "2026-11-12T13:09:50+01:00",
-"createdTime": "2026-10-28T13:07:48+01:00",
-"salary": {
-"from": 6000,
-"to": 14000,
-"currencyCode": "PLN",
-"period": "monthly"
-},
-"params": [
-{
-"key": "type",
-"normalizedValue": "parttime"
-},
-{
-"key": "agreement",
-"normalizedValue": [
-"contract",
-"selfemployment",
-"zlecenie"
-]
-},
-{
-"key": "experience",
-"normalizedValue": "exp_no"
-},
-{
-"key": "ua_friendly",
-"normalizedValue": [
-"ua_people_welcome",
-"without_polish"
-]
-}
-],
-"location": {
-"cityName": "Kraków",
-"districtName": "Stare Miasto"
-},
-"user": {
-"company_name": "",
-"name": ""
-},
-"description": "<p>ześć! Jeśli chcesz się świetnie bawić, zarabiając przy tym duże pieniądze, to ogłoszenie jest właśnie dla Ciebie! ;)</p><p>Obecnie do zespołu poszukujemy młodych (18-35) osób na stanowisko promotora/promotorki lokalu. Praca polega na zachęceniu przechodniów do skorzystania z oferty naszych lokali w Krakowie.</p><p>Jeśli jesteś:</p><p>- komunikatywny,</p><p>- charyzmatyczny,</p><p>- ambitny,</p><p>- chętny do pracy,</p><p>- dostępny przynajmniej przez 3 noce w tygodniu,</p><p>- zdecydowany na zarabianie sporych pieniędzy w młodym wieku,</p><p>oraz</p><p>- szukasz pracy weekendowej bądź na pełen etat,</p><p>- praca zespołowa nie jest Ci obca i brzmi fajnie,</p><p>-jesteś charyzmatyczny i ot"
-},
-{
-"url": "https://www.olx.pl/oferta/praca/asystent-asystentka-dzialu-handlowego-CID4-ID1d7I7Q.html",
-"title": "Asystent/Asystentka Działu Handlowego",
-"isPromoted": false,
-"lastRefreshTime": "2026-11-12T12:58:17+01:00",
-"createdTime": "2026-11-05T12:48:01+01:00",
-"salary": null,
-"params": [
-{
-"key": "type",
-"normalizedValue": "parttime"
-},
-{
-"key": "agreement",
-"normalizedValue": [
-"other",
-"zlecenie"
-]
-},
-{
-"key": "industry",
-"normalizedValue": "ind_other"
-},
-{
-"key": "special_requirements",
-"normalizedValue": [
-"student_status"
-]
-},
-{
-"key": "experience",
-"normalizedValue": "exp_no"
-},
-{
-"key": "remuneration_system",
-"normalizedValue": "base_only"
-},
-{
-"key": "availability",
-"normalizedValue": [
-"flexible_work"
-]
-},
-{
-"key": "company_car",
-"normalizedValue": "company_car_no"
-},
-{
-"key": "workplace",
-"normalizedValue": [
-"on_site"
-]
-}
-],
-"location": {
-"cityName": "Kraków",
-"districtName": "Nowa Huta"
-},
-"user": {
-"company_name": "",
-"name": ""
-},
-"description": "<p><strong>Zakres obowiązków:</strong></p><ul><li><p>Prowadzenie spraw administracyjnych i zaopatrzeniowych biura</p></li><li><p>Wsparcie Działu Handlowego w codziennych obowiązkach</p></li><li><p>Raportowanie i tworzenie zestawień zlecanych bezpośrednio przez przełożonych</p></li><li><p>Przygotowywanie i wprowadzanie zamówień</p></li><li><p>Wystawianie dokumentów sprzedażowych i magazynowych</p></li><li><p>Praca na systemie ENOVA</p></li></ul><p><strong>Wymagania:</strong></p><ul><li><p>Status studenta</p></li><li><p>Biegła znajomość komputera w zakresie MS Office</p></li><li><p>Bardzo dobra organizacja pracy</p></li><li><p>Umiejętność szybkiego uczenia się</p></li><li><p>Komunikatywność i "
-},
-{
-"url": "https://www.olx.pl/oferta/praca/recepcjonistka-asystenka-stomatologiczna-CID4-ID1dewj8.html",
-"title": "Recepcjonistka/Asystenka stomatologiczna",
-"isPromoted": false,
-"lastRefreshTime": "2026-11-12T14:02:20+01:00",
-"createdTime": "2026-11-12T13:57:05+01:00",
-"salary": null,
-"params": [
-{
-"key": "type",
-"normalizedValue": "parttime"
-},
-{
-"key": "agreement",
-"normalizedValue": [
-"part"
-]
-},
-{
-"key": "experience",
-"normalizedValue": "exp_yes"
-},
-{
-"key": "availability",
-"normalizedValue": [
-"shift_work"
-]
-}
-],
-"location": {
-"cityName": "Kraków",
-"districtName": "Prądnik Biały"
-},
-"user": {
-"company_name": "",
-"name": ""
-},
-"description": "<p><strong>REJESTRATORKA MEDYCZNA / ASYSTENTKA STOMATOLOGICZNA</strong></p><p>Szukamy osoby :</p><ul><li><p>komunikatywnej i uśmiechniętej,</p></li><li><p>odpowiedzialnej i dobrze zorganizowanej,</p></li><li><p>zaangażowanej w  wykonywane obowiązki,</p></li><li><p>mile widziane doświadczenie w pracy w gabinecie stomatologicznym.</p></li></ul><p>Oferujemy miłą atmosferę pracy, przyjazny zespół oraz możliwość rozwoju zawodowego.</p><p></p>"
-}
-]
