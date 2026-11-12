@@ -121,7 +121,10 @@ it (a board's remote filter is evidence of remote work), its title, card text an
 once fetched. `neetscape/infer.py` takes, per field, the strongest statement: board data, then the request,
 then the posting's JSON-LD, the title, the card, the category and the posting text; within one source an
 explicit statement ("100% zdalnie") beats a plain word ("zdalnie"). A posting's text sets the mode only with
-a full-remote statement or hybrid words, and an internship only from a labelled field. The job field reads
+a full-remote statement or hybrid words, and an internship only from a labelled field. A board's structured
+posting fields count with the JSON-LD (`Board.posting_facts`): LinkedIn's job criteria set the level, work time
+and contract from its labels (`linkedin.SENIORITY`, `EMPLOYMENT`; "Associate", "Mid-Senior level" and "Contract"'s
+contract type stay unknown). The job field reads
 the title as function x domain (`infer.FUNCTIONS`, `DOMAINS`, `MATRIX`), then the board's category.
 `neetscape eval` derives every offer again; `neetscape show ID` prints each value's source and phrase.
 

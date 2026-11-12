@@ -376,6 +376,7 @@ class Store:
             cols = infer.derive(title=r["title"] or "", card=infer.card_text(r), facts=json.loads(r["facts"] or "{}"),
                                 request_remote=bool(r["request_remote"]), posting=r["posting"] or "",
                                 posting_remote=bool(meta.get("remote")),
+                                posting_facts=board.posting_facts(meta) if board and r["posting"] else None,
                                 category=" ".join(filter(None, (r["category"], r["request_category"]))),
                                 languages=countries.languages(code))
             if any(r[k] != v for k, v in cols.items()):

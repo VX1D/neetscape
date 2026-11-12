@@ -139,6 +139,33 @@ def test_migration_adds_job_domains_and_eval_fills_them(tmp_path):
     assert s.offer("u1")["job_domains"] == "ai,product"
 
 
+LI_POSTING = "Location: Kraków\nSeniority level: {}\nEmployment type: {}\n\nWe offer flexible hours and a B2B contract."
+
+
+@pytest.mark.parametrize("title,facts,criteria,want", [
+    ("Support Specialist", None, ("Entry level", "Internship"),                       # the criteria fill the unknowns (B2B: text)
+     {"level": "junior", "worktime": "flexible", "contracts": "internship"}),  # the text: flexible
+    ("Senior Support Specialist, full time", None, ("Internship", "Part-time"),       # ...and outrank title and card
+     {"level": "intern", "worktime": "part_time", "contracts": "b2b"}),
+    ("Support Specialist", {"worktime": "full_time", "level": "lead"}, ("Director", "Part-time"),  # board facts win
+     {"level": "lead", "worktime": "full_time", "contracts": "b2b"}),
+    ("Senior Support Specialist", None, ("Mid-Senior level", "Volunteer"),           # unlisted: the other sources
+     {"level": "senior", "worktime": "flexible", "contracts": "b2b"}),
+])
+def test_rederive_reads_the_postings_structured_criteria(db, title, facts, criteria, want):
+    ingest(db, job("linkedin", "1", title, facts=facts), board="linkedin")
+    text = LI_POSTING.format(*criteria)
+    db.save_detail(1, 200, text, {"description": text, "source": "api",
+                                  "criteria": {"seniority": criteria[0], "employment_type": criteria[1]}}, {})
+    db.rederive()
+    o = db.offer("https://linkedin/1")
+    assert {k: o[k] for k in want} == want
+    evidence = json.loads(o["evidence"])
+    if not facts and criteria[0] == "Entry level":
+        assert evidence["level"] == ["posting_struct", "LinkedIn: Seniority level Entry level"]
+        assert evidence["contracts"] == ["posting_struct", "LinkedIn: Employment type Internship"]
+
+
 def test_job_domains_are_read_in_each_offers_language(db):
     ingest(db, job("arbeitnow", "1", "Sachbearbeiter (m/w/d) Buchhaltung"),          # a German board
            job("justjoin", "2", "Sachbearbeiter Buchhaltung"),                         # a Polish board: not Polish words

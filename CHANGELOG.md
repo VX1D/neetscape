@@ -4,6 +4,14 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
 
 ## Unreleased
 
+- LinkedIn's job criteria are structured evidence: the posting reader keeps them as `meta["criteria"]` and
+  `Board.posting_facts(meta)` maps them to level, work time and contract (source `posting_struct`, above the
+  title, card and posting text, below board facts and the request; evidence "LinkedIn: Employment type
+  Full-time"). Entry level → junior, Internship → intern, Director/Executive → manager; Full-time, Part-time;
+  Contract and Temporary → flexible work time without a contract type; employment type Internship → contract
+  and level intern. Associate, Mid-Senior level, Not Applicable, Volunteer, Other and unlisted labels stay
+  unknown. Postings stored earlier are read from their text's criteria lines; `neetscape eval` applies it.
+
 - Every language-specific word now lives in its language pack or country package, so a new language is one
   module (`neetscape/lang/<code>.py`) and a new country one package: pay periods, pay words, the thousand
   suffix and range words (`VOCAB["pay"]`, read by `pay.py`); words offering options (`choice`, for
