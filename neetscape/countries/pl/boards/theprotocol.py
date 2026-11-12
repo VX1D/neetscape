@@ -9,7 +9,10 @@ URLs (verified live 2026-11-12): remote `/filtry/zdalna;rw?pageNumber=N` (1244 o
   default order is the same. `published` is `publicationDateUtc`, the first publication: a refreshed offer
   sits among newer ones (its refresh date is not in the listing). An offer older than one listed after it on the
   page is such an offer and counts as `promoted`, so it never decides a newest-first stop;
-- many offers are pracuj.pl postings shown here too (same ids, dates and texts).
+- many offers are pracuj.pl postings shown here too (same ids, dates and texts);
+- no result cap (verified live 2026-11-12): the whole board (`/praca`, 4321 offers, `page.count` 87) is served to
+  its short last page 87 (21 offers), page 88 is empty; Warszawa (2608 offers) ends on page 53 (8 offers). The
+  listing ends on its short page; `max_pages` (200, about twice the whole board) is only a safety stop.
 """
 from __future__ import annotations
 
@@ -44,12 +47,10 @@ def unit(text: str) -> str:
 class TheProtocol(Board):
     name = "theprotocol"
     min_interval = {"theprotocol.it": 4.0}  # answers 403 after ~10 requests in a few minutes at 1.5 s (2026-11-12)
-    caps = Caps(keywords=True, remote="filter", city=True, sort_newest=True, page_size=50, max_pages=40,
+    caps = Caps(keywords=True, remote="filter", city=True, sort_newest=True, page_size=50, max_pages=200,
                 transport="browser_fetch", origin="https://theprotocol.it/")
 
     def page_url(self, r, page):
-        if page > self.caps.max_pages:
-            return None
         where = slug(r.params["city"]) + ";wp" if r.params.get("city") else "zdalna;rw"
         query = ({"kw": r.keyword} if r.keyword else {}) | ({"sort": "date"} if r.params.get("sort") == "newest" else {}) \
             | ({"pageNumber": page} if page > 1 else {})

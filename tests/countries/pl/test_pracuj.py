@@ -28,7 +28,7 @@ def test_page_urls():
     assert B.page_url(city, 2) == "https://www.pracuj.pl/praca/asystent;kw/krakow;wp?rd=30&ws=1%2C2&pn=2"
     assert B.page_url(Request("pracuj", "t", "asystent", {"city": "Kraków", "radius_km": 30}), 1) == (
         "https://www.pracuj.pl/praca/asystent;kw/krakow;wp?rd=30")
-    assert B.page_url(r, B.caps.max_pages + 1) is None
+    assert B.page_url(r, B.caps.max_pages + 1)  # never None: max_pages is a safety stop, not the end of a listing
 
 
 def test_only_keyword_free_listings_are_newest_first():

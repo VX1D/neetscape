@@ -37,7 +37,7 @@ def test_post_body_raw_search():
 def test_page_urls():
     url = NFJ.page_url(Request("nofluffjobs", "t", None, {"remote": True}), 2)
     assert "pageFrom=2&pageTo=2" in url and url.startswith("https://nofluffjobs.com/api/search/posting?")
-    assert NFJ.page_url(Request("nofluffjobs", "t", None), NFJ.caps.max_pages + 1) is None
+    assert NFJ.page_url(Request("nofluffjobs", "t", None), NFJ.caps.max_pages + 1)  # never None: a safety stop
 
 
 def test_recorded_page_fields():

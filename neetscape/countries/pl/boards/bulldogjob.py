@@ -7,6 +7,9 @@ POST `https://bulldogjob.pl/graphql` with the site's `searchJobs` query (verifie
 - `order: {field: PUBLISHED, direction: DESC}` gives a strictly newest-first listing (the site's
   `/order,published,desc`); the listing pages' own JSON has no dates, the API returns `publishedAt`;
 - 50 per page (`perPage`), the last page is short (remote: page 7 has 36);
+- no result cap (verified live 2026-11-12): the whole board (no city filter) is `totalCount` 870 (18 pages), the
+  largest city, Warszawa (609), ends on page 13 (9 offers), page 14 is empty. `max_pages` (40, twice the whole
+  board) is only a safety stop;
 - `workModes` (`full-remote`, `hybrid`, `on-site`, several per offer), `roles` (the category),
   `locations[].location.cityPl` (Polish city names; `city` is the employer's free text);
 - `denominatedSalaryLong.money` is a range without a unit ("20 000 - 24 000", currency apart);
@@ -48,8 +51,6 @@ class BulldogJob(Board):
     content_type = "application/json"
 
     def page_url(self, r, page):
-        if page > self.caps.max_pages:
-            return None
         f = filters(r)
         query = {"city": f["city"][0]} | ({"part_time": 1} if "employmentType" in f else {}) | {"page": page}
         return f"{API}?{urllib.parse.urlencode(query)}"

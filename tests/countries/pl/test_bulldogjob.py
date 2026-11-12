@@ -30,7 +30,7 @@ def test_page_urls():
     assert B.page_url(r, 2) == "https://bulldogjob.pl/graphql?city=Remote&part_time=1&page=2"
     assert B.page_url(Request("bulldogjob", "t", None, {"remote": True}), 2) == "https://bulldogjob.pl/graphql?city=Remote&page=2"
     assert B.page_url(Request("bulldogjob", "t", "asystent", {"city": "Kraków"}), 1) == "https://bulldogjob.pl/graphql?city=Krak%C3%B3w&page=1"
-    assert B.page_url(r, B.caps.max_pages + 1) is None
+    assert B.page_url(r, B.caps.max_pages + 1)  # never None: max_pages is a safety stop, not the end of a listing
 
 
 def test_fields_from_the_api():

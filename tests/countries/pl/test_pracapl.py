@@ -75,7 +75,7 @@ def test_urls():
         "https://www.praca.pl/s-asystent_m-zielona-gora.html?cr=30&sort=date"
     assert url(None, 3, city="Kraków") == "https://www.praca.pl/krakow_3.html"
     assert url(None, remote=True, sort="newest") == "https://www.praca.pl/oferty-pracy.html?wm=3&sort=date"
-    assert url("x", 21) is None
+    assert url("x", 229) == "https://www.praca.pl/s-x_229.html"  # never None: max_pages is a safety stop
     assert pracapl.keyword_slug("Asystent/ka ds. Administracji") == "asystent-ka,ds,administracji"
 
 

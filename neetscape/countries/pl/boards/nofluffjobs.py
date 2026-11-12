@@ -11,6 +11,9 @@ Kraków search, anywhere search, posting details):
 - without `remote` or a city (anywhere) every posting comes once per place variant (`-remote`, `-krakow`,
   provinces; same `reference`, contiguous, identical fields): a page holds 50 postings but hundreds of
   entries, kept once per `reference`. The whole board is ~52 pages (2026-11-12), remote ~19;
+- no result cap (verified live 2026-11-12): the anywhere search reports `totalPages` 52 and serves page 52, pages
+  53 and 54 are empty; a listing ends on its short page. `max_pages` (120, about twice the whole board) is
+  only a safety stop;
 - salaries come converted to PLN per month (`salaryCurrency`, `salaryPeriod`; 168 h, 21 days) and only the
   one contract type of the posting is listed (the others only in the posting);
 - the `q=` query parameter is ignored by the API (results identical with another value); it only makes the
@@ -47,13 +50,11 @@ def raw_search(r) -> str:
 @register
 class NoFluffJobs(Board):
     name = "nofluffjobs"
-    caps = Caps(keywords=True, remote="filter", city=True, page_size=50, max_pages=60, transport="http")
+    caps = Caps(keywords=True, remote="filter", city=True, page_size=50, max_pages=120, transport="http")
     accept = "application/json"
     content_type = "application/infiniteSearch+json"
 
     def page_url(self, r, page):
-        if page > self.caps.max_pages:
-            return None
         return f"{API}&pageFrom={page}&pageTo={page}&" + urllib.parse.urlencode({"q": raw_search(r)})
 
     @staticmethod

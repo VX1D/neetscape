@@ -1,5 +1,6 @@
 """justjoin.it and rocketjobs.pl (one engine) on their recorded pages tests/fixtures/pl/{justjoin,rocketjobs}.txt."""
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -60,7 +61,29 @@ def test_engine_urls():
                                     "&wymiar-godzin=niepelny-wymiar,freelance&sortBy=newest&strona=2")
     assert rj.page_url(Request("x", "t", None, {"remote": True}), 1) == "https://rocketjobs.pl/oferty-pracy/praca-zdalna?keyword="
     assert rj.page_url(Request("x", "t", None), 1) == "https://rocketjobs.pl/oferty-pracy/wszystkie-lokalizacje?keyword="
-    assert jj.page_url(Request("x", "t", None), 151) is None
+    assert jj.page_url(Request("x", "t", None), 151).endswith("&page=151")  # never None: max_pages is a safety stop
+    narrowed = Request("x", "t", None, {"remote": True, "level": "senior", "category": "python", "sort": "newest"})
+    assert jj.page_url(narrowed, 1) == "https://justjoin.it/job-offers/remote/python?keyword=&experience-levels=senior&sortBy=newest"
+    assert rj.page_url(replace(narrowed, params={"level": "specjalista-mid", "category": "sales"}), 2) == (
+        "https://rocketjobs.pl/oferty-pracy/wszystkie-lokalizacje/sales?keyword=&doswiadczenie=specjalista-mid&strona=2")
+
+
+@pytest.mark.parametrize("board", ["justjoin", "rocketjobs"])
+def test_capped_listing_splits_by_level_then_category(board):
+    b, raw = REGISTRY[board], (FX / f"{board}.txt").read_text()
+    assert b.caps.result_cap == 10_000 and b.caps.max_pages == 200  # 200 pages of 50, page 201 is a 404
+    r = Request(board, "t", None, {"sort": "newest"})
+    assert b.total(raw, r) >= b.caps.result_cap  # the page's count (an upper bound of the results)
+    levels = b.split(raw, r)
+    assert len(levels) == 6 and all(s.params["sort"] == "newest" and s.params["level"] for s in levels)
+    cats = b.split(raw, levels[2])
+    assert len(cats) == 24 and {s.params["level"] for s in cats} == {levels[2].params["level"]}
+    assert b.split(raw, cats[0]) == []  # level and category set: cannot be narrowed further
+    assert b.total(parse_raw_chunk(), r) is None  # an older recording (the offers slice alone) has no count
+
+
+def parse_raw_chunk():
+    return json.dumps({"offers": []}, separators=(",", ":")).replace('"', '\\"')
 
 
 def test_category_from_slug():

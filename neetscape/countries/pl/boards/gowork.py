@@ -22,6 +22,10 @@ the order the board's own `seo.next` links use (`krakow;l/2;pg/50;km`, `czesc-et
   in the last ~6 weeks; employers post them on gowork: 12 of 15 sampled offers take the application on gowork,
   3 redirect to the employer's ATS), then ~14 000 `/oferta-zewnetrzna/` copies of lento.pl / nuzle.pl ads (segment 2,
   all with the same import date, no work mode, company often "Ogłoszenie zewnętrzne"). The copies are skipped;
+- no result cap (verified live 2026-11-12): page 600 of the whole board is served (copies), Kraków (1423 results)
+  is served to its last page 36 (23 copies), page 37 is empty, the remote listing (464) ends on page 12 (15 own
+  offers). A listing's own postings end on its first page of copies only, which parses to no offers and ends the
+  request; `max_pages` (1400, about twice the whole board's 658 pages) is only a safety stop;
 - pay: `netSalary` / `grossSalary` {min, max, currency "zł" or "€", period m/h/d} in hundredths (900000 = 9000 zł).
 """
 from __future__ import annotations
@@ -99,12 +103,10 @@ def snippet(o: dict) -> str:
 class GoWork(Board):
     name = "gowork"
     caps = Caps(keywords=True, remote="filter", city=True, radius=True, worktime=True, sort_newest=False, page_size=40,
-                max_pages=15, huge_unfiltered=True, transport="http")
+                max_pages=1400, huge_unfiltered=True, transport="http")
     accept = "text/html,application/xhtml+xml"
 
     def page_url(self, r: Request, page: int) -> str | None:
-        if page > self.caps.max_pages:
-            return None
         parts = []
         kw = slug(r.keyword or "")
         if kw:

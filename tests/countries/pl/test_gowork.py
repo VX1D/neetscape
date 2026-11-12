@@ -60,7 +60,7 @@ def test_page_urls():
     remote = Request("gowork", "t", None, {"remote": True})
     assert BOARD.page_url(remote, 1) == "https://www.gowork.pl/praca/zdalna;tr"
     assert BOARD.page_url(remote, 3) == "https://www.gowork.pl/praca/zdalna;tr/3;pg"
-    assert BOARD.page_url(remote, BOARD.caps.max_pages + 1) is None
+    assert BOARD.page_url(remote, BOARD.caps.max_pages + 1)  # never None: max_pages is a safety stop
 
 
 def test_requests_remote_everything_but_not_whole_board():

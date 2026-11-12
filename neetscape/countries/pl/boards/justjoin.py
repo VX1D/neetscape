@@ -9,8 +9,19 @@ disjoint; the last page is short and the one after it is a 404). Query labels ar
 `working-times=part-time`; rocketjobs `strona` (it ignores `page`), `wymiar-godzin=niepelny-wymiar`. A city
 matches the offer's `multilocation` within `radius` km (default 30, any integer accepted). `sortBy=newest`
 orders by `lastPublishedAt` (re-publication); the default order is not by date. The offer page
-shows `publishedAt` ("Published: ..."), which is what `published` holds. The page's offer count (`count`,
-"N job offers") is not the number of results (it is larger), so the crawl relies on the short last page.
+shows `publishedAt` ("Published: ..."), which is what `published` holds.
+
+Result cap (verified live 2026-11-12 on both boards): a listing shows at most 10 000 results, 200 pages of 50; page
+200 is full and page 201 a 404 even when more match (justjoin, all locations: 200 full pages, while its experience
+levels alone list 393 + 3519 + 6693 + 249 results for junior, mid, senior and c-level; rocketjobs, all locations:
+page 200 full, page 201 a 404). The page's offer count (`count`, "N job offers") is not the number of results but
+larger (remote 10 908 -> 4934 results, "rust" 1252 -> 619, junior 658 -> 393), so it serves as an upper bound:
+`total()` returns it, and a request whose count reaches the cap is split, first by experience level
+(`experience-levels=` / `doswiadczenie=`, the levels and their URL values read from the page's facets), then by
+category (the `/<where>/<category>` links the page lists). Both partition a listing: the level facets sum to the
+count (20 310), and the 24 category counts of the c-level listing sum to its 301. When the count overstates, the
+split costs one extra page per sub-request (the remote listing is split by level although it fits). `max_pages` is
+the cap's 200 pages: the 404 after page 200 must not end a capped request as complete.
 An offer published for several cities is listed once per city (own slug), so it appears as several offers
 with the same title and company. `categoryId` is always 0; the category is the slug tail after the city
 (e.g. `...-krakow-security`, rocketjobs `...-lodz-finanse-ksiegowosc`).
@@ -25,6 +36,7 @@ from __future__ import annotations
 import json
 import re
 import urllib.parse
+from dataclasses import replace
 
 from .... import infer
 from ....model import Offer
@@ -32,7 +44,29 @@ from ....boards.base import Board, Caps, Request, register
 from ....boards.pages import epoch_or_iso_date, pay_range, slug
 
 WORKTIME_ALIASES = {"internship": "practice_internship"}  # rocketjobs "Praktyka / Staż" -> infer.worktime
-_SHRINK = r"""(t)=>{const k=t.indexOf('{\\"offers\\":[');return k<0?'':t.slice(k,k+900000)}"""
+# the page shrunk in the tab: the offer count, the experience-level facets with their URL values, the category
+# links, and the slice of the page holding the escaped offers JSON (`chunk`, decoded by `extract_offers`)
+_SHRINK = r"""(t)=>{const u=s=>JSON.parse(s.replace(/\\"/g,'"'));const k=t.indexOf('{\\"offers\\":[');
+const c=t.match(/\\"count\\":(\d+),\\"heading\\"/);
+const lv=t.match(/\\"experienceLevels\\":\{\\"label\\":\\"[^\\]+\\",\\"values\\":(\{[^}]*\})/);
+const fc=t.match(/\\"experienceLevels\\":(\[\{\\"key[^\]]*\])/);
+const cats=[...new Set([...t.matchAll(/offer_list_category_link" href="([^"?#]*)/g)].map(m=>m[1].split('/').pop()))];
+let levels=[];try{const v=lv?u(lv[1]):{};levels=(fc?u(fc[1]):[]).filter(x=>x.count>0).map(x=>({value:v[x.key]||x.key,count:x.count}))}catch(e){}
+return JSON.stringify({count:c?+c[1]:null,levels,categories:cats,chunk:k<0?'':t.slice(k,k+900000)})}"""
+RESULT_CAP = 10_000  # 200 pages of 50
+
+
+def page_data(raw: str) -> dict:
+    """The shrunk page {count, levels: [{value, count}], categories: [slug], chunk}. A bare chunk (an older
+    recording) holds the offers alone."""
+    if raw.startswith('{"'):
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            data = None
+        if isinstance(data, dict) and "chunk" in data:
+            return data
+    return {"count": None, "levels": [], "categories": [], "chunk": raw}
 
 
 def extract_offers(chunk: str) -> list[dict] | None:
@@ -87,17 +121,20 @@ class _JustJoinEngine(Board):
     page_param: str = ""
     worktime_param: str = ""
     part_time_values: str = ""
+    level_param: str = ""
 
     def page_url(self, r: Request, page: int) -> str | None:
-        if page > self.caps.max_pages:
-            return None
         p = r.params
         where = slug(p["city"]) if p.get("city") else (self.remote_path if p.get("remote") else self.all_path)
+        if p.get("category"):
+            where += "/" + p["category"]
         q = {"keyword": r.keyword or ""}
         if p.get("city") and p.get("radius_km") is not None:
             q["radius"] = round(p["radius_km"])
         if p.get("part_time"):
             q[self.worktime_param] = self.part_time_values
+        if p.get("level"):
+            q[self.level_param] = p["level"]
         if p.get("sort") == "newest":
             q["sortBy"] = "newest"
         if page > 1:
@@ -107,8 +144,21 @@ class _JustJoinEngine(Board):
     def fetch_js(self) -> str:
         return _SHRINK
 
+    def total(self, raw: str, r: Request) -> int | None:
+        return page_data(raw).get("count")
+
+    def split(self, raw: str, r: Request) -> list[Request]:
+        """One request per experience level the page lists or, for a request already narrowed to a level, one per
+        category the page links to."""
+        data = page_data(raw)
+        if not r.params.get("level"):
+            return [replace(r, params={**r.params, "level": lv["value"]}) for lv in data.get("levels") or []]
+        if not r.params.get("category"):
+            return [replace(r, params={**r.params, "category": c}) for c in data.get("categories") or []]
+        return []
+
     def parse(self, raw: str, r: Request) -> list[Offer]:
-        offers = extract_offers(raw)
+        offers = extract_offers(page_data(raw)["chunk"])
         if offers is None:
             raise ValueError("could not decode the offers JSON (page truncated or format changed)")
         out = []
@@ -135,19 +185,19 @@ class _JustJoinEngine(Board):
 class JustJoin(_JustJoinEngine):
     name = "justjoin"
     caps = Caps(keywords=True, remote="filter", city=True, radius=True, worktime=True, sort_newest=True, page_size=50,
-                max_pages=150, transport="browser_fetch", origin="https://justjoin.it/")
+                max_pages=RESULT_CAP // 50, result_cap=RESULT_CAP, transport="browser_fetch", origin="https://justjoin.it/")
     base = "https://justjoin.it/job-offers"
     offer_base = "https://justjoin.it/job-offer/"
     remote_path, all_path, page_param = "remote", "all-locations", "page"
-    worktime_param, part_time_values = "working-times", "part-time,freelance"
+    worktime_param, part_time_values, level_param = "working-times", "part-time,freelance", "experience-levels"
 
 
 @register
 class RocketJobs(_JustJoinEngine):
     name = "rocketjobs"
     caps = Caps(keywords=True, remote="filter", city=True, radius=True, worktime=True, sort_newest=True, page_size=50,
-                max_pages=150, transport="browser_fetch", origin="https://rocketjobs.pl/")
+                max_pages=RESULT_CAP // 50, result_cap=RESULT_CAP, transport="browser_fetch", origin="https://rocketjobs.pl/")
     base = "https://rocketjobs.pl/oferty-pracy"
     offer_base = "https://rocketjobs.pl/oferta-pracy/"
     remote_path, all_path, page_param = "praca-zdalna", "wszystkie-lokalizacje", "strona"  # ignores ?page
-    worktime_param, part_time_values = "wymiar-godzin", "niepelny-wymiar,freelance"
+    worktime_param, part_time_values, level_param = "wymiar-godzin", "niepelny-wymiar,freelance", "doswiadczenie"

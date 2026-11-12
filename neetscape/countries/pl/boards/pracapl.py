@@ -18,6 +18,9 @@ URLs (verified live 2026-11-12; robots.txt allows `/s-*.html` and offer pages, t
 - `sort=date` newest first (the default order is "date" on some listings and "accuracy" on others, so it is always sent);
 - 50 cards per page (4 full pages checked; no page-size parameter), so a shorter page is the last; a page past the
   last is an empty listing (HTTP 200, no cards);
+- no result cap (verified live 2026-11-12): the whole board (`/oferty-pracy.html`, "z 228" pages) is served to its
+  short last page 228 (24 cards), page 229 is empty; Warszawa ("z 47") ends on page 47 (7 cards). `max_pages` (500,
+  about twice the whole board) is only a safety stop;
 - above the cards, on every page, up to 2 "Oferta tygodnia" cards (`listing-v2__item--week`, a paid product, out of
   date order: `promoted`); highlighted cards (`--highlight`, 1-12 per page) keep their place in the date order, so
   they are not promoted. Page 1 of a keyword listing may end with up to 5 "Oferty urzędu pracy" (labour-office offers
@@ -118,12 +121,10 @@ def _place(body: str) -> list[str]:
 class PracaPl(Board):
     name = "pracapl"
     caps = Caps(keywords=True, remote="filter", city=True, radius=True, worktime=True, sort_newest=True, page_size=50,
-                max_pages=20, huge_unfiltered=True, transport="http")
+                max_pages=500, huge_unfiltered=True, transport="http")
     accept = "text/html"
 
     def page_url(self, r: Request, page: int) -> str | None:
-        if page > self.caps.max_pages:
-            return None
         kw = keyword_slug(r.keyword or "")
         city = slug(r.params["city"]) if r.params.get("city") else ""
         path = (f"s-{kw}" + (f"_m-{city}" if city else "")) if kw else (city or "oferty-pracy")
