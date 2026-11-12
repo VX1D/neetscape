@@ -86,7 +86,7 @@ EMPLOYMENT = {"Full-time": ("full_time", None), "Part-time": ("part_time", None)
               "Temporary": ("flexible", None), "Internship": (None, "internship")}
 
 
-def pick_geo(city: str, hits: list[dict], cc: str = "pl") -> str | None:
+def pick_geo(city: str, hits: list[dict], cc: str = country.DEFAULT_COUNTRY) -> str | None:
     """The place in country `cc` named exactly `city` (first such hit), else the first hit in that country."""
     names = "|".join(map(re.escape, country.get(cc).place_names))
     local = [h for h in hits if re.search(rf"\b(?:{names})$", h.get("displayName") or "")] if names else []
@@ -96,7 +96,7 @@ def pick_geo(city: str, hits: list[dict], cc: str = "pl") -> str | None:
 
 
 @functools.lru_cache(maxsize=64)
-def geo_id(city: str, cc: str = "pl") -> str | None:
+def geo_id(city: str, cc: str = country.DEFAULT_COUNTRY) -> str | None:
     """The geoId of a city from the GEO typeahead (one request per city and run); None when not found."""
     status, body = _http_get(TYPEAHEAD + urllib.parse.quote(city), "application/json")
     try:
@@ -109,7 +109,7 @@ def geo_id(city: str, cc: str = "pl") -> str | None:
 
 
 def searched_country(r: Request) -> str:
-    return r.params.get("country") or "pl"
+    return r.params.get("country") or country.DEFAULT_COUNTRY
 
 
 @register

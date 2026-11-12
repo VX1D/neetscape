@@ -238,7 +238,7 @@ def cmd_probe(a) -> None:
     if not board:
         sys.exit(f"unknown board; available: {', '.join(REGISTRY)}")
     code = country_of(board)
-    code = code if code in countries.codes() else (a.country or "pl")
+    code = code if code in countries.codes() else (a.country or countries.DEFAULT_COUNTRY)
     s = Search(id="probe", label="probe", where=Where(remote=True, country=code), keywords=(a.keyword,) if a.keyword else None)
     reqs, warns = board.requests(s)
     for w in warns:
@@ -279,7 +279,7 @@ def cmd_init(a) -> None:
         sys.exit(f"{target} already exists")
     names = a.preset or ["focused"]
     try:
-        data = prof_mod.combine(names, a.country or "pl")
+        data = prof_mod.combine(names, a.country or countries.DEFAULT_COUNTRY)
     except prof_mod.ProfileError as e:
         sys.exit(str(e))
     target.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
@@ -465,7 +465,7 @@ def _parser() -> argparse.ArgumentParser:
 
     p = command("init", cmd_init, "write profile.json from presets (they combine)")
     p.add_argument("--preset", action="append", default=[], help="preset name, repeatable")
-    p.add_argument("--country", help="the profile's country (default pl)")
+    p.add_argument("--country", help=f"the profile's country (default {countries.DEFAULT_COUNTRY})")
     command("check", cmd_check, "validate the profile", boards)
     command("plan", cmd_plan, "show what would be fetched (no network)", boards)
     command("boards", cmd_boards, "board capabilities").add_argument("--country", help="only this country's boards")
@@ -474,7 +474,7 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("board")
     p.add_argument("--keyword", help="search phrase")
     p.add_argument("--save-fixture", help="write the raw first page to this file (for tests/fixtures/<cc>/)")
-    p.add_argument("--country", help="the country searched on a board serving several (default pl)")
+    p.add_argument("--country", help=f"the country searched on a board serving several (default {countries.DEFAULT_COUNTRY})")
 
     for name, handler, summary in (("run", cmd_run, "crawl, evaluate, fetch the best postings, write the reports"),
                                    ("crawl", cmd_crawl, "only crawl (a run's first step)")):

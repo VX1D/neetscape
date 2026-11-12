@@ -331,7 +331,7 @@ class Store:
                         + " ORDER BY id DESC LIMIT 1", *args)
         if not row:
             return None
-        return (json.loads(row[0]) or {}).get("country", "pl")
+        return (json.loads(row[0]) or {}).get("country", countries.DEFAULT_COUNTRY)
 
     def start_request(self, run_id: int, board: str, search_id: str, keyword: str | None, params: dict, pushed) -> int:
         cur = self.db.execute(
@@ -430,7 +430,7 @@ class Store:
         stores) or with `force`."""
         if offer_ids is not None and not offer_ids:
             return 0
-        home = self.run_country() or "pl"
+        home = self.run_country() or countries.DEFAULT_COUNTRY
         fingerprint = derivation_fingerprint(home) if offer_ids is None else None
         if fingerprint and not force and self.meta("derivation") == fingerprint:
             return 0

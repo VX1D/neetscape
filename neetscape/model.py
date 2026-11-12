@@ -7,6 +7,8 @@ import unicodedata
 from dataclasses import dataclass, field
 from datetime import date
 
+from .country import DEFAULT_COUNTRY
+
 WORKTIMES = ("full_time", "part_time", "flexible", "unknown")
 # one shared vocabulary for every country; local words map onto it (Country.contract_aliases)
 CONTRACTS = ("employment", "b2b", "mandate", "specific_task", "internship", "freelance", "mini_job", "working_student",
@@ -128,7 +130,7 @@ class Where:
     remote: bool = False
     city: str | None = None
     radius_km: int | None = None
-    country: str = "pl"           # the job market searched (a country code); boards of other countries skip the search
+    country: str = DEFAULT_COUNTRY  # the job market searched (a country code); boards of other countries skip the search
 
     def describe(self) -> str:
         """'Kraków +30km or remote (pl)', 'remote (pl)', 'anywhere (de)'."""

@@ -57,7 +57,7 @@ def _is_earlier_first_publication(row, meta: dict) -> bool:
     return bool(first and board and board.posting_date_is_first and (not stored or first < stored))
 
 
-def _save(store: Store, row, status: int, text: str, meta: dict, home: str = "pl") -> None:
+def _save(store: Store, row, status: int, text: str, meta: dict, home: str = countries.DEFAULT_COUNTRY) -> None:
     """Store one offer's posting, fill the company and publication date the card lacked, and derive the offer's
     fields again with the posting as a new observation (mode, work time, contracts)."""
     store.save_detail(row["id"], status, text, meta, infer.hints(text, _languages(row["board"], home)))
@@ -155,7 +155,7 @@ def route(row) -> str:
     return "browser"
 
 
-async def fetch_details(store: Store, ids: list[int], port: int, limiter: Limiter, retries: int = 2, home: str = "pl") -> int:
+async def fetch_details(store: Store, ids: list[int], port: int, limiter: Limiter, retries: int = 2, home: str = countries.DEFAULT_COUNTRY) -> int:
     """Fetch and store the postings of the offers `ids`, sites in parallel; returns how many offers were found.
     `home`: the profile's country (language of postings on boards serving any country)."""
     rows = [r for r in (store.offer(i) for i in ids) if r]
