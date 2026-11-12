@@ -25,9 +25,10 @@ neetscape check                                 # validate
 neetscape plan                                  # what goes to which board (no network)
 neetscape run                                   # crawl, evaluate, write the report
 neetscape list --new --limit 50                 # offers new in this run
-neetscape details --pick 12,40                  # fetch full postings for chosen ids
+neetscape details --pick 12,40                  # fetch full postings for chosen ids, re-evaluate
 neetscape show 12                               # offer, per-search verdict, posting text
-neetscape mark 12 applied --note "sent CV"      # track your decisions
+neetscape mark 12 shortlisted --note "why · risk"  # record your decisions
+neetscape report                                # rewrite REPORT.md / REPORT.html with the review
 ```
 
 Commands at a glance (`neetscape --help` for all flags):
@@ -36,12 +37,15 @@ Commands at a glance (`neetscape --help` for all flags):
 |---|---|
 | Setup | `init [--country CC] [--preset P ...]`, `check`, `plan`, `boards [--country CC]`, `probe BOARD [--keyword K] [--save-fixture PATH]` |
 | Run | `run [--resume] [--full] [--limit-pages N] [--boards a,b] [--record DIR]`; single steps `crawl`, `eval`, `report` |
-| Review | `list [--search ID] [--new] [--group title] [--where SQL] [--limit N] [--format tsv\|md\|json]`, `details --pick IDS \| --pick-file F \| --top N`, `show ID`, `sql "SELECT ... :run"` |
+| Review | `list [--search ID] [--new] [--group title] [--where SQL] [--limit N] [--format tsv\|md\|json]`, `details --pick IDS \| --pick-file F \| --top N \| --marked`, `show ID`, `sql "SELECT ... :run"` |
 | Tracking | `mark ID\|URL STATUS [--note TEXT]`, `tracked` |
 
 Common options: `--profile` (default `profile.json`), `--out` (data directory, default `runs`),
 `--run` (run id, default latest). Mark statuses: `shortlisted applied interview offer rejected
 ignored`; `rejected` and `ignored` offers are hidden from later listings.
+
+Each run writes `runs/<date>-run<N>/` with `REPORT.md`, `REPORT.html` (open it in a browser: your
+review on top, then every passing offer in a filterable, sortable table), `listing.tsv` and `offers.csv`.
 
 ## Presets
 

@@ -1,5 +1,9 @@
 """International remote-only boards with machine-readable feeds (country "intl", opt-in): remoteok API,
-weworkremotely RSS. Each is one download per run, filtered locally."""
+weworkremotely RSS. Each is one download per run (`whole_listing`), filtered locally.
+
+Not part of the 2026-11-12 live audit (which covered the Polish boards): the formats are those of the recorded
+fixtures in tests/fixtures/shared/.
+"""
 from __future__ import annotations
 
 import json
@@ -15,7 +19,7 @@ from .pages import feed_date
 @register
 class RemoteOK(Board):
     name = "remoteok"
-    caps = Caps(keywords=False, remote="always", page_size=0, max_pages=1, country="intl", transport="http")
+    caps = Caps(keywords=False, remote="always", page_size=0, max_pages=1, whole_listing=True, country="intl", transport="http")
 
     def page_url(self, r: Request, page: int) -> str | None:
         return "https://remoteok.com/api" if page == 1 else None
@@ -34,7 +38,7 @@ class RemoteOK(Board):
 @register
 class WeWorkRemotely(Board):
     name = "weworkremotely"
-    caps = Caps(keywords=False, remote="always", page_size=0, max_pages=1, country="intl", transport="http")
+    caps = Caps(keywords=False, remote="always", page_size=0, max_pages=1, whole_listing=True, country="intl", transport="http")
 
     def page_url(self, r: Request, page: int) -> str | None:
         return "https://weworkremotely.com/remote-jobs.rss" if page == 1 else None

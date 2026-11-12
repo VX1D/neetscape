@@ -13,7 +13,8 @@ pytest -m live              # live checks against the real boards (network; neve
 Tests run offline and are grouped by area: `tests/core` (pay parsing, text inference, JSON-LD,
 language-pack examples, a snapshot of the Polish behaviour), `tests/countries` (every country's
 definition, a fixture for every board, country boards' parsers on recorded pages in
-`tests/fixtures/<cc>/` and their URL builders, e.g. `tests/countries/pl/`),
+`tests/fixtures/<cc>/` and their URL builders, one test file per board, e.g. `tests/countries/pl/test_gowork.py`;
+posting readers on recorded offer pages `tests/fixtures/<cc>/<board>_posting.html`),
 `tests/boards` (the shared boards, on pages in `tests/fixtures/shared/`) and
 `tests/engine` (profile, planner, filters, store, crawler stop rules, CLI end to end with a fake
 board). `tests/affected.py` maps changed files to these groups; a board-only change runs just that

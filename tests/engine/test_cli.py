@@ -171,3 +171,36 @@ def test_sigterm_stops_the_browser(fake, browser, tmp_path, monkeypatch):
     assert signal.getsignal(signal.SIGTERM) is before
     from neetscape.store import Store
     assert Store(tmp_path / "runs" / "neetscape.db").q("SELECT status FROM runs")[0][0] == "running"  # resumable
+
+
+def test_details_counts_offers_that_drop_although_others_now_pass(fake, tmp_path, monkeypatch, capsys):
+    from neetscape import cli, details
+    monkeypatch.chdir(tmp_path)
+    _profile(tmp_path, searches=[{"id": "all", "where": "remote", "what": "all", "worktime": ["part_time"], "unknown": "drop",
+                                  "text_exclude": ["niemiecki"]}])
+    fake.pages = {("*", 1): [["a", "Asystent", {"worktime": "part_time"}], ["b", "Konsultant", {}]]}
+    cli.main(["run"])
+    capsys.readouterr()
+    postings = {"https://fake/a": "Wymagany język niemiecki.", "https://fake/b": "Praca na pół etatu."}
+
+    async def fetch(store, ids, *a, **kw):   # a's posting excludes it, b's settles its unknown work time
+        for i in ids:
+            row = store.offer(i)
+            details._save(store, row, 200, postings[row["url"]], {})
+    monkeypatch.setattr(cli, "fetch_details", fetch)
+    monkeypatch.setattr(cli, "_details_need_browser", lambda store, ids: False)
+    cli.main(["details", "--pick", "1,2"])
+    assert "details: 1 offers no longer pass" in capsys.readouterr().err
+    cli.main(["list", "--format", "json"])
+    assert [d["title"] for d in json.loads(capsys.readouterr().out)] == ["Konsultant"]
+
+
+def test_show_flags_a_blacklisted_offer(fake, tmp_path, monkeypatch, capsys):
+    from neetscape import cli
+    monkeypatch.chdir(tmp_path)
+    _profile(tmp_path, blacklist={"companies": ["acme"], "action": "flag"})
+    fake.pages = {("*", 1): [["a", "Asystent", {"company": "Acme"}]]}
+    cli.main(["run"])
+    capsys.readouterr()
+    cli.main(["show", "1"])
+    assert "blacklist (flag): blacklisted company /acme/" in capsys.readouterr().out

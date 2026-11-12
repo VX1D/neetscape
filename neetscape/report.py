@@ -1,6 +1,6 @@
 """Listings and reports, all read from the store.
 
-`listing()` is the single source for `neetscape list`, listing.tsv, offers.csv and REPORT.md: offers of a
+`listing()` is the single source for `neetscape list`, listing.tsv, offers.csv, REPORT.md and REPORT.html: offers of a
 run that pass at least one search, one row per cluster (the same job on several boards), clusters whose
 latest mark is rejected/ignored removed, sorted by the profile's sort keys. Pay is shown per month in the
 profile country's currency, in a column named after it (`pay_pln_month`, `pay_eur_month`).
@@ -14,10 +14,12 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from .details import GONE, detail
-from .model import norm_company, parse_date
+from .details import detail
+from .html_report import write_html
+from .model import age_label, norm_company, parse_date
+from .pay import pay_label
 from .profile import Profile
-from .store import HIDDEN, Store
+from .store import GONE, HIDDEN, Store
 
 _LISTING_SQL = """
     SELECT o.*, e.search_id, e.score, e.why, c.first_seen_run = :run AS is_new,
@@ -77,20 +79,6 @@ def group_by_title(rows: list[dict]) -> list[dict]:
     return sorted(out, key=lambda g: -g["offers"])
 
 
-def pay_label(d: dict) -> str:
-    if d.get("pay_period") == "project":
-        return (d.get("pay_text") or "project")[:24]
-    lo, hi = d.get("pay_min"), d.get("pay_max")
-    if hi is None:
-        return "—"
-    return f"{lo / 1000:.1f}–{hi / 1000:.1f}k" if lo != hi else f"{hi / 1000:.1f}k"
-
-
-def age(d: dict) -> str:
-    published = parse_date(d.get("published"))
-    return f"{(dt.date.today() - published).days}d" if published else "?"
-
-
 def pay_column(currency: str = "PLN") -> str:
     return f"pay_{currency.lower()}_month"
 
@@ -107,8 +95,13 @@ def _md_columns(currency: str) -> list[str]:
 def row_values(d: dict, currency: str = "PLN") -> dict:
     return {"id": d["id"], "new": "🆕" if d["is_new"] else "", "score": d["score"], "title": d["title"], "company": d["company"],
             pay_column(currency): pay_label(d), "mode": d["mode"], "worktime": d["worktime"], "contracts": d["contracts"],
-            "level": d["level"], "age": age(d), "boards": d["boards"] or d["board"], "searches": ",".join(d["searches"]),
+            "level": d["level"], "age": age_label(d["published"]), "boards": d["boards"] or d["board"], "searches": ",".join(d["searches"]),
             "tags": ",".join(d["tags"]), "mark": d["mark"] or "", "url": d["url"]}
+
+
+def _md_cell(value, width: int = 60) -> str:
+    """A markdown table cell: `|` and line breaks would end the cell or the row."""
+    return " ".join(str(value if value is not None else "").replace("|", "/").split())[:width]
 
 
 def _table(vals: list[dict], cols: list[str], fmt: str, md_cols: list[str] | None = None) -> str:
@@ -118,7 +111,7 @@ def _table(vals: list[dict], cols: list[str], fmt: str, md_cols: list[str] | Non
     if fmt == "md":
         cols = md_cols or cols
         out = ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
-        return "\n".join(out + ["| " + " | ".join(str(v[c]).replace("|", "/")[:60] for c in cols) + " |" for v in vals])
+        return "\n".join(out + ["| " + " | ".join(_md_cell(v[c]) for c in cols) + " |" for v in vals])
     return "\n".join(["\t".join(cols)] + ["\t".join(str(v[c]).replace("\t", " ") for c in cols) for v in vals])
 
 
@@ -133,8 +126,7 @@ def format_groups(groups: list[dict], fmt: str, currency: str = "PLN") -> str:
 
 
 def _run_stats(store: Store, run_id: int) -> list[str]:
-    rows = store.q("""SELECT board, COUNT(*) n, SUM(pages) pages, SUM(found) found, SUM(complete) complete,
-                      SUM(error != '') errors FROM requests WHERE run_id=? GROUP BY board""", run_id)
+    rows = store.board_stats(run_id)
     out = ["| Board | Requests | Pages | Offers | Complete | Errors |", "|---|---|---|---|---|---|"]
     out += [f"| {r['board']} | {r['n']} | {r['pages']} | {r['found']} | {r['complete']}/{r['n']} | {r['errors'] or 0} |" for r in rows]
     errs = store.q("SELECT board, keyword, error FROM requests WHERE run_id=? AND error != ''", run_id)
@@ -148,8 +140,8 @@ def _tracked_section(store: Store, run_id: int) -> list[str]:
     if not marked:
         return []
     out = ["## Tracked offers", "", "| Status | Offer | Since | Still listed | Note |", "|---|---|---|---|---|"]
-    out += [f"| {m['status']} | [{(m['title'] or m['url'])[:50]}]({m['url']}) | {m['at'][:10]} | {m['listed']} | {(m['note'] or '')[:60]} |"
-            for m in marked]
+    out += [f"| {m['status']} | [{_md_cell(m['title'] or m['url'], 50).replace(']', ')')}]({_md_cell(m['url'], 2000)}) | "
+            f"{m['at'][:10]} | {m['listed']} | {_md_cell(m['note'])} |" for m in marked]
     return out + [""]
 
 
@@ -159,7 +151,7 @@ def _opened_offer(d: dict, det: dict, currency: str) -> list[str]:
         + ("❌" if det["status"] in GONE else "")
     listed = lambda key, label: h.get(key) and f"{label}: " + ", ".join(h[key])
     meta = [x for x in (f"pay {pay_label(d)} {currency}/mo" + (f" ({d['pay_text'][:70]})" if d["pay_text"] else ""),
-                        f"{d['mode']}, {d['worktime']}, {d['contracts'] or '-'}, level {d['level']}", f"posted {age(d)} ago",
+                        f"{d['mode']}, {d['worktime']}, {d['contracts'] or '-'}, level {d['level']}", f"posted {age_label(d['published'])} ago",
                         listed("years", "experience"), listed("degree", "degree"), listed("languages", "languages"),
                         listed("hybrid", "mode hints")) if x]
     return [f"### {flags} #{d['id']} {d['title']} — {d['company'] or '?'} [{d['score']}]" + (f" · {d['mark']}" if d["mark"] else ""),
@@ -175,11 +167,12 @@ def _opened_section(store: Store, rows: list[dict], currency: str) -> list[str]:
     return ["## Opened offers", ""] + [line for d, det in opened for line in _opened_offer(d, det, currency)]
 
 
-def write_reports(store: Store, profile: Profile, run_id: int, out_dir: Path) -> Path:
-    """Write listing.tsv, offers.csv and REPORT.md of a run into `out_dir`; returns the REPORT.md path."""
+def write_reports(store: Store, profile: Profile, run_id: int, out_dir: Path, rows: list[dict] | None = None) -> Path:
+    """Write listing.tsv, offers.csv, REPORT.md and REPORT.html of a run into `out_dir`; returns the REPORT.md path.
+    `rows`: the run's `listing()` when the caller has it already."""
     out_dir.mkdir(parents=True, exist_ok=True)
     cur = profile.currency
-    rows = listing(store, profile, run_id)
+    rows = listing(store, profile, run_id) if rows is None else rows
     (out_dir / "listing.tsv").write_text(format_rows(rows, "tsv", cur) + "\n")
     with open(out_dir / "offers.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=columns(cur) + ["pay_text", "why"])
@@ -203,4 +196,5 @@ def write_reports(store: Store, profile: Profile, run_id: int, out_dir: Path) ->
     L += ["## All passing offers", "", f"See `listing.tsv` / `offers.csv` ({len(rows)} rows) or `neetscape list`.", ""]
     path = out_dir / "REPORT.md"
     path.write_text("\n".join(L) + "\n")
+    write_html(store, profile, run_id, rows, out_dir / "REPORT.html")
     return path

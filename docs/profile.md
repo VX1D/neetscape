@@ -36,13 +36,43 @@ Search fields:
 | `levels_exclude` | `intern junior mid senior lead manager unknown` |
 | `pay` | `{"min", "per": "month"\|"hour", "required"}`; amounts are in the profile country's currency (PLN, EUR), compared against the top of the offer's range |
 | `max_age_days` | drop offers published earlier |
-| `title_include`, `title_exclude`, `text_exclude`, `category_include` | case-insensitive Python regexes |
+| `title_include`, `title_exclude`, `text_exclude`, `category_include` | case-insensitive Python regexes; `text_exclude` reads title, company, category, skills, pay text, card text and, once fetched, the posting |
 | `unknown` | `keep` (default) or `drop` offers whose filtered field (mode, pay, work time, date, location) is unknown |
 | `boost` | score added to offers passing this search |
 
 Top-level keys: `country` (`pl` default, `de`), `boards` (board names or groups: a country code, `intl`, `all`;
 default: the boards of the profile's country and of every country a search targets), `candidate` (free-form notes
 for the reviewing agent, ignored by the tool), `rank` (`rules`, `tags`, `sort`), `review` (`mode`
-`auto`/`listing`, `details_top`, `min_score`), `politeness` (`min_interval_s` per host, `retries`),
+`auto`/`listing`, `details_top`, `min_score`; see below), `politeness` (`min_interval_s` per host, overriding a
+board's own minimum; `retries`), `blacklist` (below),
 `fx` (units of the country's currency per unit of another currency; the country sets defaults). The full definition is
 [`neetscape/profile/schema.json`](../neetscape/profile/schema.json).
+
+`review` controls the second stage (see [How it works](how-it-works.md#postings-the-second-stage)):
+with `mode: "auto"`, `run` fetches the postings of the top `details_top` (default 60) matches scoring at
+least `min_score` whose job has no stored posting yet, then evaluates again; with `mode: "listing"` it
+fetches none and `neetscape details` does it on demand. The default is `auto` when the profile has rank
+rules, `listing` otherwise.
+
+## Blacklist
+
+Your own list of employers, links and phrases to avoid; neetscape ships no built-in list.
+
+```json
+"blacklist": {
+  "companies": ["example staffing"],
+  "urls": ["example-agency\\.pl"],
+  "text": ["network marketing|mlm"],
+  "action": "drop"
+}
+```
+
+| Key | Meaning |
+|---|---|
+| `companies` | regexes on the company name |
+| `urls` | regexes on the offer URL (e.g. a domain) |
+| `text` | regexes on title, company, card text and the fetched posting |
+| `action` | `drop` (default): rejected in every search, reason `blacklisted company /.../` etc.; `flag`: kept, tagged `!blacklist`, the reason shown with the offer and by `neetscape show ID` |
+
+All patterns are case-insensitive. Because `text` also reads postings, an offer can be dropped or
+flagged only after its posting has been fetched.

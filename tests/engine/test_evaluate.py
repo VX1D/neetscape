@@ -70,3 +70,60 @@ def test_unknown_location_dropped_once():
 
 def test_malformed_published_date_is_unknown():
     assert ev.check(R(row(published="2024-1-5")), s(max_age_days=7)) == (True, [])
+
+
+def test_profile_blacklist_drops_or_flags(fake, tmp_path):
+    from conftest import ALL_REMOTE, run_crawl
+    from neetscape.store import Store
+    fake.pages = {("*", 1): [["a", "Asystent biurowy", {"company": "Szybka Kasa"}], ["b", "Helpdesk", {"company": "Acme"}],
+                             ["c", "Praca z domu", {"snippet": "brak górnego limitu zarobków"}]]}
+    db = Store(tmp_path / "j.db")
+    rid = db.start_run({}, [])
+    run_crawl(db, rid, fake, [ALL_REMOTE])
+    bl = {"companies": ["szybka kasa"], "text": ["limitu zarobków"]}
+
+    def run(action):
+        p = profile.validate({"version": 2, "boards": ["fake"], "searches": [{"id": "all", "what": "all"}],
+                              "blacklist": {**bl, "action": action}})
+        ev.evaluate(db, p, rid)
+        return p
+
+    p = run("drop")
+    assert [r["title"] for r in db.run_offers(rid) if db.q("SELECT 1 FROM evals WHERE offer_id=?", r["id"])] == ["Helpdesk"]
+    reasons = {r["reasons"] for r in db.q("SELECT reasons FROM rejections WHERE run_id=?", rid)}
+    assert reasons == {"blacklisted company /szybka kasa/", "blacklisted text /limitu zarobków/"}
+    assert ev.explain(db, p, db.offer("https://fake/a")["id"], rid) == {"all": ["blacklisted company /szybka kasa/"]}
+
+    run("flag")
+    flagged = db.q("SELECT e.why FROM evals e JOIN offers o ON o.id = e.offer_id WHERE o.key = 'a'")[0]["why"]
+    assert "!blacklist" in flagged and db.q("SELECT COUNT(*) n FROM evals WHERE run_id=?", rid)[0]["n"] == 3
+
+
+def test_blacklist_regex_errors_name_the_field():
+    with pytest.raises(profile.ProfileError, match=r"blacklist.urls\[0\]"):
+        profile.validate({"version": 2, "searches": [{"id": "x"}], "blacklist": {"urls": ["("]}})
+
+
+def test_text_exclude_reads_the_posting_once_fetched():
+    search = s(text_exclude=["niemiecki"])
+    assert ev.check(R(row()), search)[0]
+    assert ev.check(R(row(posting="Wymagany język niemiecki B2")), search)[1] == ["text excluded"]
+
+
+def test_failed_posting_fetch_is_not_posting_text():
+    search = s(text_exclude=["timeout"])
+    assert ev.check(R(row(posting="ERROR TimeoutError: page did not load")), search) == (True, [])
+
+
+def test_blacklist_action_is_checked():
+    with pytest.raises(profile.ProfileError, match="blacklist.action"):
+        profile.validate({"version": 2, "searches": [{"id": "x"}], "blacklist": {"companies": ["x"], "action": "dorp"}})
+    assert profile.validate({"version": 2, "searches": [{"id": "x"}], "blacklist": {}}).blacklist["action"] == "drop"
+
+
+def test_explain_an_offer_never_sighted(tmp_path):
+    from neetscape.store import Store
+    db = Store(tmp_path / "j.db")
+    db.db.execute("INSERT INTO offers(board, key, url, title) VALUES ('x', '1', 'https://x/1', 'Job')")
+    p = profile.validate({"version": 2, "searches": [{"id": "x"}], "blacklist": {"companies": ["x"], "action": "flag"}})
+    assert ev.explain(db, p, 1) == {} and ev.flagged(db, p, 1) == []

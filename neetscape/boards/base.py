@@ -11,6 +11,7 @@ from dataclasses import dataclass, field, replace
 from typing import ClassVar
 
 from ..model import Offer, Search, Where
+from ..posting import parse_posting
 from ..store import request_key
 
 
@@ -25,12 +26,16 @@ class Caps:
     sort_newest: bool = False    # results can be ordered newest first (enables incremental stops)
     page_size: int = 0           # 0 = unknown / variable
     max_pages: int = 1
-    huge_unfiltered: bool = False  # listing everything without a filter is too big: needs keywords or a city
+    huge_unfiltered: bool = False  # listing everything is too big: needs keywords, a city or the server-side remote filter
     local_all: bool = False      # the whole board is one cheap download: any search can be served by local filtering
+    whole_listing: bool = False  # one response holds the request's whole listing (feeds): fetching it completes the request
     country: str = ""            # "pl", "de", ...; "any" (serves every country, gets `params["country"]`); "intl" (opt-in,
                                  # international). Empty: derived on registration from the module (see `register`)
-    transport: str = "http"     # "http", "browser_fetch" (same-origin fetch in a tab), "browser_render" (rendered cards)
-    origin: str = ""             # page to open before same-origin fetches
+    transport: str = "http"      # "http" (plain HTTP, GET or POST) or "browser_fetch" (same-origin fetch in a tab)
+    origin: str = ""             # browser_fetch: page to open before the same-origin fetches
+
+
+TRANSPORTS = ("http", "browser_fetch")
 
 
 @dataclass(frozen=True)
@@ -49,7 +54,12 @@ class Request:
 class Board:
     name: ClassVar[str]
     caps: ClassVar[Caps]
-    link_pattern: ClassVar[str] = ""          # browser_render boards: which links are offers
+    accept: ClassVar[str] = "*/*"             # http: Accept header
+    headers: ClassVar[dict] = {}              # http: extra request headers (e.g. a public API key)
+    content_type: ClassVar[str] = ""          # http: Content-Type of the `post_body` of a POST search
+    min_interval: ClassVar[dict] = {}         # host -> seconds between requests, for boards that throttle hard
+    posting_selector: ClassVar[str] = ""      # CSS selector of the posting body on the rendered offer page, used
+    #                                           when `posting()` finds no text; empty: never fall back to rendering
 
     def requests(self, s: Search) -> tuple[list[Request], list[str]]:
         """Requests serving this search, plus warnings about what cannot be served. Default implementation
@@ -87,7 +97,7 @@ class Board:
             params["sort"] = "newest"
         kws = s.keywords_on(self.name)
         if kws is None or not caps.keywords:  # one unfiltered-by-keyword listing
-            if caps.huge_unfiltered and "city" not in pushed:
+            if caps.huge_unfiltered and "city" not in pushed and not (caps.remote == "filter" and "remote" in pushed):
                 return [], [f"{self.name}: listing everything is too large without keywords or a city; skipped for '{s.id}'"]
             if kws is not None:
                 warnings.append(f"{self.name}: no keyword search; fetching all and filtering locally for '{s.id}'")
@@ -104,8 +114,24 @@ class Board:
         """browser_fetch boards: optional JS `(text)=>string` applied in the page to shrink the response."""
         return None
 
+    def posting(self, page: str) -> dict:
+        """Posting fields from the source of an offer page: `description` (plain text) plus whatever JSON-LD
+        ships (company, published, salary, ...). Default: schema.org JobPosting. Boards whose JSON-LD lacks the
+        posting body (or that have none) override this to read their embedded data; never return page chrome."""
+        return parse_posting(page)
+
+    def post_body(self, r: Request, page: int) -> str | None:
+        """http boards whose search is a POST: the request body for this page (sent as `content_type`)."""
+        return None
+
 
 REGISTRY: dict[str, Board] = {}
+
+
+def min_intervals(profile_intervals: dict | None = None) -> dict:
+    """Per-host request gaps: the boards' own minimums, overridden by the profile's `politeness.min_interval_s`."""
+    out = {host: s for b in REGISTRY.values() for host, s in b.min_interval.items()}
+    return out | (profile_intervals or {})
 
 
 def module_country(module: str) -> str:
@@ -117,6 +143,8 @@ def module_country(module: str) -> str:
 def register(cls):
     """Class decorator: add the board to REGISTRY. A board without `caps.country` gets its country from its
     module (`neetscape/countries/<cc>/boards/`); shared boards in `neetscape/boards/` must declare "any" or "intl"."""
+    if cls.caps.transport not in TRANSPORTS:
+        raise ValueError(f"board {cls.name!r}: unknown transport {cls.caps.transport!r} (one of {TRANSPORTS})")
     if not cls.caps.country:
         code = module_country(cls.__module__)
         if not code:

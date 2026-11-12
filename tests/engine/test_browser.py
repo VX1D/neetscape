@@ -30,3 +30,20 @@ def test_failed_browser_start_stops_xvfb(monkeypatch, tmp_path):
     with pytest.raises(FileNotFoundError):
         b.start()
     assert killed == [4242]
+
+
+def test_stuck_navigation_is_retried_once():
+    import asyncio
+    from neetscape.browser import Tab
+    tab = Tab.__new__(Tab)
+    calls = []
+
+    async def call(method, params, timeout=180):
+        calls.append(method)
+        if method == "Page.navigate" and calls.count("Page.navigate") == 1:
+            raise asyncio.TimeoutError
+        return {}
+
+    tab.call = call
+    asyncio.run(tab.goto("https://x", 0))
+    assert calls == ["Page.navigate", "Page.stopLoading", "Page.navigate"]

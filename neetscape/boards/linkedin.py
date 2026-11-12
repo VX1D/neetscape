@@ -23,7 +23,8 @@ from ..log import log
 from ..model import Offer, fold
 from .base import Board, Caps, Request, register
 from .fetch import _http_get
-from .pages import clean_spaces
+from ..posting import html_to_text
+from .pages import clean_spaces, html_field
 
 SEARCH = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?"
 POSTING = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/"
@@ -51,11 +52,6 @@ def geo_id(city: str, cc: str = "pl") -> str | None:
     return found
 
 
-def _field(pattern: str, card: str) -> str:
-    m = re.search(pattern, card, re.S)
-    return html.unescape(clean_spaces(m.group(1))).strip() if m else ""
-
-
 @register
 class LinkedIn(Board):
     name = "linkedin"
@@ -78,14 +74,27 @@ class LinkedIn(Board):
             if not m:
                 continue
             published = (re.search(r'datetime="(\d{4}-\d{2}-\d{2})"', card) or [None, ""])[1]
-            loc = _field(r"job-search-card__location[^>]*>(.*?)<", card)
+            loc = html_field(r"job-search-card__location[^>]*>(.*?)<", card)
             out.append(Offer(board=self.name, key=m.group(1), url=m.group(1),
-                             title=_field(r"base-search-card__title[^>]*>(.*?)<", card),
-                             company=_field(r"base-search-card__subtitle[^>]*>.*?>(.*?)<", card),
-                             locations=[loc] if loc else [], pay_text=_field(r"job-search-card__salary-info[^>]*>(.*?)</span", card),
+                             title=html_field(r"base-search-card__title[^>]*>(.*?)<", card),
+                             company=html_field(r"base-search-card__subtitle[^>]*>.*?>(.*?)<", card),
+                             locations=[loc] if loc else [], pay_text=html_field(r"job-search-card__salary-info[^>]*>(.*?)</span", card),
                              published=dt.date.fromisoformat(published) if published else None,
                              promoted="promoted" in card.lower()))
         return out
+
+    @staticmethod
+    def posting_fields(page: str) -> dict:
+        """The guest posting page: only its description block, plus the job criteria (seniority, employment
+        type, ...) and the location line, which the search cards lack."""
+        i = page.find("show-more-less-html__markup")
+        body = page[page.find(">", i) + 1:page.find("</div>", i)] if i >= 0 else ""
+        criteria = [f"{html.unescape(k)}: {clean_spaces(html.unescape(v))}" for k, v in re.findall(
+            r'description__job-criteria-subheader[^>]*>\s*([^<]+?)\s*</h3>\s*<span[^>]*>\s*([^<]+?)\s*</span>', page)]
+        place = re.search(r'topcard__flavor--bullet[^>]*>\s*([^<]+?)\s*<', page)
+        head = ([f"Location: {clean_spaces(html.unescape(place.group(1)))}"] if place else []) + criteria
+        text = html_to_text(body)
+        return {"description": ("\n".join(head) + "\n\n" + text).strip() if text else "", "source": "api"}
 
     @staticmethod
     def detail_url(url: str) -> str | None:

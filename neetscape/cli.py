@@ -13,7 +13,7 @@ Run
 
 Review (all read the latest run, or --run N)
   neetscape list [--search ID] [--new] [--group title] [--where SQL] [--limit N] [--format tsv|md|json]
-  neetscape details --pick 12,40 | --pick-file F | --top N
+  neetscape details --pick 12,40 | --pick-file F | --top N | --marked
   neetscape show ID                                       offer, why it passes/fails each search, posting text
   neetscape sql "SELECT ... WHERE run_id = :run"          read-only SQL on the database (:run = the run)
   neetscape mark ID|URL STATUS [--note TEXT]              shortlisted applied interview offer rejected ignored
@@ -36,11 +36,11 @@ from . import evaluate as ev
 from . import planner, report
 from . import profile as prof_mod
 from .boards import REGISTRY, expand
-from .boards.base import Request, country_of
+from .boards.base import Request, country_of, min_intervals
 from .boards.fetch import Limiter
 from .browser import Browser
 from .crawler import crawl
-from .details import detail, fetch_details
+from .details import detail, fetch_details, route
 from .log import log
 from .model import Search, Where
 from .store import MARK_STATUSES, Store
@@ -92,9 +92,8 @@ def _needs_browser(boards) -> bool:
 
 
 def _details_need_browser(store: Store, ids: list[int]) -> bool:
-    """Postings are fetched in the browser unless the source shipped the text or the board is LinkedIn."""
-    rows = [r for r in (store.offer(i) for i in ids) if r]
-    return any(not r["description"] and r["board"] != "linkedin" for r in rows)
+    """Postings are fetched in the browser unless the source shipped the text, or LinkedIn / a posting API serves them."""
+    return any(route(r) == "browser" for r in (store.offer(i) for i in ids) if r)
 
 
 # ---------------------------------------------------------------- store, profile, run
@@ -150,14 +149,34 @@ def _money(c: countries.Country) -> dict:
 
 
 def _ids(a, store: Store, profile, run_id: int) -> list[int]:
+    """Offers `details` opens: --pick, --pick-file, --marked, else the top matches (--top or `details_top`)."""
     if a.pick:
         return [int(x) for x in a.pick.split(",") if x.strip()]
     if a.pick_file:
         lines = [line.split() for line in Path(a.pick_file).read_text().splitlines()]
         return [int(w[0]) for w in lines if w and w[0].isdigit()]
-    top = a.top or profile.details_top
-    rows = [d for d in report.listing(store, profile, run_id) if d["score"] >= profile.min_score]
+    if a.marked:
+        return _marked_ids(store, run_id)
+    return _top_ids(store, profile, run_id, a.top or profile.details_top)
+
+
+def _marked_ids(store: Store, run_id: int) -> list[int]:
+    """Marked offers (not rejected/ignored), of any run, whose posting is missing (never fetched or failed)."""
+    offers = (store.offer(m["url"]) for m in store.tracked(run_id, hidden=False))
+    return [o["id"] for o in offers if o and store.needs_posting(o["id"])]
+
+
+def _top_ids(store: Store, profile, run_id: int, top: int) -> list[int]:
+    """The best `top` matches of the run scoring at least `min_score` whose job has no stored posting: postings
+    are fetched once per job, so later runs open only new matches."""
+    fetched = store.posted_clusters()
+    rows = [d for d in report.listing(store, profile, run_id) if d["score"] >= profile.min_score and d["cluster_id"] not in fetched]
     return [d["id"] for d in rows[:top]]
+
+
+def _fetch_postings(store: Store, profile, ids: list[int], port: int, limiter: Limiter, browser: _LazyBrowser) -> None:
+    browser.ensure(_details_need_browser(store, ids))
+    asyncio.run(fetch_details(store, ids, port, limiter, profile.retries, profile.country.code))
 
 
 # ---------------------------------------------------------------- run
@@ -176,13 +195,15 @@ def _start_or_resume(a, store: Store, profile) -> tuple[int, set[str]]:
 
 
 def cmd_run(a, crawl_only: bool = False) -> None:
+    """Stage 1: crawl the cards and evaluate them. Stage 2 (`review.mode: auto`): fetch the postings of the best
+    matches not opened before and evaluate again with them."""
     profile = _profile(a)
     plan = planner.plan(profile)
     for w in plan.warnings:
         log("plan:", w)
     store = _store(a)
     run_id, skip = _start_or_resume(a, store, profile)
-    limiter = Limiter(profile.min_interval)
+    limiter = Limiter(min_intervals(profile.min_interval))
     with contextlib.ExitStack() as stack:
         browser = _LazyBrowser(stack, a.port)
         browser.ensure(_needs_browser({r.board for r in plan.requests}))
@@ -196,14 +217,14 @@ def cmd_run(a, crawl_only: bool = False) -> None:
             print(f"run {run_id} crawled; {gone} offers no longer listed. Next: neetscape eval")
             return
         counts = ev.evaluate(store, profile, run_id)
-        if profile.review_mode == "auto":
-            ids = _ids(argparse.Namespace(pick=None, pick_file=None, top=None), store, profile, run_id)
-            browser.ensure(_details_need_browser(store, ids))
-            asyncio.run(fetch_details(store, ids, a.port, limiter, profile.retries, profile.country.code))
-    path = report.write_reports(store, profile, run_id, _report_dir(a, store, run_id))
+        ids = _top_ids(store, profile, run_id, profile.details_top) if profile.review_mode == "auto" else []
+        if ids:
+            _fetch_postings(store, profile, ids, a.port, limiter, browser)
+            counts = ev.evaluate(store, profile, run_id)
+    rows = report.listing(store, profile, run_id)
+    path = report.write_reports(store, profile, run_id, _report_dir(a, store, run_id), rows)
     store.finish_run(run_id)
-    total = len(report.listing(store, profile, run_id))
-    print(f"run {run_id}: {total} offers pass the profile ({', '.join(f'{k} {v}' for k, v in counts.items())}); {gone} gone")
+    print(f"run {run_id}: {len(rows)} offers pass the profile ({', '.join(f'{k} {v}' for k, v in counts.items())}); {gone} gone")
     print(f"report: {path}")
     if profile.review_mode == "listing":
         print(f"next: read {path.parent / 'listing.tsv'} (or `neetscape list --new`), then `neetscape details --pick ID,ID,...`")
@@ -230,7 +251,7 @@ def cmd_probe(a) -> None:
     try:
         run_id = store.start_run({}, ["probe"])
         with Browser(port=a.port) if board.caps.transport != "http" else contextlib.nullcontext():
-            asyncio.run(crawl([r], {"probe": s}, store, run_id, port=a.port, limiter=Limiter(), limit_pages=1,
+            asyncio.run(crawl([r], {"probe": s}, store, run_id, port=a.port, limiter=Limiter(min_intervals()), limit_pages=1,
                               save_fixture=Path(a.save_fixture) if a.save_fixture else None, **_money(countries.get(code))))
         _print_probe(name, board.page_url(r, 1), store.run_offers(run_id), a.save_fixture)
     finally:
@@ -314,9 +335,15 @@ def cmd_list(a) -> None:
 def cmd_details(a) -> None:
     store, profile, rid = _open(a)
     ids = _ids(a, store, profile, rid)
-    with Browser(port=a.port) if _details_need_browser(store, ids) else contextlib.nullcontext():
-        asyncio.run(fetch_details(store, ids, a.port, Limiter(profile.min_interval), profile.retries, profile.country.code))
-    print(report.write_reports(store, profile, rid, _report_dir(a, store, rid)))
+    passing = {d["cluster_id"] for d in report.listing(store, profile, rid)}
+    with contextlib.ExitStack() as stack:
+        _fetch_postings(store, profile, ids, a.port, Limiter(min_intervals(profile.min_interval)), _LazyBrowser(stack, a.port))
+    ev.evaluate(store, profile, rid)  # the postings may settle unknown fields or hit text filters
+    rows = report.listing(store, profile, rid)
+    dropped = passing - {d["cluster_id"] for d in rows}
+    if dropped:
+        log(f"details: {len(dropped)} offers no longer pass once their posting is known (see `neetscape show ID`)")
+    print(report.write_reports(store, profile, rid, _report_dir(a, store, rid), rows))
 
 
 def _verdict_lines(store: Store, profile, offer_id: int, run_id: int) -> list[str]:
@@ -344,6 +371,9 @@ def cmd_show(a) -> None:
         sys.exit("no such offer")
     print(json.dumps({k: o[k] for k in o.keys() if k not in ("description", "snippet")}, ensure_ascii=False, indent=1))
     print("", *_verdict_lines(store, profile, o["id"], rid), sep="\n")
+    flagged = ev.flagged(store, profile, o["id"], rid)
+    if flagged:
+        print("blacklist (flag): " + ", ".join(flagged))
     d = detail(store, o["id"])
     if d:
         print(f"\nposting: HTTP {d['status']}, hints {json.dumps(d['hints'], ensure_ascii=False)}")
@@ -406,7 +436,8 @@ def _parser() -> argparse.ArgumentParser:
     ap.add_argument("--format", default="tsv", choices=["tsv", "md", "json"])
     ap.add_argument("--pick", help="details: offer ids, comma separated")
     ap.add_argument("--pick-file", help="details: file with an offer id at the start of each line")
-    ap.add_argument("--top", type=int, help="details: open the top N of the listing")
+    ap.add_argument("--top", type=int, help="details: open the best N matches whose job has no stored posting (default review.details_top)")
+    ap.add_argument("--marked", action="store_true", help="details: open the marked offers whose posting is missing (never fetched or failed)")
     ap.add_argument("--note", default="")
     ap.add_argument("--keyword", help="probe: search phrase")
     ap.add_argument("--save-fixture", help="probe: write the raw first page to this file (for tests/fixtures/<cc>/)")

@@ -1,9 +1,16 @@
-"""Fetch full posting text for selected offers (two-pass review: list first, then details for picks).
+"""Fetch the full posting text of selected offers: stage 2 of a run (`review.mode: auto`) and `neetscape details`.
 
-Offers whose source shipped the full text are saved without fetching; LinkedIn postings come over plain
-HTTP; every other offer is fetched in the private browser, one tab per site: JSON-LD first, the rendered
-page text when the page has none. A 404/410 marks the offer gone; any other failure is saved with HTTP
-status 0 and an `ERROR ...` text, and never stops the other offers of the site.
+Only the posting itself is stored, never page chrome (menus, cookie banners, "similar offers"). Per offer, the
+first source that applies (saved as `source` with the posting fields):
+- `feed`: the source shipped the full text with the listing;
+- `api`: LinkedIn's guest posting endpoint (`LinkedIn.posting_fields`: the description block and job criteria)
+  and boards with a JSON posting API (`posting_url`/`posting_text`), over plain HTTP;
+- `jsonld` or board data: the offer page fetched in the private browser, one tab per site, read by the board's
+  `posting()` (schema.org JobPosting by default; boards whose JSON-LD lacks the body read their embedded data);
+- `render`: the board's `posting_selector` on the rendered page, only for boards that declare one.
+Otherwise the text stays empty. A 404/410 marks the offer gone; 401/403/429 are saved as blocked, not
+rendered; any other failure is saved with HTTP status 0 and an `ERROR ...` text, and never stops the other
+offers of the site.
 """
 from __future__ import annotations
 
@@ -20,10 +27,11 @@ from .boards.fetch import BrowserFetch, BrowserRender, FetchError, Http, Limiter
 from .boards.linkedin import LinkedIn
 from .log import log
 from .model import parse_date
-from .posting import html_to_text, parse_posting
-from .store import Store
+from .posting import parse_posting
+from .store import GONE, Store
 
-GONE = (404, 410)
+BLOCKED = (401, 403, 429)  # saved as blocked, never rendered: the page would be a login wall or block page
+PLACEHOLDER_COMPANIES = {"confidential", "poufne", "anonymous", "anonim", "ogłoszenie zewnętrzne", "n/a", "-"}
 
 
 def _languages(board: str, home: str) -> tuple:
@@ -32,9 +40,26 @@ def _languages(board: str, home: str) -> tuple:
     return countries.languages(countries.text_country(b.caps.country if b else "", home))
 
 
+def _from_posting(row, text: str, meta: dict, hints: dict, languages) -> dict:
+    """Fields the listing card left unknown, read from the posting. The mode only from strong signals (JSON-LD
+    TELECOMMUTE, "fully remote" phrases, hybrid words): a long posting mentions "remote" for many reasons."""
+    if not text or text.startswith("ERROR"):
+        return {}
+    mode = "remote" if meta.get("remote") or hints.get("fully_remote") else "hybrid" if hints.get("hybrid") else "unknown"
+    found = {"mode": mode, "worktime": infer.worktime_from_text(text, languages)}
+    out = {k: v for k, v in found.items() if row[k] == "unknown" and v != "unknown"}
+    if not row["contracts"] and (cs := infer.contracts_from_text(text, languages)):
+        out["contracts"] = ",".join(cs)
+    return out
+
+
 def _save(store: Store, row, status: int, text: str, meta: dict, home: str = "pl") -> None:
-    store.save_detail(row["id"], status, text, meta, infer.hints(text, _languages(row["board"], home)))
-    updates = {k: meta[k] for k in ("company", "published") if meta.get(k) and not row[k]}
+    languages = _languages(row["board"], home)
+    hints = infer.hints(text, languages)
+    store.save_detail(row["id"], status, text, meta, hints)
+    if (meta.get("company") or "").strip().lower() in PLACEHOLDER_COMPANIES:
+        meta = {**meta, "company": ""}
+    updates = {k: meta[k] for k in ("company", "published") if meta.get(k) and not row[k]} | _from_posting(row, text, meta, hints, languages)
     if updates.get("published") and not parse_date(updates["published"]):
         del updates["published"]
     if updates:
@@ -43,19 +68,26 @@ def _save(store: Store, row, status: int, text: str, meta: dict, home: str = "pl
 
 
 async def _posting(fetch, row, render) -> tuple[int, str, dict]:
-    """(status, text, JSON-LD fields) of one posting; `render()` opens the shared render tab on first use."""
+    """(status, text, posting fields) of one offer page. The text comes from the board's `posting()` (JSON-LD or
+    its embedded data) or, failing that, from the board's `posting_selector` on the rendered page; never from the
+    whole page. `meta["source"]` says which. `render()` opens the shared render tab on first use."""
+    board = REGISTRY.get(row["board"])
     try:
-        meta = parse_posting(await fetch.get(row["url"]))
+        page = await fetch.get(row["url"])
+        meta = board.posting(page) if board else parse_posting(page)
         status, text = 200, meta.get("description", "")
+        meta["source"] = meta.get("source") or ("jsonld" if text else "")
     except FetchError as e:
         status, text, meta = e.status, "", {}
     except Exception as e:
-        return 0, f"ERROR {type(e).__name__}: {e}", {}
-    if not text and status not in GONE:  # no JSON-LD: render and read the page
+        return 0, _error(e), {}
+    selector = board.posting_selector if board else ""
+    if not text and selector and status not in GONE + BLOCKED:
         try:
-            text = await (await render()).page_text(row["url"])
+            text = await (await render()).element_text(row["url"], selector)
+            meta["source"] = "render" if text else ""
         except Exception as e:
-            status, text = 0, f"ERROR {type(e).__name__}: {e}"
+            status, text = 0, _error(e)
     return status, text, meta
 
 
@@ -73,27 +105,64 @@ async def _origin(store: Store, origin: str, rows, port: int, limiter: Limiter, 
             _save(store, row, *await _posting(fetch, row, render), home)
 
 
-async def _linkedin(store: Store, rows, limiter: Limiter, retries: int, home: str) -> None:
-    async with Http(limiter, "*/*", retries) as h:
+def _error(e: Exception) -> str:
+    return f"ERROR {type(e).__name__}: {e}"
+
+
+async def _over_http(store: Store, rows, limiter: Limiter, retries: int, home: str, accept: str, read) -> None:
+    """Postings served over plain HTTP: `read(http, row)` returns (text, posting fields). A failure is saved for
+    its offer and never stops the others."""
+    async with Http(limiter, accept, retries) as h:
         for row in rows:
-            url = LinkedIn.detail_url(row["url"])
             try:
-                html = await h.get(url) if url else ""
-                _save(store, row, 200, html_to_text(html), {}, home)
+                text, meta = await read(h, row)
             except FetchError as e:
                 _save(store, row, e.status, "", {}, home)
+            except Exception as e:
+                _save(store, row, 0, _error(e), {}, home)
+            else:
+                _save(store, row, 200, text, meta, home)
+
+
+async def _linkedin(h: Http, row) -> tuple[str, dict]:
+    """LinkedIn's guest posting endpoint: the description block and job criteria."""
+    url = LinkedIn.detail_url(row["url"])
+    meta = LinkedIn.posting_fields(await h.get(url)) if url else {}
+    return meta.get("description", ""), meta
+
+
+async def _posting_api(h: Http, row) -> tuple[str, dict]:
+    """Boards whose offer pages lack the posting text but have a JSON posting API (`posting_url`, `posting_text`)."""
+    board = REGISTRY[row["board"]]
+    text, meta = board.posting_text(await h.get(board.posting_url(row["url"])))
+    return text, {**meta, "source": "api"}
+
+
+def route(row) -> str:
+    """How a posting is fetched: `text` (shipped by the source), `linkedin`, `api` (posting API) or `browser`."""
+    board = REGISTRY.get(row["board"])
+    if row["description"]:  # feeds ship the full text
+        return "text"
+    if row["board"] == "linkedin":
+        return "linkedin"
+    if getattr(board, "posting_url", None) and board.posting_url(row["url"]):
+        return "api"
+    return "browser"
 
 
 async def fetch_details(store: Store, ids: list[int], port: int, limiter: Limiter, retries: int = 2, home: str = "pl") -> int:
     """`home`: the profile's country (language of postings on boards serving any country)."""
     rows = [r for r in (store.offer(i) for i in ids) if r]
     groups: dict[str, list] = defaultdict(list)
-    linkedin = []
+    linkedin, api = [], []
     for row in rows:
-        if row["description"]:  # feeds ship the full text
-            _save(store, row, 200, row["description"], {}, home)
-        elif row["board"] == "linkedin":
+        how = route(row)
+        if how == "text":
+            _save(store, row, 200, row["description"], {"source": "feed"}, home)
+        elif how == "linkedin":
             linkedin.append(row)
+        elif how == "api":
+            api.append(row)
         else:
             u = urllib.parse.urlsplit(row["url"])
             groups[f"{u.scheme}://{u.netloc}/"].append(row)
@@ -107,7 +176,8 @@ async def fetch_details(store: Store, ids: list[int], port: int, limiter: Limite
                 log("details error:", type(e).__name__, e)
 
     await asyncio.gather(*[guarded(_origin(store, o, rs, port, limiter, retries, home)) for o, rs in groups.items()],
-                         guarded(_linkedin(store, linkedin, limiter, retries, home)))
+                         guarded(_over_http(store, linkedin, limiter, retries, home, "*/*", _linkedin)),
+                         guarded(_over_http(store, api, limiter, retries, home, "application/json", _posting_api)))
     log("details fetched:", len(rows))
     return len(rows)
 

@@ -4,15 +4,24 @@ Result pages embed the full offer objects as escaped JSON (`{"offers":[...]}`, 5
 The tab fetches the page and returns only the slice holding that JSON; `extract_offers` decodes it.
 
 URL: `<base>/<city-slug>|<remote>|<all>?keyword=K&radius=KM&<worktime>=<part>,freelance&sortBy=newest&<page>=N`
-(verified live 2026-11-12). Query labels are localised: justjoin `page`, `working-times=part-time`;
-rocketjobs `strona`, `wymiar-godzin=niepelny-wymiar`. A city matches the offer's `multilocation` within
-`radius` km (default 30, any integer accepted). `sortBy=newest` orders by first publication; the default
-order follows re-publications. `categoryId` is always 0; the category is the slug tail after the city
+(verified live 2026-11-12: keyword, remote, city + radius, part-time and sort change the results; pages are
+disjoint; the last page is short and the one after it is a 404). Query labels are localised: justjoin `page`,
+`working-times=part-time`; rocketjobs `strona` (it ignores `page`), `wymiar-godzin=niepelny-wymiar`. A city
+matches the offer's `multilocation` within `radius` km (default 30, any integer accepted). `sortBy=newest`
+orders by `lastPublishedAt` (re-publication); the default order is not by date. The offer page
+shows `publishedAt` ("Published: ..."), which is what `published` holds. The page's offer count (`count`,
+"N job offers") is not the number of results (it is larger), so the crawl relies on the short last page.
+An offer published for several cities is listed once per city (own slug), so it appears as several offers
+with the same title and company. `categoryId` is always 0; the category is the slug tail after the city
 (e.g. `...-krakow-security`, rocketjobs `...-lodz-finanse-ksiegowosc`).
+
+Pay: one range per contract type in the currency the employer gave (`currencySource: original`, PLN, EUR,
+USD...); the board's conversions into other currencies are skipped. Some employers enter an hourly rate with
+the unit "month" ("120 - 150 PLN per month"); the board shows it like that and `pay.py` reads it as hourly.
+Contract type `any` (shown as "Any") is no particular contract: such offers get no contract type.
 """
 from __future__ import annotations
 
-import datetime as dt
 import json
 import re
 import urllib.parse
@@ -20,8 +29,9 @@ import urllib.parse
 from .... import infer
 from ....model import Offer
 from ....boards.base import Board, Caps, Request, register
-from ....boards.pages import slug
+from ....boards.pages import epoch_or_iso_date, pay_range, slug
 
+WORKTIME_ALIASES = {"internship": "practice_internship"}  # rocketjobs "Praktyka / Staż" -> infer.worktime
 _SHRINK = r"""(t)=>{const k=t.indexOf('{\\"offers\\":[');return k<0?'':t.slice(k,k+900000)}"""
 
 
@@ -104,17 +114,19 @@ class _JustJoinEngine(Board):
         out = []
         for o in offers:
             types = o.get("employmentTypes") or []
-            pay = "; ".join(f"{e.get('type')}:{e.get('from')}-{e.get('to')}/{e.get('unit')}{' gross' if e.get('gross') else ''}"
-                            for e in types if e.get("currency") == "PLN" and e.get("currencySource") == "original" and e.get("from"))
-            published = (o.get("publishedAt") or "")[:10]
+            # one entry per contract type in the employer's currency ("original"), plus the board's conversions
+            pay = "; ".join(pay_range(e.get("type"), e["from"], e.get("to") or e["from"], e.get("currency") or "PLN",
+                                      e.get("unit") or "month", bool(e.get("gross")))
+                            for e in types if e.get("currencySource") == "original" and e.get("from"))
             cities = [m.get("city") for m in o.get("multilocation") or [] if m.get("city")] or ([o["city"]] if o.get("city") else [])
             out.append(Offer(
                 board=self.name, key=self.offer_base + o["slug"], url=self.offer_base + o["slug"], title=o.get("title") or "",
                 company=o.get("companyName") or "", mode=infer.mode(o.get("workplaceType")), locations=sorted(set(cities)),
-                worktime=infer.worktime(o.get("workingTime")), contracts=sorted({infer.contract(e.get("type")) for e in types}),
+                worktime=infer.worktime(WORKTIME_ALIASES.get(o.get("workingTime"), o.get("workingTime"))),
+                contracts=sorted({infer.contract(e.get("type")) for e in types if e.get("type") != "any"}),
                 level=infer.level(o.get("experienceLevel")), category=category_from_slug(o["slug"], o.get("city") or ""),
                 skills=list(o.get("requiredSkills") or []), pay_text=pay,
-                published=dt.date.fromisoformat(published) if published else None,
+                published=epoch_or_iso_date(o.get("publishedAt")),
                 promoted=bool(o.get("isPromoted") or o.get("isSuperOffer"))))
         return out
 

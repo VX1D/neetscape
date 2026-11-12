@@ -130,8 +130,17 @@ class Tab:
             if msg.get("id") == msg_id:
                 return msg.get("result", {})
 
-    async def goto(self, url: str, settle: float) -> None:
-        await self.call("Page.navigate", {"url": url})
+    async def goto(self, url: str, settle: float, timeout: float = 45) -> None:
+        """Navigate and let the page settle. Page.navigate sometimes never answers (seen on olx.pl): give up
+        after `timeout` and retry once, so one stuck navigation does not stall the whole board for minutes."""
+        for attempt in (1, 2):
+            try:
+                await self.call("Page.navigate", {"url": url}, timeout)
+                break
+            except asyncio.TimeoutError:
+                if attempt == 2:
+                    raise
+                await self.call("Page.stopLoading", {}, 10)
         await asyncio.sleep(settle)
 
     async def evaluate(self, expression: str, timeout: float = 600):

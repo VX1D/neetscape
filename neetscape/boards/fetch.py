@@ -1,8 +1,10 @@
 """Transports used by boards, with per-host politeness.
 
-http            plain HTTP (stdlib), run in a thread
+http            plain HTTP (stdlib), GET or POST, run in a thread
 browser_fetch   `fetch()` from a tab opened on the board's origin (passes bot checks, no rendering)
-browser_render  navigate + scroll + collect (link, link text, card text) triples
+
+`BrowserRender` is not a board transport: `details` uses it to read a board's `posting_selector` from a rendered
+offer page.
 """
 from __future__ import annotations
 
@@ -15,7 +17,6 @@ import urllib.parse
 import urllib.request
 
 from ..browser import Tab
-from ..log import log
 
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
 
@@ -46,8 +47,11 @@ class FetchError(Exception):
         self.status = status
 
 
-def _http_get(url: str, accept: str, language: str = "en", headers: dict | None = None) -> tuple[int, str]:
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": accept, "Accept-Language": language, **(headers or {})})
+def _http_get(url: str, accept: str, language: str = "en", headers: dict | None = None,
+              body: str | None = None) -> tuple[int, str]:
+    """GET, or POST when `body` is given (its Content-Type comes from `headers`)."""
+    req = urllib.request.Request(url, data=body.encode() if body is not None else None,
+                                 headers={"User-Agent": UA, "Accept": accept, "Accept-Language": language, **(headers or {})})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             return r.status, r.read().decode("utf-8", "replace")
@@ -68,13 +72,13 @@ class Http:
     async def __aexit__(self, *exc):
         return False
 
-    async def get(self, url: str) -> str:
+    async def get(self, url: str, body: str | None = None) -> str:
         status = 0
         for attempt in range(self.retries + 1):
             await self.limiter.wait(url)
-            status, body = await asyncio.to_thread(_http_get, url, self.accept, self.language, self.headers)
+            status, text = await asyncio.to_thread(_http_get, url, self.accept, self.language, self.headers, body)
             if status == 200:
-                return body
+                return text
             if status in (404, 410):
                 raise FetchError(status)
             await asyncio.sleep((15 if status == 429 else 3) * (attempt + 1))
@@ -114,15 +118,8 @@ class BrowserFetch:
         raise FetchError(status, url)
 
 
-_GRAB = r"""(async()=>{const L=new Map();
-const grab=()=>document.querySelectorAll('a[href]').forEach(a=>{const t=(a.innerText||a.textContent||'').trim().replace(/\s+/g,' ').slice(0,500);
- const card=a.closest('li,article,[data-test],[data-cy],div[class*=offer],div[class*=card],div[class*=job]');const c=card?(card.innerText||'').replace(/\s+/g,' ').slice(0,800):'';
- const o=L.get(a.href);L.set(a.href,o?[t.length>o[0].length?t:o[0],c.length>o[1].length?c:o[1]]:[t,c])});
-for(let i=0;i<14;i++){grab();window.scrollBy(0,900);await new Promise(r=>setTimeout(r,300))}grab();return JSON.stringify([...L.entries()])})()"""
-
-
 class BrowserRender:
-    """Render a result page and return JSON [[href, [link_text, card_text]], ...]."""
+    """A tab that renders pages (navigate, let the page settle) to read one element's text."""
 
     def __init__(self, port: int, limiter: Limiter, settle: float = 4.0):
         self.port, self.limiter, self.settle = port, limiter, settle
@@ -135,15 +132,9 @@ class BrowserRender:
         await self.tab.__aexit__(*exc)
         return False
 
-    async def get(self, url: str) -> str:
-        await self.limiter.wait(url)
-        await self.tab.goto(url, self.settle)
-        raw = await self.tab.evaluate(_GRAB, 120)
-        if raw is None:
-            log("render: no result for", url)
-        return raw or "[]"
-
-    async def page_text(self, url: str) -> str:
+    async def element_text(self, url: str, selector: str) -> str:
+        """innerText of the first element matching `selector` on the rendered page ("" when absent)."""
         await self.limiter.wait(url)
         await self.tab.goto(url, self.settle + 2)
-        return await self.tab.evaluate("document.body.innerText.slice(0,40000)", 60) or ""
+        js = f"(document.querySelector({json.dumps(selector)})||{{}}).innerText?.slice(0,40000)||''"
+        return await self.tab.evaluate(js, 60) or ""

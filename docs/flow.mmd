@@ -1,7 +1,7 @@
 flowchart TD
     CV["CV (PDF/TXT) + a few answers"] --> AG
     subgraph AG["Coding agent (Claude Code, Codex) — follows AGENTS.md"]
-        A1["read CV, ask what changes the search<br/>(country, remote/city, pay, contracts, hours)"] --> A2["neetscape init --country CC --preset …<br/>edit profile.json: searches = where · what · filters · boost"]
+        A1["read CV, ask what changes the search<br/>(country, remote/city, pay, contracts, hours)"] --> A2["neetscape init --country CC --preset …<br/>edit profile.json: searches = where · what · filters · boost<br/>optional blacklist (companies · urls · text)"]
     end
     A2 --> CHK["neetscape check · neetscape plan<br/>(validate, show requests per board, no network)"]
 
@@ -15,26 +15,32 @@ flowchart TD
     CHK --> PLAN["planner: search × board capabilities<br/>push supported conditions, dedupe identical requests"]
 
     PLAN --> CRAWL
-    subgraph CRAWL["neetscape run — crawler (per-host rate limiter, private browser on Xvfb)"]
+    subgraph CRAWL["stage 1: neetscape run — crawler (per-host rate limiter, board minimum intervals)"]
         direction LR
-        HT["http<br/>APIs · RSS · public guest API"]
-        BF["browser_fetch<br/>same-origin JSON"]
-        BR["browser_render<br/>result pages → cards"]
+        HT["http<br/>JSON APIs (GET/POST) · RSS ·<br/>server-rendered pages · guest API"]
+        BF["browser_fetch<br/>same-origin fetch in a private tab:<br/>embedded page data (__NEXT_DATA__, …)"]
     end
-    CRAWL -->|"store everything fetched<br/>stop: empty / no new / last page / known page"| DB[("SQLite runs/neetscape.db (one country)<br/>offers · clusters · sightings · requests<br/>evals · rejections · details · marks")]
+    CRAWL -->|"store every listing card<br/>stop: empty / short / 404 / no new / known page"| DB[("SQLite runs/neetscape.db (one country)<br/>offers · clusters · sightings · requests<br/>evals · rejections · details · marks")]
 
-    DB --> EVAL["eval: every condition re-checked locally<br/>pay → country currency/month · unknown keep/drop · rank rules<br/>pass → evals · fail → rejections (reasons)"]
+    DB --> EVAL["eval: every condition re-checked locally on the cards<br/>pay → country currency/month · unknown keep/drop · blacklist · rank rules<br/>pass → evals · fail → rejections (reasons)"]
     EVAL --> DB
-    DB --> OUT["runs/DATE-runN/<br/>REPORT.md · listing.tsv · offers.csv<br/>neetscape list [--group title] · neetscape sql (:run)"]
+    EVAL --> POST
+    subgraph POST["stage 2: postings, only for matches"]
+        P1["review.mode auto: top details_top matches<br/>whose job has no stored posting yet<br/>(on demand: details --pick / --top / --marked)"] --> P2["posting text: board API · posting() (JSON-LD / embedded data)<br/>· posting_selector · never the whole page"]
+        P2 --> P3["settle unknown mode / work time / contracts<br/>text_exclude + blacklist read the posting · eval again"]
+    end
+    P3 --> DB
+    DB --> OUT["runs/DATE-runN/<br/>REPORT.md · REPORT.html · listing.tsv · offers.csv<br/>neetscape list [--group title] · neetscape sql (:run)"]
 
     OUT --> REV
     subgraph REV["Coding agent — two-pass review"]
-        R1["pass 1: listing in chunks, list --group title,<br/>sql GROUP BY → candidate ids"] --> R2["neetscape details --pick ID,…<br/>(auto mode: top N opened by run)"]
+        R1["pass 1: listing in chunks, list --group title,<br/>sql GROUP BY → candidate ids"] --> R2["neetscape details --pick ID,…"]
         R2 --> R3["pass 2: neetscape show ID<br/>posting · pass/fail reasons per search<br/>verify remote · blockers · fit · pay"]
-        R3 --> R4["runs/shortlist.md<br/>apply now · side jobs · stretch · rejected"]
+        R3 --> R4["neetscape mark ID shortlisted --note 'why · risk'<br/>neetscape report → REPORT.html review"]
     end
-    R2 --> DB
+    R2 --> POST
+    R4 --> DB
     R4 --> USER(["You"])
     USER --> MARK["neetscape mark ID STATUS"]
     MARK --> DB
-    DB -.->|"next run: incremental crawl,<br/>only new clusters flagged, gone after complete requests"| CRAWL
+    DB -.->|"next run: incremental crawl, only new clusters flagged,<br/>postings opened only for new matches, gone after complete requests"| CRAWL

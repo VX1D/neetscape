@@ -24,14 +24,20 @@ All of them follow the same rules.
 
 ## Add a board
 
+0. **Check that it may be added.** The board's terms must allow automated access to its public pages
+   (see *Politeness and terms* under [Ground rules](#ground-rules)), and it must not be on the list of
+   [boards deliberately not supported](docs/boards-and-countries.md#boards-deliberately-not-supported).
 1. **Pick the transport**, in this order of preference:
-   1. a public JSON API or feed (`transport="http"`);
-   2. JSON embedded in the result page (`__NEXT_DATA__`, JSON-LD `JobPosting`) read with a
-      same-origin fetch from a tab (`browser_fetch`, optionally shrunk in the page with `fetch_js`);
-   3. rendered result pages (`browser_render`), parsed from (link, link text, card text) triples.
+   1. `transport="http"`: a public JSON API (GET, or POST: return the body from `post_body(r, page)`
+      and set `content_type`), an RSS feed, or server-rendered result pages / data embedded in them
+      (`__NEXT_DATA__`, a Nuxt payload, JSON-LD), when the board serves a plain HTTP client;
+   2. `transport="browser_fetch"`: the same embedded data, fetched with a same-origin request from a
+      tab of the private browser, for boards that refuse a plain client. `fetch_js()` can shrink the
+      response in the page to the fields you parse (the fixture is then that shrunk output).
+   Parse the board's own data, not the visible page text.
 2. **Probe it by hand.** Find which query parameters really change the results (keywords, remote,
-   city/radius, part-time, newest first), the page size, the last page, rate limits. Write what you
-   verified, with the date, in the module docstring.
+   city/radius, part-time, newest first), the page size, what the page after the last one returns,
+   rate limits. Write what you verified, with the date, in the module docstring.
 3. **Write the adapter** from [`docs/board_template.py`](docs/board_template.py) in
    `neetscape/countries/<cc>/boards/<name>.py`, then import it in that package's `__init__.py` and
    add it to `__all__` there (the import registers the board; `__all__` keeps pyflakes quiet). The
@@ -40,15 +46,33 @@ All of them follow the same rules.
    `country="any"` for boards serving every country (they receive the searched country in
    `r.params["country"]`, like `linkedin.py`), `country="intl"` for international remote-only boards
    (`feeds.py`). A worked example: [`neetscape/countries/de/boards/arbeitnow.py`](neetscape/countries/de/boards/arbeitnow.py).
-4. **Record a fixture** (at most ~15 offers; trim long descriptions, keep the structure):
+   Optional parts, when the board needs them:
+   - `Caps(whole_listing=True)`: one response is the request's whole listing (a feed, a whole-category
+     download), so fetching it completes the request. Otherwise a request is complete only on an
+     empty, short or no-new page or a 404 after the last page; reaching `max_pages` never is;
+   - `min_interval = {"host": seconds}`: a longer minimum gap for a board that throttles (the
+     profile's `politeness.min_interval_s` still overrides it);
+   - `posting(page)`: posting fields from the source of an offer page; the default reads schema.org
+     `JobPosting` JSON-LD. Override it when the JSON-LD lacks the body or is missing, to read the
+     board's embedded data. Return only the posting body, never page chrome (menus, cookie banners,
+     similar offers);
+   - `posting_url(url)` / `posting_text(raw)`: a JSON posting API fetched over plain HTTP instead of
+     the offer page;
+   - `posting_selector`: a CSS selector of the posting body on the rendered offer page, used only when
+     `posting()` finds no text. Leave it empty unless you checked that the selector holds just the posting.
+4. **Record fixtures** (public offer data only, at most ~15 offers; trim long descriptions, keep the
+   structure):
    ```
    neetscape probe <name> --save-fixture tests/fixtures/<cc>/<name>.json
    ```
-   It must hold only public offer data (shared boards: `tests/fixtures/shared/<name>.*`).
-   `tests/countries/test_countries.py` requires a fixture for every board and parses every country
-   board's fixture; add a test of your own for the fields the board ships (see `tests/countries/test_de.py`
-   or `tests/countries/pl/test_pl_boards.py`).
-5. **Fill in the PR coverage table** from `neetscape probe <name>`:
+   Shared boards use `tests/fixtures/shared/<name>.*`. If the board reads postings itself, add a trimmed
+   offer page as `tests/fixtures/<cc>/<name>_posting.html`. `tests/countries/test_countries.py`
+   requires a fixture for every board and parses every country board's fixture.
+5. **Write one test file for the board** in `tests/countries/<cc>/` (e.g.
+   `tests/countries/pl/test_gowork.py`) covering the fields it ships, its URL builder and, if any, its
+   posting reader; `tests/affected.py` then runs just that file and the country checks for a board-only
+   change.
+6. **Fill in the PR coverage table** from `neetscape probe <name>`:
 
    | field | coverage | source |
    |---|---|---|

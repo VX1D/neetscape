@@ -1,16 +1,17 @@
 {
- "total": 1239,
+ "total": 1244,
  "page": {
   "number": 1,
   "size": 50,
   "count": 25
  },
+ "keywords": [],
  "offers": [
   {
-   "url": "senior-master-data-specialist-poznan,oferta,01000000-bd74-3b89-86d2-08df40b7d427",
-   "title": "Senior Master Data Specialist",
-   "company": "ALTEN Polska",
-   "published": "2026-11-12T12:23:57.157",
+   "url": "system-analyst-iso-20022-bydgoszcz,oferta,01000000-4029-e663-f2db-08df40ca699c",
+   "title": "System Analyst (ISO 20022)",
+   "company": "Connectis_",
+   "published": "2026-11-12T14:36:59.653",
    "modes": [
     "zdalna"
    ],
@@ -18,80 +19,34 @@
     "senior"
    ],
    "cities": [
-    "Poznań"
+    "Bydgoszcz"
    ],
    "skills": [
-    "SQL",
-    "Microsoft Power BI",
-    "PowerShell"
+    "SQL"
    ],
    "contracts": [
     {
-     "id": 0,
-     "salary": null
-    },
-    {
-     "id": 3,
-     "salary": null
-    }
-   ],
-   "about": "Szukamy doświadczonego Senior Master Data Specialist, który samodzielnie zarządza procesami Master Data, posiada silne kompetencje analityczne (SQL, Power Platform, Dynamics AX), rozumie procesy biznesowe oraz potrafi współpracować z biznesem, prowadzić usprawnienia i wspierać zespół swoją wiedzą ek"
-  },
-  {
-   "url": "analityk-rynku-energii-i-rozwoju-produktu-k-m-krakow,oferta,01000000-4029-e663-cec6-08df40b5f45e",
-   "title": "Analityk Rynku Energii i Rozwoju Produktu (K/M)",
-   "company": "UNWASTE PSA",
-   "published": "2026-11-12T12:10:32.917",
-   "modes": [
-    "zdalna",
-    "hybrydowa",
-    "stacjonarna"
-   ],
-   "levels": [
-    "expert"
-   ],
-   "cities": [
-    "Kraków",
-    "Warszawa"
-   ],
-   "skills": [],
-   "contracts": [
-    {
-     "id": 0,
-     "salary": {
-      "from": 13000,
-      "to": 20000,
-      "currencySymbol": "zł",
-      "timeUnitId": 0,
-      "timeUnit": {
-       "shortForm": "mies.",
-       "longForm": "miesięcznie"
-      },
-      "kindName": "brutto"
-     }
-    },
-    {
      "id": 3,
      "salary": {
-      "from": 16000,
-      "to": 26000,
+      "from": 123,
+      "to": 135,
       "currencySymbol": "zł",
-      "timeUnitId": 0,
+      "timeUnitId": 1,
       "timeUnit": {
-       "shortForm": "mies.",
-       "longForm": "miesięcznie"
+       "shortForm": "godz.",
+       "longForm": "godzinowo"
       },
       "kindName": "netto (+ VAT)"
      }
     }
    ],
-   "about": ""
+   "about": "Wspólnie z naszym Partnerem z sektora bankowego poszukujemy doświadczonego/ej specjalisty/ki do świadczenia usług jako System Analyst (ISO 20022)."
   },
   {
-   "url": "senior-data-engineer-rzeszow,oferta,01000000-4029-e663-7002-08df40aba637",
-   "title": "Senior Data Engineer",
-   "company": "ALTEN Polska",
-   "published": "2026-11-12T10:56:46.577",
+   "url": "senior-project-manager-k-m-warszawa,oferta,01000000-4029-e663-f832-08df40c2a49c",
+   "title": "Senior Project Manager (K/M)",
+   "company": "ASTEK Polska",
+   "published": "2026-11-12T13:41:22.153",
    "modes": [
     "zdalna"
    ],
@@ -99,99 +54,86 @@
     "senior"
    ],
    "cities": [
-    "Rzeszów"
-   ],
-   "skills": [
-    "Apache Spark",
-    "PySpark",
-    "Python",
-    "SQL",
-    "AWS",
-    "Databricks"
-   ],
-   "contracts": [
-    {
-     "id": 0,
-     "salary": null
-    },
-    {
-     "id": 3,
-     "salary": null
-    }
-   ],
-   "about": "Do zespołu u naszego klienta z branży lotniczej szukamy osoby na stanowisko Senior Data Engineer!"
-  },
-  {
-   "url": "senior-program-director-krakow,oferta,01000000-a71c-250c-3397-08df40a6e7cd",
-   "title": "Senior Program Director",
-   "company": "ALTEN Polska",
-   "published": "2026-11-12T10:22:49.077",
-   "modes": [
-    "zdalna"
-   ],
-   "levels": [
-    "senior"
-   ],
-   "cities": [
-    "Kraków"
+    "Warszawa"
    ],
    "skills": [],
    "contracts": [
     {
-     "id": 0,
-     "salary": null
-    },
-    {
      "id": 3,
-     "salary": null
+     "salary": {
+      "from": 200,
+      "to": 260,
+      "currencySymbol": "zł",
+      "timeUnitId": 1,
+      "timeUnit": {
+       "shortForm": "godz.",
+       "longForm": "godzinowo"
+      },
+      "kindName": "netto (+ VAT)"
+     }
     }
    ],
-   "about": "Szukamy Senior Program Directora z doświadczeniem w prowadzeniu międzynarodowych programów transformacyjnych, zarządzaniu zmianą organizacyjną oraz współpracy z kadrą zarządzającą, który będzie odpowiadać za realizację i skalowanie strategicznych inicjatyw technologicznych w środowisku globalnym."
+   "about": "Praca zdalna"
   },
   {
-   "url": "servicenow-architect-f-m-x-bialystok-jozefa-marjanskiego-3,oferta,01000000-bd74-3b89-c3a1-08df40a65ae5",
-   "title": "ServiceNow Architect (f/m/x)",
-   "company": "Sii Sp. z o.o.",
-   "published": "2026-11-12T10:18:49",
+   "url": "f-m-lead-postgresql-expert---database-architect-warszawa,oferta,01000000-0ed0-6030-ad11-08df40c1e70b",
+   "title": "F/M: Lead PostgreSQL Expert / Database Architect",
+   "company": "PEOPLEVIBE SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+   "published": "2026-11-12T13:36:04.633",
    "modes": [
-    "remote",
-    "hybrid",
-    "full office"
+    "zdalna"
    ],
    "levels": [
-    "mid",
-    "senior"
+    "senior",
+    "expert"
    ],
    "cities": [
-    "Białystok",
-    "Bydgoszcz",
-    "Gdańsk",
-    "Katowice",
-    "Kraków",
-    "Łódź",
-    "Lublin",
-    "Piła",
-    "Poznań",
-    "Rzeszów",
-    "Szczecin",
-    "Toruń",
-    "Warszawa",
-    "Wrocław"
+    "Warszawa"
    ],
    "skills": [
-    "ServiceNow"
+    "PostgreSQL",
+    "IBM DB2"
    ],
    "contracts": [
     {
-     "id": 0,
-     "salary": null
-    },
-    {
      "id": 3,
      "salary": null
     }
    ],
-   "about": "Join the Sii ServiceNow Competency Center and become part of a team delivering solutions for clients across Europe and the United States. We focus on enhancing customer platforms, optimizing and digitizing process flows, and expanding ServiceNow usage within organizations. In this role, you will con"
+   "about": "Szukamy eksperta PostgreSQL z doświadczeniem architektonicznym, który będzie odpowiedzialny za projektowanie, rozwój i optymalizację rozwiązań bazodanowych oraz wsparcie techniczne zespołów projektowych. Kluczowym elementem projektu są migracje bardzo dużych wolumenów danych do PostgreSQL. Rola ma c"
+  },
+  {
+   "url": "analityk-systemowy-k-m-warszawa,oferta,01000000-bd74-3b89-d059-08df40c075e4",
+   "title": "Analityk Systemowy (k/m)",
+   "company": "Moondigo sp. z o.o.",
+   "published": "2026-11-12T13:25:45.637",
+   "modes": [
+    "zdalna"
+   ],
+   "levels": [
+    "mid"
+   ],
+   "cities": [
+    "Warszawa"
+   ],
+   "skills": [],
+   "contracts": [
+    {
+     "id": 3,
+     "salary": {
+      "from": 90,
+      "to": 140,
+      "currencySymbol": "zł",
+      "timeUnitId": 1,
+      "timeUnit": {
+       "shortForm": "godz.",
+       "longForm": "godzinowo"
+      },
+      "kindName": "netto (+ VAT)"
+     }
+    }
+   ],
+   "about": "Dołącz do strategicznego projektu transformacji cyfrowej w branży ubezpieczeniowej jako Analityk Systemowy."
   },
   {
    "url": "analityk-biznesowy---analityczka-biznesowa-warszawa,oferta,01000000-4029-e663-0560-08df40bdbd4e",
@@ -280,6 +222,55 @@
    "about": "Projekt który będziemy gotowi Ci zaproponować dotyczy realizacji działań wspierających proces audytu cyberbezpieczeństwa, w szczególności poprzez: przeprowadzanie audytowych testów bezpieczeństwa oraz tworzenie i rozwój narzędzi automatyzujących testy bezpieczeństwa."
   },
   {
+   "url": "cloud-data-engineer-f-m-x-bialystok-jozefa-marjanskiego-3,oferta,01000000-bd74-3b89-b55d-08df40b7b064",
+   "title": "Cloud Data Engineer (f/m/x)",
+   "company": "Sii Sp. z o.o.",
+   "published": "2026-11-12T12:22:55.133",
+   "modes": [
+    "zdalna",
+    "hybrydowa",
+    "stacjonarna"
+   ],
+   "levels": [
+    "mid",
+    "senior"
+   ],
+   "cities": [
+    "Białystok",
+    "Bydgoszcz",
+    "Częstochowa",
+    "Gdańsk",
+    "Gliwice",
+    "Katowice",
+    "Kielce",
+    "Kraków",
+    "Łódź",
+    "Lublin",
+    "Piła",
+    "Poznań",
+    "Rzeszów",
+    "Szczecin",
+    "Toruń",
+    "Warszawa",
+    "Wrocław"
+   ],
+   "skills": [
+    "Python",
+    "SQL",
+    "ETL/ELT",
+    "Apache Spark/PySpark",
+    "Microsoft Azure",
+    "Databricks"
+   ],
+   "contracts": [
+    {
+     "id": 3,
+     "salary": null
+    }
+   ],
+   "about": "Chcesz rozwijać swoje kompetencje w technologiach chmurowych? Dołącz do naszej wyspecjalizowanej jednostki skupiającej ekspertów z dziedziny procesowania i analizy danych w ramach Centrum Kompetencyjnego Data & Analytics. Oferujemy również rozwój w obszarach Data Science, Big Data i Machine Learning"
+  },
+  {
    "url": "tester---qa-team-lead-warszawa-grzybowska-49,oferta,01000000-4029-e663-afc9-08df40b61809",
    "title": "Tester / QA Team Lead",
    "company": "ITHOUSE SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
@@ -318,6 +309,56 @@
     }
    ],
    "about": "📌 Poszukujemy doświadczonego Testera, który dołączy do zespołu projektowego jednego z naszych klientów."
+  },
+  {
+   "url": "analityk-rynku-energii-i-rozwoju-produktu-k-m-krakow,oferta,01000000-4029-e663-cec6-08df40b5f45e",
+   "title": "Analityk Rynku Energii i Rozwoju Produktu (K/M)",
+   "company": "UNWASTE PSA",
+   "published": "2026-11-12T12:10:32.917",
+   "modes": [
+    "zdalna",
+    "hybrydowa",
+    "stacjonarna"
+   ],
+   "levels": [
+    "expert"
+   ],
+   "cities": [
+    "Kraków",
+    "Warszawa"
+   ],
+   "skills": [],
+   "contracts": [
+    {
+     "id": 0,
+     "salary": {
+      "from": 13000,
+      "to": 20000,
+      "currencySymbol": "zł",
+      "timeUnitId": 0,
+      "timeUnit": {
+       "shortForm": "mies.",
+       "longForm": "miesięcznie"
+      },
+      "kindName": "brutto"
+     }
+    },
+    {
+     "id": 3,
+     "salary": {
+      "from": 16000,
+      "to": 26000,
+      "currencySymbol": "zł",
+      "timeUnitId": 0,
+      "timeUnit": {
+       "shortForm": "mies.",
+       "longForm": "miesięcznie"
+      },
+      "kindName": "netto (+ VAT)"
+     }
+    }
+   ],
+   "about": ""
   },
   {
    "url": "senior-data-bi-architect-microsoft-fabric---power-bi-warszawa,oferta,01000000-a71c-250c-4e86-08df40af3748",
@@ -391,157 +432,6 @@
    "about": "Projekt obejmuje budowę modelu zarządzania danymi, definiowanie standardów jakości danych, Data Lineage oraz metadanych. Zakres prac to ocena dojrzałości organizacji, przygotowanie rekomendacji rozwojowych oraz wsparcie inicjatyw analitycznych i AI we współpracy z interesariuszami biznesowymi i tech"
   },
   {
-   "url": "sap-pp-qm-ams-consultant-german-speaking-f-m-warszawa,oferta,01000000-0ed0-6030-09a8-08df40b7ecb5",
-   "title": "SAP PP/QM AMS Consultant (German-speaking) (f/m)",
-   "company": "ASTEK Polska",
-   "published": "2026-11-12T12:24:35.447",
-   "modes": [
-    "remote"
-   ],
-   "levels": [
-    "senior"
-   ],
-   "cities": [
-    "Warszawa"
-   ],
-   "skills": [
-    "SAP PP",
-    "SAP QM",
-    "SAP ECC",
-    "SAP HANA",
-    "IDocs",
-    "SAP Fiori",
-    "SAP"
-   ],
-   "contracts": [
-    {
-     "id": 3,
-     "salary": null
-    }
-   ],
-   "about": "Wynagrodzenie: 1 400 – 1 700 zł net (+ VAT) / per day | B2B contract"
-  },
-  {
-   "url": "cloud-data-engineer-f-m-x-bialystok-jozefa-marjanskiego-3,oferta,01000000-bd74-3b89-b55d-08df40b7b064",
-   "title": "Cloud Data Engineer (f/m/x)",
-   "company": "Sii Sp. z o.o.",
-   "published": "2026-11-12T12:22:55.133",
-   "modes": [
-    "zdalna",
-    "hybrydowa",
-    "stacjonarna"
-   ],
-   "levels": [
-    "mid",
-    "senior"
-   ],
-   "cities": [
-    "Białystok",
-    "Bydgoszcz",
-    "Częstochowa",
-    "Gdańsk",
-    "Gliwice",
-    "Katowice",
-    "Kielce",
-    "Kraków",
-    "Łódź",
-    "Lublin",
-    "Piła",
-    "Poznań",
-    "Rzeszów",
-    "Szczecin",
-    "Toruń",
-    "Warszawa",
-    "Wrocław"
-   ],
-   "skills": [
-    "Python",
-    "SQL",
-    "ETL/ELT",
-    "Apache Spark/PySpark",
-    "Microsoft Azure",
-    "Databricks"
-   ],
-   "contracts": [
-    {
-     "id": 3,
-     "salary": null
-    }
-   ],
-   "about": "Chcesz rozwijać swoje kompetencje w technologiach chmurowych? Dołącz do naszej wyspecjalizowanej jednostki skupiającej ekspertów z dziedziny procesowania i analizy danych w ramach Centrum Kompetencyjnego Data & Analytics. Oferujemy również rozwój w obszarach Data Science, Big Data i Machine Learning"
-  },
-  {
-   "url": "ai-test-strategy-expert---ekspert---ekspertka-ds-strategii-testowania-ai-warszawa-grzybowska-49,oferta,01000000-4029-e663-8340-08df40b65191",
-   "title": "AI Test Strategy Expert / Ekspert / Ekspertka ds. Strategii Testowania AI",
-   "company": "ITHOUSE SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
-   "published": "2026-11-12T12:13:08.573",
-   "modes": [
-    "zdalna"
-   ],
-   "levels": [
-    "senior",
-    "expert"
-   ],
-   "cities": [
-    "Warszawa"
-   ],
-   "skills": [
-    "LLM",
-    "RAG",
-    "Machine Learning"
-   ],
-   "contracts": [
-    {
-     "id": 3,
-     "salary": null
-    }
-   ],
-   "about": "📌 Poszukujemy AI Test Strategy Expert / Eksperta / Ekspertki ds. Strategii Testowania AI, który/-a dołączy do dodatkowego projektu realizowanego dla jednego z naszych klientów z sektora publicznego. Współpraca zakłada zaangażowanie w niepełnym wymiarze godzin z elastycznym czasem pracy."
-  },
-  {
-   "url": "regular-fullstack-developer-net-vue---freelancer-gdansk,oferta,01000000-4029-e663-c7d7-08df40ae2286",
-   "title": "Regular Fullstack Developer (.Net + Vue) - Freelancer",
-   "company": "Monterail Sp. z o.o.",
-   "published": "2026-11-12T11:14:30.6",
-   "modes": [
-    "remote"
-   ],
-   "levels": [
-    "mid"
-   ],
-   "cities": [
-    "Gdańsk",
-    "Kraków",
-    "Poznań",
-    "Warszawa",
-    "Wrocław"
-   ],
-   "skills": [
-    ".NET",
-    "C#",
-    "Vue.js",
-    "Microsoft SQL Server",
-    "Microsoft Azure"
-   ],
-   "contracts": [
-    {
-     "id": 3,
-     "salary": {
-      "from": 65,
-      "to": 100,
-      "currencySymbol": "zł",
-      "timeUnitId": 1,
-      "timeUnit": {
-       "shortForm": "hr.",
-       "longForm": "hourly"
-      },
-      "kindName": "net (+ VAT)"
-     }
-    }
-   ],
-   "about": "We are looking for a strong Regular Fullstack Developer (.Net + Vue) to collaborate with us on a freelance basis for a greenfield project in the retail industry."
-  },
-  {
    "url": "data-engineer-gdansk-aleja-grunwaldzka-472b,oferta,01000000-4029-e663-51f7-08df40ad4f0a",
    "title": "Data Engineer",
    "company": "Acxiom Global Service Center Polska sp. z o. o",
@@ -578,6 +468,121 @@
     }
    ],
    "about": "The Data Engineer within Analytics Services team in Acxiom will create solutions to business problems defined by specific business requirements. In this position, you will draw upon technical and data processing knowledge to solve complex marketing analytics problems on very large volumes of data."
+  },
+  {
+   "url": "servicenow-architect-f-m-x-bialystok-jozefa-marjanskiego-3,oferta,01000000-bd74-3b89-c3a1-08df40a65ae5",
+   "title": "ServiceNow Architect (f/m/x)",
+   "company": "Sii Sp. z o.o.",
+   "published": "2026-11-12T10:18:49",
+   "modes": [
+    "remote",
+    "hybrid",
+    "full office"
+   ],
+   "levels": [
+    "mid",
+    "senior"
+   ],
+   "cities": [
+    "Białystok",
+    "Bydgoszcz",
+    "Gdańsk",
+    "Katowice",
+    "Kraków",
+    "Łódź",
+    "Lublin",
+    "Piła",
+    "Poznań",
+    "Rzeszów",
+    "Szczecin",
+    "Toruń",
+    "Warszawa",
+    "Wrocław"
+   ],
+   "skills": [
+    "ServiceNow"
+   ],
+   "contracts": [
+    {
+     "id": 0,
+     "salary": null
+    },
+    {
+     "id": 3,
+     "salary": null
+    }
+   ],
+   "about": "Join the Sii ServiceNow Competency Center and become part of a team delivering solutions for clients across Europe and the United States. We focus on enhancing customer platforms, optimizing and digitizing process flows, and expanding ServiceNow usage within organizations. In this role, you will con"
+  },
+  {
+   "url": "chief-information-security-officer-f-m-krakow-ksiedza-jozefa-tischnera-8,oferta,01000000-bd74-3b89-bab7-08df40a132ed",
+   "title": "Chief Information Security Officer (F/M)",
+   "company": "drEryk Sp. z o.o.",
+   "published": "2026-11-10T09:22:11.03",
+   "modes": [
+    "zdalna",
+    "hybrydowa"
+   ],
+   "levels": [
+    "manager"
+   ],
+   "cities": [
+    "Kraków"
+   ],
+   "skills": [
+    "SIEM",
+    "EDR/XDR",
+    "NDR",
+    "WAF",
+    "DLP",
+    "Vulnerability Management",
+    "Wazuh",
+    "Risk Management"
+   ],
+   "contracts": [
+    {
+     "id": 0,
+     "salary": {
+      "from": 16000,
+      "to": 25000,
+      "currencySymbol": "zł",
+      "timeUnitId": 0,
+      "timeUnit": {
+       "shortForm": "mies.",
+       "longForm": "miesięcznie"
+      },
+      "kindName": "brutto"
+     }
+    }
+   ],
+   "about": "Poszukujemy doświadczonego lidera bezpieczeństwa informacji i cyberbezpieczeństwa, który będzie odpowiedzialny za opracowanie, wdrożenie i rozwój kompleksowej strategii bezpieczeństwa w organizacji specjalizującej się w projektowaniu, wytwarzaniu, wdrażaniu i utrzymywaniu oprogramowania."
+  },
+  {
+   "url": "junior-system-support-specialist-warszawa,oferta,01000000-4029-e663-de0b-08df409cd793",
+   "title": "Junior System Support Specialist",
+   "company": "ORNSSON SOLUTIONS",
+   "published": "2026-11-10T12:03:03.967",
+   "modes": [
+    "zdalna"
+   ],
+   "levels": [
+    "junior"
+   ],
+   "cities": [
+    "Warszawa"
+   ],
+   "skills": [],
+   "contracts": [
+    {
+     "id": 2,
+     "salary": null
+    },
+    {
+     "id": 3,
+     "salary": null
+    }
+   ],
+   "about": ""
   }
  ]
 }

@@ -2,8 +2,8 @@
 directory (LinkedIn, serving any country, and the international feeds) and the boards of every country
 package (`neetscape/countries/<cc>/boards/`, one module per board).
 
-Shared code for adapters: `base` (interface, registration), `fetch` (HTTP, politeness), `pages` (helpers for
-adapters reading result pages).
+Shared code for adapters: `base` (interface, registration), `fetch` (HTTP, politeness), `pages` (parsing
+helpers shared by adapters).
 
 Groups usable in a profile's `boards` and in `--boards`: a country code (that country's boards plus the
 boards serving any country, e.g. "pl", "de"), "intl" (international remote-only boards, opt-in) and "all".

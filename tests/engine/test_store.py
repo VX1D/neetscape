@@ -154,3 +154,41 @@ def test_readonly_store_sees_the_current_schema(tmp_path):
     assert s.q("SELECT COUNT(*) FROM rejections")[0][0] == 0
     with pytest.raises(sqlite3.OperationalError, match="readonly"):
         s.db.execute("DELETE FROM offers")
+
+
+def test_single_page_board_completes(fake, tmp_path):
+    from neetscape.boards.base import Caps
+    fake.caps = Caps(keywords=True, remote="filter", page_size=3, max_pages=1, whole_listing=True, transport="http")
+    fake.pages = {("*", 1): [["a", "Job A", {}], ["b", "Job B", {}], ["c", "Job C", {}]]}
+    db = Store(tmp_path / "j.db")
+    run_crawl(db, db.start_run({}, []), fake, [ALL_REMOTE])
+    req = db.q("SELECT * FROM requests")[0]
+    assert (req["complete"], req["stop_reason"]) == (1, "end")   # a full single page is the whole listing
+
+
+def test_page_cap_is_not_the_end_of_the_listing(fake, tmp_path):
+    from neetscape.boards.base import Caps
+    fake.caps = Caps(keywords=True, remote="filter", page_size=3, max_pages=1, transport="http")  # e.g. Indeed: 1 public page
+    fake.page_url = lambda r, page: f"fake://{r.keyword or '*'}/{page}" if page <= 1 else None
+    fake.pages = {("*", 1): [["a", "Job A", {}], ["b", "Job B", {}], ["c", "Job C", {}]]}
+    db = Store(tmp_path / "j.db")
+    run_crawl(db, db.start_run({}, []), fake, [ALL_REMOTE])
+    req = db.q("SELECT * FROM requests")[0]
+    assert (req["complete"], req["stop_reason"]) == (0, "page limit")   # offers beyond the cap must not turn "gone"
+
+
+def test_404_after_the_last_page_ends_the_request(fake, tmp_path, monkeypatch):
+    import json as _json
+    from neetscape.boards.fetch import FetchError, Http
+    fake.pages = {("*", 1): [["a", "Job A", {}], ["b", "Job B", {}], ["c", "Job C", {}]]}
+
+    async def get(self, url):
+        if url.endswith("/2"):
+            raise FetchError(404)
+        return _json.dumps(fake.pages.get(("*", 1)))
+
+    monkeypatch.setattr(Http, "get", get)
+    db = Store(tmp_path / "j.db")
+    run_crawl(db, db.start_run({}, []), fake, [ALL_REMOTE])
+    req = db.q("SELECT * FROM requests")[0]
+    assert (req["complete"], req["stop_reason"], req["error"]) == (1, "end", "")

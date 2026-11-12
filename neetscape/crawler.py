@@ -24,7 +24,7 @@ from . import country as countries
 from . import infer
 from .boards import REGISTRY
 from .boards.base import Request, accept_language
-from .boards.fetch import BrowserFetch, BrowserRender, FetchError, Http, Limiter
+from .boards.fetch import BrowserFetch, FetchError, Http, Limiter
 from .log import log
 from .model import Offer, Search
 from .store import Store
@@ -33,11 +33,13 @@ from .store import Store
 def transport_for(board, port: int, limiter: Limiter, retries: int):
     caps = board.caps
     if caps.transport == "http":
-        return Http(limiter, getattr(board, "accept", "*/*"), retries, headers=getattr(board, "headers", None),
+        headers = {**(getattr(board, "headers", None) or {}),
+                   **({"Content-Type": board.content_type} if getattr(board, "content_type", "") else {})}
+        return Http(limiter, getattr(board, "accept", "*/*"), retries, headers=headers or None,
                     language=accept_language(board))
     if caps.transport == "browser_fetch":
         return BrowserFetch(port, caps.origin, limiter, board.fetch_js(), retries)
-    return BrowserRender(port, limiter)
+    raise ValueError(f"{board.name}: unknown transport {caps.transport!r}")
 
 
 def text_country(board, r: Request, search: Search) -> str:
@@ -97,7 +99,8 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
             if url is None:
                 complete, reason = True, "end"
                 break
-            raw = await fetcher.get(url)
+            body = board.post_body(r, page)
+            raw = await (fetcher.get(url, body) if body is not None else fetcher.get(url))
             if record:
                 (record / r.board).mkdir(parents=True, exist_ok=True)
                 (record / r.board / f"{hashlib.sha1(url.encode()).hexdigest()[:10]}_p{page}.txt").write_text(url + "\n" + raw)
@@ -125,9 +128,15 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
                 if reason:
                     break
         else:
-            reason = "page limit"
+            if board.caps.whole_listing:  # the response was the whole listing (feeds, solid.jobs divisions)
+                complete, reason = True, "end"
+            else:
+                reason = "page limit"
     except FetchError as e:
-        error = str(e)
+        if e.status == 404 and pages:  # boards answer 404 for the page after the last one
+            complete, reason = True, "end"
+        else:
+            error = str(e)
     except Exception as e:  # a broken parser must not stop the other boards
         error = f"{type(e).__name__}: {e}"
     store.finish_request(req_id, pages, found, complete, reason, error)

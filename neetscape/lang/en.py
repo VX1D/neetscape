@@ -1,9 +1,15 @@
 """English: used for every country (always the last pack) and alone for international boards."""
 
 VOCAB = {
+    "first": {
+        "mode": [
+            ("remote", r"fully remote|full[- ]remote|100\s*% remote|remote only|remote[- ]only"),
+            ("remote", r"remote\s*(?:/|,|or)\s*hybrid|hybrid\s*(?:/|,|or)\s*remote"),  # a choice: remote is offered
+        ],
+    },
     "mode": {
-        "remote": [r"fully remote", r"full[- ]remote", r"\bremote\b", r"home office"],
-        "hybrid": [r"hybrid"],
+        "remote": [r"\bremote\b", r"home office"],
+        "hybrid": [r"hybrid(?![- ](?:cloud|apps?|mobile|infrastructure|environments?))"],
         "onsite": [r"on-?site"],
     },
     "worktime": {
@@ -38,6 +44,10 @@ VOCAB = {
 EXAMPLES = [
     ("Fully remote Python developer", "mode", "remote"),
     ("Hybrid, 2 days in the office", "mode", "hybrid"),
+    ("Hybrid work, 3 days remote per week", "mode", "hybrid"),
+    ("Hybrid (2 days in the office), remote possible", "mode", "hybrid"),
+    ("Remote or hybrid, your choice", "mode", "remote"),
+    ("Remote DevOps engineer (hybrid cloud, AWS)", "mode", "remote"),
     ("On-site in Berlin", "mode", "onsite"),
     ("Part-time support agent", "worktime", "part_time"),
     ("Full-time, permanent contract", "contract", ["employment"]),
