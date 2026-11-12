@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "label": "Focused search (rewrite the phrases, filters and pay for the person and the country)",
+  "label": "Focused search (an example role: rewrite the phrases, fields, filters and rules for the person and the country)",
   "candidate": {
     "summary": "Replace with a short summary of the person (written by the agent from the CV).",
     "strengths": [],
@@ -12,27 +12,19 @@
   "searches": [
     {
       "id": "main",
-      "label": "Main roles",
+      "label": "Main role (example: accountant; replace with the person's role)",
       "where": "remote",
       "what": [
-        "automation",
-        "ai",
-        "n8n",
-        "helpdesk",
-        "it support"
+        "accountant",
+        "accounting",
+        "bookkeeping",
+        "accounts payable"
       ],
-      "keywords_for": {
-        "linkedin": [
-          "AI automation",
-          "n8n",
-          "IT support"
-        ]
-      },
-      "title_include": [
-        "\\bai\\b|automat|n8n|llm|support|helpdesk"
+      "fields": [
+        "finance"
       ],
       "title_exclude": [
-        "senior|\\bsr\\.?\\b|lead|principal|staff|architect|head of|director|manager"
+        "senior|\\bsr\\.?\\b|\\blead\\b|principal|head of|director|manager|controller"
       ],
       "levels_exclude": [
         "senior",
@@ -44,36 +36,22 @@
   "rank": {
     "rules": [
       {
-        "pattern": "(ai|llm|agent|gpt).*(automat|workflow|implement|integrat)|(automat|implement).*(ai|llm|agent)",
-        "weight": 4,
-        "label": "AI + automation"
-      },
-      {
-        "pattern": "n8n|make\\.com|zapier|power automate|copilot studio",
-        "weight": 3,
-        "label": "workflow tools"
-      },
-      {
         "pattern": "junior|\\bjr\\b|entry|associate",
         "weight": 3,
         "label": "junior / entry level"
       },
       {
-        "pattern": "\\bengineer\\b|developer",
-        "weight": -2,
-        "label": "generic engineering role"
+        "pattern": "excel|\\bsap\\b",
+        "weight": 2,
+        "field": "any",
+        "label": "tools the person knows (example)"
       }
     ],
     "tags": [
       {
-        "id": "AI",
-        "label": "AI & automation",
-        "pattern": "\\bai\\b|automat|llm|agent"
-      },
-      {
-        "id": "SUP",
-        "label": "IT support",
-        "pattern": "support|helpdesk|service desk"
+        "id": "JR",
+        "label": "Junior / entry level",
+        "pattern": "junior|\\bjr\\b|entry"
       }
     ],
     "sort": [
@@ -84,7 +62,6 @@
   },
   "review": {
     "mode": "auto",
-    "details_top": 60,
-    "min_score": 3
+    "details_top": 60
   }
 }

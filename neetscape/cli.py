@@ -47,7 +47,7 @@ from .log import log
 from .model import LEVELS, Search, Where
 from .store import MARK_STATUSES, Store
 
-_SIGNALS = (signal.SIGTERM, signal.SIGINT, signal.SIGHUP)
+_SIGNALS = tuple(getattr(signal, name) for name in ("SIGTERM", "SIGINT", "SIGHUP") if hasattr(signal, name))  # no SIGHUP on Windows
 
 
 # ---------------------------------------------------------------- process lifecycle

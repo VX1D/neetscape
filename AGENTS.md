@@ -54,7 +54,7 @@ another country from the same profile, give a search `"where": {"remote": true, 
 
 | Preset | Use when |
 |---|---|
-| `focused` | the person has a clear target role: phrases, title filters, pay floor, rank rules; review mode `auto` |
+| `focused` | the person has a clear target role: phrases, a field, title filters, rank rules (an accountant as the example); review mode `auto` |
 | `broad` | "show me everything remote": no phrases, review mode `listing` |
 | `local` | everything within a radius of a city (edit the city) |
 | `side` | remote part-time / freelance / mandate work with an hourly floor |
@@ -70,17 +70,17 @@ it passes any search. `defaults` are merged into every search. Full schema:
 |---|---|
 | `id`, `label` | unique id (used by `list --search`) and a readable name |
 | `where` | `"remote"` (default), `"anywhere"`, `{"city": "Kraków", "radius_km": 30, "or_remote": true}`, or with a `"country"` key to search another country: `{"remote": true, "country": "de"}`, `{"city": "München", "country": "de"}` |
-| `what` | `"all"`, or phrases sent to boards: `["n8n", "automatyzacja", "helpdesk"]` |
-| `keywords_for` | phrases per board, e.g. `{"linkedin": ["IT support", "AI automation"]}` (LinkedIn works best in English) |
+| `what` | `"all"`, or phrases sent to boards as they are, in the boards' language: `["księgowa", "accountant"]`, `["it support", "helpdesk"]` |
+| `keywords_for` | phrases per board, e.g. `{"linkedin": ["accountant", "bookkeeper"]}` (LinkedIn often works best in English) |
 | `worktime` | allowed: `full_time`, `part_time`, `flexible`, `unknown` |
 | `contracts` | allowed: `employment` (`uop` is an old alias), `b2b`, `mandate`, `specific_task`, `internship`, `freelance`, `mini_job`, `working_student`, `temp_agency`, `other`. With `worktime`, either one may match |
 | `levels_exclude` | `intern`, `junior`, `mid`, `senior`, `lead`, `manager`, `unknown` |
-| `fields`, `fields_exclude` | job fields read from the title (then the board's category): `ai_automation`, `security`, `qa`, `devops_cloud`, `data`, `erp_crm`, `it_support`, `it_admin`, `software_dev`, `product_project`, `design`, `ecommerce`, `customer_service`, `sales`, `marketing`, `hr`, `finance`, `legal`, `retail`, `admin_office`, `logistics`, `engineering`, `manufacturing`, `healthcare`, `education`, `hospitality` (`other` when nothing matches: unknown to `fields`). Prefer these to title regexes for a person's field, e.g. `"fields": ["ai_automation", "it_support", "qa"]` |
+| `fields`, `fields_exclude` | job fields read from the title (then the board's category): `ai_automation`, `security`, `qa`, `devops_cloud`, `data`, `erp_crm`, `it_support`, `it_admin`, `software_dev`, `product_project`, `design`, `ecommerce`, `customer_service`, `sales`, `marketing`, `hr`, `finance`, `legal`, `retail`, `admin_office`, `logistics`, `engineering`, `manufacturing`, `healthcare`, `education`, `hospitality` (`other` when nothing matches: unknown to `fields`). Prefer these to title regexes for a person's field, e.g. `"fields": ["finance"]`, `["healthcare"]`, `["it_support", "qa"]` |
 | `domains` | what the work is about, any of the offer's domains (title and category, in the offer's languages): `ai`, `security`, `erp`, `data`, `cloud`, `software`, `it`, `tech`, `ecommerce`, `industrial`, `construction`, `manufacturing`, `logistics`, `hr`, `finance`, `legal`, `health`, `education`, `hospitality`, `retail`, `customer`, `sales`, `marketing`, `office`, `design`, `product`. "AI Gateway Product Owner" has `ai` and `product`, "Sachbearbeiter Buchhaltung" `finance` |
 | `functions`, `functions_exclude` | what the person does: `assist`, `test`, `automate`, `develop`, `design`, `teach`, `care`, `serve`, `sell`, `market`, `people`, `account`, `transport`, `operate`, `build`, `manage_project`, `cook_clean`, `shop`, `law`, `support`, `administer`, `engineer`, `analyse`, `consult`, `manage`, `specialist` |
 | `pay` | `{"min": 9000, "per": "month"}` or `{"min": 45, "per": "hour"}`; in the profile country's currency (PLN, EUR), compared with the top of the offer's range. `"required": true` drops offers without pay |
 | `max_age_days` | ignore older postings, e.g. `30` |
-| `title_include` | regexes; at least one must match the title: `["support\|helpdesk\|automat"]` |
+| `title_include` | regexes; at least one must match the title: `["księgow\|accountant\|bookkeep"]` |
 | `title_exclude` | regexes that drop by title: `["senior\|\\blead\\b\|architect"]` |
 | `text_exclude` | regexes on title, company, category, skills, pay text, card text and, once fetched, the posting |
 | `category_include` | regexes on the board's own category and industry strings |
@@ -117,9 +117,10 @@ Rules of thumb:
   one search with loose filters.
 - Exclude seniority above their level and fields they rule out; this removes most noise.
 - `fields` vs `domains`: `fields` gives each offer one field, so "AI Gateway Product Owner" is
-  `product_project` and "AI Content Creator" `marketing`. When the person wants a subject in any role ("AI or IT,
-  but not sales, HR or marketing"), use `domains` plus `functions_exclude`
-  (`["sell", "market", "people", "account"]`); use `fields` when they name a role ("IT support", "QA"). Missing
+  `product_project` and "AI Content Creator" `marketing`. When the person wants a subject in any role
+  ("anything in healthcare except sales", "AI or IT, but not sales, HR or marketing"), use `domains` plus
+  `functions_exclude` (`["sell", "market"]`, `["sell", "market", "people", "account"]`); use `fields` when they
+  name a role ("accountant", "IT support", "nurse"). Missing
   values are unknown, not failures: generic titles with no domain ("Support Associate") pass `domains` unless
   `"unknown": {"domain": "drop"}`; exclude filters never drop them.
 - For "show me everything", use `what: "all"` with `review.mode: "listing"` (the `broad` preset)
@@ -228,7 +229,7 @@ neetscape list --group title --limit 60                 # one row per title: cou
 neetscape list --new --limit 100                        # only offers new in this run
 neetscape list --search side --limit 100                # one search
 neetscape list --where "o.pay_max >= 12000" --format md
-neetscape list --where "o.title LIKE '%support%' AND o.level != 'senior'"
+neetscape list --where "o.title LIKE '%księgow%' AND o.level != 'senior'"
 sed -n '2,201p' runs/<date>-run<N>/listing.tsv          # chunk by chunk
 ```
 
@@ -285,7 +286,9 @@ Record the review in the database, one mark per decision, with a note of why it 
 biggest risk, then rewrite the reports:
 
 ```
-neetscape mark 12 shortlisted --note "n8n + helpdesk, fully remote · asks for 2 years of B2B"
+neetscape mark 12 shortlisted --note "Apply now
+✅ invoicing + Excel, 10 km away
+⚠ asks for 2 years in an accounting office"
 neetscape mark 40 rejected --note "requires German C1"
 neetscape report
 ```

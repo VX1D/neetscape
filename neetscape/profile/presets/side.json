@@ -20,7 +20,7 @@
         "freelance"
       ],
       "text_exclude": [
-        "call ?cent(er|re)|telemarket|cold call|mlm|network marketing"
+        "mlm|network marketing|pyramid scheme"
       ],
       "boost": 3
     }
