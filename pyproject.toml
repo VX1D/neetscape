@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neetscape"
+version = "0.1.0"
+description = "A job offer radar for the job boards of one country (Poland, Germany), driven by a search profile that a coding agent writes from your CV."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["websockets>=12"]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.scripts]
+neetscape = "neetscape.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["neetscape*"]
+
+[tool.setuptools.package-data]
+neetscape = ["profile/*.json", "profile/presets/*.json", "countries/*/presets/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+markers = ["live: talks to real job boards (never in CI)"]
+addopts = "-m 'not live'"

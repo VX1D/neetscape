@@ -1,0 +1,43 @@
+{
+  "version": 2,
+  "label": "Side jobs",
+  "defaults": {
+    "max_age_days": 30
+  },
+  "searches": [
+    {
+      "id": "side",
+      "label": "Side jobs (part-time, freelance, contracts)",
+      "where": "remote",
+      "what": "all",
+      "worktime": [
+        "part_time",
+        "flexible"
+      ],
+      "contracts": [
+        "mandate",
+        "specific_task",
+        "freelance"
+      ],
+      "pay": {
+        "min": 30,
+        "per": "hour"
+      },
+      "text_exclude": [
+        "call ?center|telemark|cold call|akwizyc|mlm|network marketing|kurier|kierowc|magazyn|sprzątan"
+      ],
+      "boost": 3
+    }
+  ],
+  "rank": {
+    "rules": [],
+    "sort": [
+      "new",
+      "pay",
+      "published"
+    ]
+  },
+  "review": {
+    "mode": "listing"
+  }
+}

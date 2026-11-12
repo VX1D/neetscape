@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "label": "Everything remote",
+  "defaults": {
+    "max_age_days": 30
+  },
+  "searches": [
+    {
+      "id": "remote-all",
+      "label": "All remote offers",
+      "where": "remote",
+      "what": "all"
+    }
+  ],
+  "rank": {
+    "rules": [],
+    "sort": [
+      "new",
+      "pay",
+      "published"
+    ]
+  },
+  "review": {
+    "mode": "listing"
+  }
+}

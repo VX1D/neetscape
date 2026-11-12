@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "country": "de",
+  "label": "Side jobs (Germany)",
+  "defaults": {
+    "max_age_days": 30
+  },
+  "searches": [
+    {
+      "id": "side",
+      "label": "Side jobs (Teilzeit, Minijob, Werkstudent, freelance)",
+      "where": "remote",
+      "what": "all",
+      "worktime": ["part_time", "flexible"],
+      "contracts": ["mini_job", "working_student", "freelance"],
+      "pay": {"min": 15, "per": "hour"},
+      "text_exclude": [
+        "call ?center|telefonverkauf|kaltakquise|cold call|mlm|network marketing|kurier|fahrer|lager|reinigung|zusteller"
+      ],
+      "boost": 3
+    }
+  ],
+  "rank": {
+    "rules": [],
+    "sort": ["new", "pay", "published"]
+  },
+  "review": {
+    "mode": "listing"
+  }
+}

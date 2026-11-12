@@ -1,0 +1,424 @@
+[
+ {
+  "id": 39118,
+  "jobOfferKey": "2ff6a713-df21-4d7f-a99e-c01c81a25d59",
+  "division": "IT",
+  "mainCategory": "UX/UI Designer",
+  "subCategory": "UX/UI Designer",
+  "jobTitle": "UX/UI Designer",
+  "experienceLevel": "Regular",
+  "minimalExperienceInField": 2,
+  "salaryRange": {
+   "lowerBound": 15100.0,
+   "upperBound": 20200.0,
+   "currency": "PLN",
+   "employmentType": "B2B",
+   "salaryPeriod": "Month"
+  },
+  "normalizedSalaryRange": {
+   "lowerBound": 15100.0,
+   "upperBound": 20200.0,
+   "currency": "PLN",
+   "employmentType": "B2B",
+   "salaryPeriod": "Month"
+  },
+  "isSalaryNormalized": false,
+  "secondarySalaryRange": {
+   "lowerBound": 12000.0,
+   "upperBound": 16000.0,
+   "currency": "PLN",
+   "employmentType": "Umowa o pracę",
+   "salaryPeriod": "Month"
+  },
+  "normalizedSecondarySalaryRange": {
+   "lowerBound": 12000.0,
+   "upperBound": 16000.0,
+   "currency": "PLN",
+   "employmentType": "Umowa o pracę",
+   "salaryPeriod": "Month"
+  },
+  "workload": "100%",
+  "remotePossible": "Brak",
+  "requiredSkills": [
+   {
+    "name": "Figma",
+    "skillType": "expert",
+    "skillLevel": "Expert"
+   },
+   {
+    "name": "Adobe XD",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   },
+   {
+    "name": "Design System",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   },
+   {
+    "name": "UX research",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   },
+   {
+    "name": "Komunikacja",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   },
+   {
+    "name": "Usability testing",
+    "skillType": "basic",
+    "skillLevel": "Basic"
+   },
+   {
+    "name": "Proaktywność",
+    "skillType": "basic",
+    "skillLevel": "Basic"
+   },
+   {
+    "name": "Praca zespołowa",
+    "skillType": "basic",
+    "skillLevel": "Basic"
+   }
+  ],
+  "requiredLanguages": [
+   {
+    "name": "Angielski",
+    "skillType": "expert",
+    "skillLevel": "Expert"
+   },
+   {
+    "name": "Polski",
+    "skillType": "expert",
+    "skillLevel": "Expert"
+   }
+  ],
+  "validFrom": "2026-10-12T13:37:00.8007435+02:00",
+  "validTo": "2026-12-13T13:30:04.5328594+01:00",
+  "billingProfileKey": "ef1f4058-0e2a-4bc1-aab5-231919fd1300",
+  "companyName": "execon",
+  "companyAddress": "Centrum, Warszawa",
+  "companyCity": "Warszawa",
+  "companyLogoUrl": "https://cdn.solid.jobs/companies/logos/8f9b3039beece5280514225fd18d2329e2949bc930184a877435d3b226ed265f.png",
+  "jobOfferUrl": "execon-ux-ui-designer",
+  "jobOfferShortUrl": "8r8jyt9j",
+  "officeLatitude": 52.2302091,
+  "officeLongitude": 21.0113922,
+  "isPremium": false
+ },
+ {
+  "id": 33323,
+  "jobOfferKey": "2dfa1d0e-2605-4cab-939f-b2b72970fd0d",
+  "division": "IT",
+  "mainCategory": "DevOps",
+  "subCategory": "DevOps",
+  "jobTitle": "Cloud DevOps Tech Lead (GCP)",
+  "experienceLevel": "Senior",
+  "minimalExperienceInField": 0,
+  "salaryRange": {
+   "lowerBound": 23500.0,
+   "upperBound": 30200.0,
+   "currency": "PLN",
+   "employmentType": "B2B",
+   "salaryPeriod": "Month"
+  },
+  "normalizedSalaryRange": {
+   "lowerBound": 23500.0,
+   "upperBound": 30200.0,
+   "currency": "PLN",
+   "employmentType": "B2B",
+   "salaryPeriod": "Month"
+  },
+  "isSalaryNormalized": true,
+  "workload": "100%",
+  "remotePossible": "Hybrydowo",
+  "requiredSkills": [
+   {
+    "name": "Kubernetes",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   },
+   {
+    "name": "CI/CD",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   },
+   {
+    "name": "GCP",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   },
+   {
+    "name": "Terraform",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   },
+   {
+    "name": "Linux",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   },
+   {
+    "name": "Jenkins",
+    "skillType": "basic",
+    "skillLevel": "Basic"
+   }
+  ],
+  "requiredLanguages": [
+   {
+    "name": "Polski",
+    "skillType": "expert",
+    "skillLevel": "Expert"
+   },
+   {
+    "name": "Angielski",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   }
+  ],
+  "validFrom": "2026-06-10T10:07:55.9907872+02:00",
+  "validTo": "2026-12-13T13:30:03.9073646+01:00",
+  "billingProfileKey": "24db7019-8b02-4e99-b38f-c9d7cb89c7d8",
+  "companyName": "Scalo",
+  "companyAddress": "Centrum, Warszawa",
+  "companyCity": "Warszawa",
+  "companyLogoUrl": "https://cdn.solid.jobs/companies/logos/ca67392697664d519b64350d9a7c7d31",
+  "jobOfferUrl": "scalo-cloud-devops-tech-lead-gcp",
+  "jobOfferShortUrl": "0nkfbyns",
+  "officeLatitude": 52.2296756,
+  "officeLongitude": 21.0122287,
+  "isPremium": false
+ },
+ {
+  "id": 39845,
+  "jobOfferKey": "8faca7c2-29d9-41d0-8212-aa8cd42ee7aa",
+  "division": "IT",
+  "mainCategory": "Manager/Agile",
+  "subCategory": "Project Manager",
+  "jobTitle": "IT Delivery Manager",
+  "experienceLevel": "Senior",
+  "minimalExperienceInField": 0,
+  "salaryRange": {
+   "lowerBound": 15000.0,
+   "upperBound": 25000.0,
+   "currency": "PLN",
+   "employmentType": "B2B",
+   "salaryPeriod": "Month"
+  },
+  "normalizedSalaryRange": {
+   "lowerBound": 15000.0,
+   "upperBound": 25000.0,
+   "currency": "PLN",
+   "employmentType": "B2B",
+   "salaryPeriod": "Month"
+  },
+  "isSalaryNormalized": false,
+  "workload": "100%",
+  "remotePossible": "Możliwa częściowo",
+  "requiredSkills": [
+   {
+    "name": "Zarządzanie projektem",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   }
+  ],
+  "requiredLanguages": [
+   {
+    "name": "Angielski",
+    "skillType": "expert",
+    "skillLevel": "Expert"
+   }
+  ],
+  "validFrom": "2026-11-12T12:34:36.2978228+01:00",
+  "validTo": "2026-12-13T12:34:36.2978228+01:00",
+  "billingProfileKey": "46d843e9-3f31-4169-a666-910738edbace",
+  "companyName": "TeamQuest",
+  "companyAddress": "Centrum, Sopot",
+  "companyCity": "Sopot",
+  "companyLogoUrl": "https://cdn.solid.jobs/companies/logos/55c1bdeef5500657f1a3ecb4a373ecc98c9ac59fd6d0c7b658f7e5d4fc3f15db.png",
+  "jobOfferUrl": "teamquest-it-delivery-manager",
+  "jobOfferShortUrl": "3ash9i40",
+  "officeLatitude": 54.4408349,
+  "officeLongitude": 18.5629592,
+  "isPremium": false
+ },
+ {
+  "id": 39844,
+  "jobOfferKey": "060e7259-7174-485d-967f-516e67aac600",
+  "division": "IT",
+  "mainCategory": "Manager/Agile",
+  "subCategory": "Project Manager",
+  "jobTitle": "IT Delivery Manager",
+  "experienceLevel": "Senior",
+  "minimalExperienceInField": 0,
+  "salaryRange": {
+   "lowerBound": 15000.0,
+   "upperBound": 25000.0,
+   "currency": "PLN",
+   "employmentType": "B2B",
+   "salaryPeriod": "Month"
+  },
+  "normalizedSalaryRange": {
+   "lowerBound": 15000.0,
+   "upperBound": 25000.0,
+   "currency": "PLN",
+   "employmentType": "B2B",
+   "salaryPeriod": "Month"
+  },
+  "isSalaryNormalized": false,
+  "workload": "100%",
+  "remotePossible": "Możliwa częściowo",
+  "requiredSkills": [
+   {
+    "name": "Zarządzanie projektem",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   }
+  ],
+  "requiredLanguages": [
+   {
+    "name": "Angielski",
+    "skillType": "expert",
+    "skillLevel": "Expert"
+   }
+  ],
+  "validFrom": "2026-11-12T12:34:27.4171067+01:00",
+  "validTo": "2026-12-13T12:34:27.4171067+01:00",
+  "billingProfileKey": "46d843e9-3f31-4169-a666-910738edbace",
+  "companyName": "TeamQuest",
+  "companyAddress": "Centrum, Gdynia",
+  "companyCity": "Gdynia",
+  "companyLogoUrl": "https://cdn.solid.jobs/companies/logos/55c1bdeef5500657f1a3ecb4a373ecc98c9ac59fd6d0c7b658f7e5d4fc3f15db.png",
+  "jobOfferUrl": "teamquest-it-delivery-manager",
+  "jobOfferShortUrl": "wjke902z",
+  "officeLatitude": 54.5195232,
+  "officeLongitude": 18.5348,
+  "isPremium": false
+ },
+ {
+  "id": 39843,
+  "jobOfferKey": "52490328-2ca0-4e3b-89a1-39736ce98873",
+  "division": "IT",
+  "mainCategory": "Manager/Agile",
+  "subCategory": "Project Manager",
+  "jobTitle": "IT Delivery Manager",
+  "experienceLevel": "Senior",
+  "minimalExperienceInField": 0,
+  "salaryRange": {
+   "lowerBound": 15000.0,
+   "upperBound": 25000.0,
+   "currency": "PLN",
+   "employmentType": "B2B",
+   "salaryPeriod": "Month"
+  },
+  "normalizedSalaryRange": {
+   "lowerBound": 15000.0,
+   "upperBound": 25000.0,
+   "currency": "PLN",
+   "employmentType": "B2B",
+   "salaryPeriod": "Month"
+  },
+  "isSalaryNormalized": false,
+  "workload": "100%",
+  "remotePossible": "Możliwa częściowo",
+  "requiredSkills": [
+   {
+    "name": "Zarządzanie projektem",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   }
+  ],
+  "requiredLanguages": [
+   {
+    "name": "Angielski",
+    "skillType": "expert",
+    "skillLevel": "Expert"
+   }
+  ],
+  "validFrom": "2026-11-12T12:34:22.8214171+01:00",
+  "validTo": "2026-12-13T12:34:22.8214171+01:00",
+  "billingProfileKey": "46d843e9-3f31-4169-a666-910738edbace",
+  "companyName": "TeamQuest",
+  "companyAddress": "Centrum, Gdańsk",
+  "companyCity": "Gdańsk",
+  "companyLogoUrl": "https://cdn.solid.jobs/companies/logos/55c1bdeef5500657f1a3ecb4a373ecc98c9ac59fd6d0c7b658f7e5d4fc3f15db.png",
+  "jobOfferUrl": "teamquest-it-delivery-manager",
+  "jobOfferShortUrl": "csyny5ip",
+  "officeLatitude": 54.3480121,
+  "officeLongitude": 18.6564851,
+  "isPremium": false
+ },
+ {
+  "id": 39847,
+  "jobOfferKey": "51306709-72e5-45c9-b50d-3cb5f5bd0962",
+  "division": "IT",
+  "mainCategory": "Analityk",
+  "subCategory": "Analityk",
+  "jobTitle": "Data Analyst",
+  "experienceLevel": "Regular",
+  "minimalExperienceInField": 3,
+  "salaryRange": {
+   "lowerBound": 21800.0,
+   "upperBound": 25200.0,
+   "currency": "PLN",
+   "employmentType": "B2B",
+   "salaryPeriod": "Month"
+  },
+  "normalizedSalaryRange": {
+   "lowerBound": 21800.0,
+   "upperBound": 25200.0,
+   "currency": "PLN",
+   "employmentType": "B2B",
+   "salaryPeriod": "Month"
+  },
+  "isSalaryNormalized": true,
+  "workload": "100%",
+  "remotePossible": "W całości",
+  "requiredSkills": [
+   {
+    "name": "MS Power BI",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   },
+   {
+    "name": "DAX",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   },
+   {
+    "name": "MS Power Query",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   },
+   {
+    "name": "SQL",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   }
+  ],
+  "requiredLanguages": [
+   {
+    "name": "Polski",
+    "skillType": "expert",
+    "skillLevel": "Expert"
+   },
+   {
+    "name": "Angielski",
+    "skillType": "advanced",
+    "skillLevel": "Advanced"
+   }
+  ],
+  "validFrom": "2026-11-12T12:33:06.7878317+01:00",
+  "validTo": "2026-12-13T12:33:06.7878317+01:00",
+  "billingProfileKey": "6b00b4da-55f4-4436-a41d-5f9043463d30",
+  "companyName": "ITFS",
+  "companyAddress": "Centrum, Warszawa",
+  "companyCity": "Warszawa",
+  "companyLogoUrl": "https://cdn.solid.jobs/companies/logos/e6b53ef804d84e71b9852bab96edc8ff",
+  "jobOfferUrl": "itfs-data-analyst",
+  "jobOfferShortUrl": "vtjgaax1",
+  "officeLatitude": 52.2302091,
+  "officeLongitude": 21.0113922,
+  "isPremium": false
+ }
+]

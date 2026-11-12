@@ -1,0 +1,94 @@
+{
+  "version": 2,
+  "label": "Focused search",
+  "candidate": {
+    "summary": "Replace with a short summary of the person (written by the agent from the CV).",
+    "strengths": [],
+    "constraints": []
+  },
+  "defaults": {
+    "max_age_days": 45
+  },
+  "searches": [
+    {
+      "id": "main",
+      "label": "Main roles",
+      "where": "remote",
+      "what": [
+        "automatyzacja",
+        "automation",
+        "ai",
+        "n8n",
+        "helpdesk"
+      ],
+      "keywords_for": {
+        "linkedin": [
+          "AI automation",
+          "n8n",
+          "IT support"
+        ]
+      },
+      "title_include": [
+        "\\bai\\b|automat|n8n|llm|support|helpdesk"
+      ],
+      "title_exclude": [
+        "senior|\\bsr\\.?\\b|lead|principal|staff|architect|head of|director|manager"
+      ],
+      "levels_exclude": [
+        "senior",
+        "lead",
+        "manager"
+      ],
+      "pay": {
+        "min": 7000,
+        "per": "month"
+      }
+    }
+  ],
+  "rank": {
+    "rules": [
+      {
+        "pattern": "(ai|llm|agent|gpt).*(automat|workflow|implement|wdroż|integrat)|(automat|wdroż|implement).*(ai|llm|agent)",
+        "weight": 4,
+        "label": "AI + automation"
+      },
+      {
+        "pattern": "n8n|make\\.com|zapier|power automate|copilot studio",
+        "weight": 3,
+        "label": "workflow tools"
+      },
+      {
+        "pattern": "junior|młodszy|młodsza|\\bjr\\b|entry|associate",
+        "weight": 3,
+        "label": "junior / entry level"
+      },
+      {
+        "pattern": "\\bengineer\\b|developer|programist",
+        "weight": -2,
+        "label": "generic engineering role"
+      }
+    ],
+    "tags": [
+      {
+        "id": "AI",
+        "label": "AI & automation",
+        "pattern": "\\bai\\b|automat|llm|agent"
+      },
+      {
+        "id": "SUP",
+        "label": "IT support",
+        "pattern": "support|helpdesk|service desk"
+      }
+    ],
+    "sort": [
+      "score",
+      "new",
+      "pay"
+    ]
+  },
+  "review": {
+    "mode": "auto",
+    "details_top": 60,
+    "min_score": 3
+  }
+}

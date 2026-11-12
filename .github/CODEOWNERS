@@ -1,0 +1,10 @@
+# Reviewers per area. Handles are placeholders: replace them with real maintainers' logins.
+*                                @neetscape-maintainers
+/neetscape/countries/pl/         @neetscape-pl
+/tests/fixtures/pl/              @neetscape-pl
+/tests/countries/pl/             @neetscape-pl
+/neetscape/countries/de/         @neetscape-de
+/tests/fixtures/de/              @neetscape-de
+/tests/countries/test_de.py      @neetscape-de
+/neetscape/lang/pl.py            @neetscape-pl
+/neetscape/lang/de.py            @neetscape-de

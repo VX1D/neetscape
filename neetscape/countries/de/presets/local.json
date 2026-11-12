@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "country": "de",
+  "label": "Local jobs (Germany)",
+  "defaults": {
+    "max_age_days": 30
+  },
+  "searches": [
+    {
+      "id": "local",
+      "label": "Near Berlin",
+      "where": {"city": "Berlin", "radius_km": 25},
+      "what": "all"
+    }
+  ],
+  "rank": {
+    "rules": [],
+    "sort": ["new", "pay", "published"]
+  },
+  "review": {
+    "mode": "listing"
+  }
+}

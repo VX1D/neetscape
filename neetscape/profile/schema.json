@@ -1,0 +1,578 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "neetscape search profile v2",
+  "type": "object",
+  "required": [
+    "version",
+    "searches"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "const": 2
+    },
+    "country": {
+      "enum": [
+        "de",
+        "pl"
+      ],
+      "default": "pl",
+      "description": "job market of the profile: currency of every amount and of the database, default boards, language of the text"
+    },
+    "label": {
+      "type": "string"
+    },
+    "candidate": {
+      "type": "object",
+      "description": "notes about the person for the reviewing agent; ignored by the tool"
+    },
+    "boards": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "board names or groups: a country code (its boards plus boards serving any country, e.g. linkedin), \"intl\" (international remote-only boards), \"all\"; `neetscape boards` lists them. Default: the default boards of the profile's country and of every country a search targets"
+    },
+    "defaults": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "where": {
+          "oneOf": [
+            {
+              "enum": [
+                "remote",
+                "anywhere"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "string"
+                },
+                "radius_km": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "or_remote": {
+                  "type": "boolean"
+                },
+                "remote": {
+                  "type": "boolean",
+                  "description": "without city: true = remote (default), false = anywhere"
+                },
+                "country": {
+                  "enum": [
+                    "de",
+                    "pl"
+                  ],
+                  "description": "country searched (default: the profile's country)"
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "description": "remote (default), anywhere, a city with optional radius, or an object with a country: {\"remote\": true, \"country\": \"de\"}"
+        },
+        "what": {
+          "oneOf": [
+            {
+              "const": "all"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
+          ],
+          "description": "\"all\" or search phrases"
+        },
+        "keywords_for": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": "per-board phrase override, e.g. English phrases for linkedin"
+        },
+        "worktime": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "full_time",
+              "part_time",
+              "flexible",
+              "unknown"
+            ]
+          }
+        },
+        "contracts": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "employment",
+              "b2b",
+              "mandate",
+              "specific_task",
+              "internship",
+              "freelance",
+              "mini_job",
+              "working_student",
+              "temp_agency",
+              "other",
+              "uop"
+            ]
+          },
+          "description": "an offer passes when its worktime OR one of its contracts is allowed; \"uop\" is an old name of \"employment\"; local words of the profile's country (e.g. \"minijob\") are accepted too"
+        },
+        "levels_exclude": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "intern",
+              "junior",
+              "mid",
+              "senior",
+              "lead",
+              "manager",
+              "unknown"
+            ]
+          }
+        },
+        "pay": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "number",
+              "description": "in the profile country's currency"
+            },
+            "per": {
+              "enum": [
+                "month",
+                "hour"
+              ]
+            },
+            "required": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "max_age_days": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "title_include": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Case-insensitive Python regular expression"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "Case-insensitive Python regular expression"
+              }
+            }
+          ]
+        },
+        "title_exclude": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Case-insensitive Python regular expression"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "Case-insensitive Python regular expression"
+              }
+            }
+          ]
+        },
+        "text_exclude": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Case-insensitive Python regular expression"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "Case-insensitive Python regular expression"
+              }
+            }
+          ]
+        },
+        "category_include": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Case-insensitive Python regular expression"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "Case-insensitive Python regular expression"
+              }
+            }
+          ]
+        },
+        "unknown": {
+          "enum": [
+            "keep",
+            "drop"
+          ],
+          "description": "what to do when a filtered field (mode, pay, worktime, date) is unknown"
+        },
+        "boost": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "description": "merged into every search"
+    },
+    "searches": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "where": {
+            "oneOf": [
+              {
+                "enum": [
+                  "remote",
+                  "anywhere"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "radius_km": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "or_remote": {
+                    "type": "boolean"
+                  },
+                  "remote": {
+                    "type": "boolean",
+                    "description": "without city: true = remote (default), false = anywhere"
+                  },
+                  "country": {
+                    "enum": [
+                      "de",
+                      "pl"
+                    ],
+                    "description": "country searched (default: the profile's country)"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ],
+            "description": "remote (default), anywhere, a city with optional radius, or an object with a country: {\"remote\": true, \"country\": \"de\"}"
+          },
+          "what": {
+            "oneOf": [
+              {
+                "const": "all"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              }
+            ],
+            "description": "\"all\" or search phrases"
+          },
+          "keywords_for": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "per-board phrase override, e.g. English phrases for linkedin"
+          },
+          "worktime": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "full_time",
+                "part_time",
+                "flexible",
+                "unknown"
+              ]
+            }
+          },
+          "contracts": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "employment",
+                "b2b",
+                "mandate",
+                "specific_task",
+                "internship",
+                "freelance",
+                "mini_job",
+                "working_student",
+                "temp_agency",
+                "other",
+                "uop"
+              ]
+            },
+            "description": "an offer passes when its worktime OR one of its contracts is allowed; \"uop\" is an old name of \"employment\"; local words of the profile's country (e.g. \"minijob\") are accepted too"
+          },
+          "levels_exclude": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "intern",
+                "junior",
+                "mid",
+                "senior",
+                "lead",
+                "manager",
+                "unknown"
+              ]
+            }
+          },
+          "pay": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "number",
+                "description": "in the profile country's currency"
+              },
+              "per": {
+                "enum": [
+                  "month",
+                  "hour"
+                ]
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          },
+          "max_age_days": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "title_include": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Case-insensitive Python regular expression"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "Case-insensitive Python regular expression"
+                }
+              }
+            ]
+          },
+          "title_exclude": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Case-insensitive Python regular expression"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "Case-insensitive Python regular expression"
+                }
+              }
+            ]
+          },
+          "text_exclude": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Case-insensitive Python regular expression"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "Case-insensitive Python regular expression"
+                }
+              }
+            ]
+          },
+          "category_include": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Case-insensitive Python regular expression"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "Case-insensitive Python regular expression"
+                }
+              }
+            ]
+          },
+          "unknown": {
+            "enum": [
+              "keep",
+              "drop"
+            ],
+            "description": "what to do when a filtered field (mode, pay, worktime, date) is unknown"
+          },
+          "boost": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "rank": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "pattern",
+              "weight"
+            ],
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "description": "Case-insensitive Python regular expression"
+              },
+              "weight": {
+                "type": "integer"
+              },
+              "field": {
+                "enum": [
+                  "title",
+                  "any"
+                ]
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "pattern"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "pattern": {
+                "type": "string",
+                "description": "Case-insensitive Python regular expression"
+              }
+            }
+          }
+        },
+        "sort": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "score",
+              "new",
+              "pay",
+              "published"
+            ]
+          }
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "auto",
+            "listing"
+          ]
+        },
+        "details_top": {
+          "type": "integer"
+        },
+        "min_score": {
+          "type": "integer"
+        }
+      }
+    },
+    "politeness": {
+      "type": "object",
+      "properties": {
+        "min_interval_s": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "fx": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "units of the profile country's currency per unit of another currency (overrides the country's rates)"
+    }
+  },
+  "additionalProperties": false
+}

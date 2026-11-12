@@ -1,0 +1,24 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  no-personal-data:
+    # contributors' own profiles, CVs, crawl databases and secrets must never land in the repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject personal data and secrets
+        run: |
+          bad=$(git ls-files | grep -E '(^|/)(profile[^/]*\.json|\.env(\..*)?|[^/]*\.(db|db-wal|db-shm|sqlite3?|pdf|docx?|odt|rtf|pem|key))$|^(runs|profiles|cv|recordings)/|(^|/)shortlist[^/]*\.md$' | grep -v '^neetscape/profile/' || true)
+          if [ -n "$bad" ]; then echo "Personal data or secrets committed:"; echo "$bad"; exit 1; fi
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e '.[test]'
+      - run: pytest -q  # offline only; live tests are excluded by default

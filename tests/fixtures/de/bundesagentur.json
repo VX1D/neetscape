@@ -1,0 +1,793 @@
+{
+ "ergebnisliste": [
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Finanzbuchhalter (m/w/d) in Homeoffice",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": true,
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": false,
+   "eintrittszeitraum": {
+    "von": "2026-11-11"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "UNBEFRISTET",
+   "istGeringfuegigeBeschaeftigung": true,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "plz": "93426",
+      "ort": "Roding, Regen",
+      "region": "BAYERN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 49.2047075,
+     "laenge": 12.4824074
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-11-11"
+   },
+   "datumErsteVeroeffentlichung": "2026-11-11",
+   "aenderungsdatum": "2026-11-11T18:42:51.423",
+   "hauptberuf": "Steuerfachangestellte/r",
+   "alternativBeruf1": "Finanzbuchhalter/in",
+   "firma": "Industriemontage Roding GmbH",
+   "arbeitgeberKundennummerHash": "DuCywUliCHnVQ-ZSCvmT31IyqDsrbnvwve_rc6sZLTQ=",
+   "referenznummer": "17220-WDH3KQ2ZMYSS4JKE-S",
+   "alleBerufe": [
+    "Steuerfachangestellte/r",
+    "Finanzbuchhalter/in"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Steuerberater (m/w/d) mit Homeoffice",
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": false,
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-10-29"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "UNBEFRISTET",
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Schulstr.",
+      "hausnummer": "4a",
+      "plz": "86660",
+      "ort": "Tapfheim",
+      "region": "BAYERN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 48.677391,
+     "laenge": 10.6954245
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-29"
+   },
+   "datumErsteVeroeffentlichung": "2026-09-10",
+   "aenderungsdatum": "2026-10-29T09:16:23.033",
+   "hauptberuf": "Steuerberater/in",
+   "alternativBeruf1": "Steuerberater/in",
+   "firma": "Schweiger Bschor Steuerberatung Partn. mbB",
+   "arbeitgeberKundennummerHash": "LeuVWrdUM8QASbTQgOnpOssOdYHfHqzBqAcbhmNOa_Y=",
+   "referenznummer": "10001-1003686871-S",
+   "alleBerufe": [
+    "Steuerberater/in",
+    "Steuerberater/in"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Steuerberater (m/w/d) mit Homeoffice",
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": false,
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-11-10"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "KEINE_ANGABE",
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Wentorf",
+      "hausnummer": "2",
+      "plz": "29386",
+      "ort": "Obernholz",
+      "region": "NIEDERSACHSEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.744653,
+     "laenge": 10.6556625
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-11-10"
+   },
+   "datumErsteVeroeffentlichung": "2026-07-31",
+   "aenderungsdatum": "2026-11-10T10:29:45.256",
+   "hauptberuf": "Steuerberater/in",
+   "firma": "Martens & Pesel PartG mbB Steuerberatungsgesellschaft Landwirtschaftliche Buchstelle",
+   "arbeitgeberKundennummerHash": "xfz7xz_SmSQwaRCS9cUHoIBli_1FuMZxE_v0YXZRgwE=",
+   "referenznummer": "10000-1207391116-S",
+   "alleBerufe": [
+    "Steuerberater/in"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Steuerberater (m/w/d) – Homeoffice",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitTeilzeitAbend": true,
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-11-11"
+   },
+   "verguetungsangabe": "JAHRESGEHALT",
+   "artDerVerguetung": "GEHALTSSPANNE",
+   "gehaltsspanneVon": 65000.0,
+   "gehaltsspanneBis": 110000.0,
+   "vertragsdauer": "UNBEFRISTET",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Bahnhofstraße 1",
+      "plz": "30519",
+      "ort": "Hannover",
+      "region": "NIEDERSACHSEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.337664489,
+     "laenge": 9.777047836
+    }
+   ],
+   "veroeffentlichungszeitraum": {
+    "von": "2026-11-08"
+   },
+   "datumErsteVeroeffentlichung": "2026-11-08",
+   "aenderungsdatum": "2026-11-10T17:46:06.274",
+   "hauptberuf": "Steuerberater/in",
+   "firma": "Julius Oscar Lorr LORR Personalberatung",
+   "arbeitgeberKundennummerHash": "M-MPG1tbuBBF-obkCnrBaLvsm_fG1Oc5hNqCcnCMiUU=",
+   "referenznummer": "18235-k60287.3923-S",
+   "alleBerufe": [
+    "Steuerberater/in"
+   ]
+  },
+  {
+   "stellenangebotsart": "PRAKTIKUM_TRAINEE",
+   "stellenangebotsTitel": "Praktikum im Homeoffice",
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": false,
+   "arbeitszeitTeilzeitNachmittag": false,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": false,
+   "eintrittszeitraum": {
+    "von": "2026-10-28"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "UNBEFRISTET",
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Gf-v-Stauffenberg-Str",
+      "hausnummer": "15",
+      "plz": "86899",
+      "ort": "Landsberg am Lech",
+      "ortsteil": "Landsberg",
+      "region": "BAYERN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 48.041838,
+     "laenge": 10.8704385
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-28"
+   },
+   "datumErsteVeroeffentlichung": "2026-10-28",
+   "aenderungsdatum": "2026-10-28T14:54:00.703",
+   "hauptberuf": "Tourismuskaufmann/-frau (Privat- und Geschäftsreisen)",
+   "firma": "Christof Sauer Reiseveranstaltung",
+   "arbeitgeberKundennummerHash": "xw0RqHm4lBBzggbPHczXtFSITAGDDCcr__LZKqhWxh4=",
+   "referenznummer": "10000-1208453452-S",
+   "alleBerufe": [
+    "Tourismuskaufmann/-frau (Privat- und Geschäftsreisen)"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Steuerberater (m/w/d) mit Homeoffice",
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-11-10"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "UNBEFRISTET",
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Großhandelsring",
+      "hausnummer": "6",
+      "plz": "49084",
+      "ort": "Osnabrück",
+      "region": "NIEDERSACHSEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.2589972,
+     "laenge": 8.0852603
+    },
+    {
+     "adresse": {
+      "strasse": "Münsterstraße",
+      "hausnummer": "22",
+      "plz": "33775",
+      "ort": "Versmold",
+      "region": "NORDRHEIN_WESTFALEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.039611,
+     "laenge": 8.1512775
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-11-10"
+   },
+   "datumErsteVeroeffentlichung": "2025-11-21",
+   "aenderungsdatum": "2026-11-10T10:08:01.229",
+   "hauptberuf": "Steuerberater/in",
+   "firma": "ProTax Steuerberatung PartGmbB",
+   "arbeitgeberKundennummerHash": "HuvfS0XsnJKS2vS47IgCPF4-8CZLXDJ3xocYbtEmkl0=",
+   "referenznummer": "10001-1002185557-S",
+   "alleBerufe": [
+    "Steuerberater/in"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Rechtsanwalt (m/w/d) Homeoffice",
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-10-29"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "UNBEFRISTET",
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Schanzäckerstr.",
+      "hausnummer": "33",
+      "plz": "90443",
+      "ort": "Nürnberg, Mittelfranken",
+      "region": "BAYERN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 49.445154234000086,
+     "laenge": 11.065101663000064
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-29"
+   },
+   "datumErsteVeroeffentlichung": "2025-11-11",
+   "aenderungsdatum": "2026-10-29T09:58:19.416",
+   "hauptberuf": "Fachanwalt/-anwältin",
+   "firma": "iURAX Nürnberg Hofmann, Wolf GbR",
+   "arbeitgeberKundennummerHash": "UV-nYVQIx3-Tyg3DdFScNsRWr5eQH-LA_c_8c66Lp2c=",
+   "referenznummer": "10001-1002134731-S",
+   "alleBerufe": [
+    "Fachanwalt/-anwältin"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Buchhalter/in im Homeoffice",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": true,
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": false,
+   "eintrittszeitraum": {
+    "von": "2026-10-16"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "UNBEFRISTET",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Salvador-Allende-Platz",
+      "hausnummer": "29",
+      "plz": "07747",
+      "ort": "Jena",
+      "region": "THUERINGEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 50.883984,
+     "laenge": 11.618937
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-14"
+   },
+   "datumErsteVeroeffentlichung": "2026-10-14",
+   "aenderungsdatum": "2026-10-16T10:36:46.547",
+   "hauptberuf": "Buchhalter/in",
+   "alternativBeruf1": "Finanzbuchhalter/in",
+   "alternativBeruf2": "Steuerfachangestellte/r",
+   "firma": "Dt. Gesellschaft f. klinische Neurophysiologie",
+   "arbeitgeberKundennummerHash": "Gxyv83gXySOEpm8sICpyXUEpzciqfWyCRyfkMD3k7UQ=",
+   "referenznummer": "10000-1208281315-S",
+   "alleBerufe": [
+    "Buchhalter/in",
+    "Finanzbuchhalter/in",
+    "Steuerfachangestellte/r"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Lohnbuchhalter (m/w/d) Homeoffice",
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-10-29"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "UNBEFRISTET",
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Sieben Berge",
+      "hausnummer": "37",
+      "plz": "26125",
+      "ort": "Oldenburg (Oldb)",
+      "region": "NIEDERSACHSEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 53.190837,
+     "laenge": 8.22204
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-29"
+   },
+   "datumErsteVeroeffentlichung": "2026-05-08",
+   "aenderungsdatum": "2026-10-29T10:18:35.538",
+   "hauptberuf": "Lohn- und Gehaltsbuchhalter/in",
+   "firma": "FBSP Steuerberatung GmbH",
+   "arbeitgeberKundennummerHash": "zpr2d1lNEvLHByUkzMeEoXMvS8admiI1GsAV6ALQTmI=",
+   "referenznummer": "10001-1003049938-S",
+   "alleBerufe": [
+    "Lohn- und Gehaltsbuchhalter/in"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Steuerfachangestellte/r (m/w/d)  auch Homeoffice",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": true,
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-10-14"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "UNBEFRISTET",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Karlsvorstadt",
+      "hausnummer": "15",
+      "plz": "74613",
+      "ort": "Öhringen",
+      "region": "BADEN_WUERTTEMBERG",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 49.2013972,
+     "laenge": 9.5055396
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-14"
+   },
+   "datumErsteVeroeffentlichung": "2024-12-18",
+   "aenderungsdatum": "2026-10-14T09:29:54.361",
+   "hauptberuf": "Steuerfachangestellte/r",
+   "firma": "HSG Steuerberatungsgesellschaft mbH",
+   "arbeitgeberKundennummerHash": "Y4L9G6YrDFj-RTdBYR7ujgXq7MoaxVyZoRdVkHoEHrs=",
+   "referenznummer": "10000-1201086893-S",
+   "alleBerufe": [
+    "Steuerfachangestellte/r"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Homeoffice möglich!",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": false,
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-10-16"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "KEINE_ANGABE",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Quettinger Str.",
+      "hausnummer": "230",
+      "plz": "51381",
+      "ort": "Leverkusen",
+      "region": "NORDRHEIN_WESTFALEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 51.059304,
+     "laenge": 7.016931
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-05-21"
+   },
+   "datumErsteVeroeffentlichung": "2026-05-21",
+   "aenderungsdatum": "2026-10-16T12:53:06.301",
+   "hauptberuf": "Zahnmedizinische/r Verwaltungsassistent/in",
+   "firma": "Dr. Berthold Kappek",
+   "arbeitgeberKundennummerHash": "qj9h991hN3lLuUSAjFksG_4oh5s9AwlZgt4l-2WCaXU=",
+   "referenznummer": "10000-1206583498-S",
+   "alleBerufe": [
+    "Zahnmedizinische/r Verwaltungsassistent/in"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Vertriebsassistenz (m/w/d) im Homeoffice",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitTeilzeitAbend": true,
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-11-05"
+   },
+   "verguetungsangabe": "JAHRESGEHALT",
+   "artDerVerguetung": "GEHALTSSPANNE",
+   "gehaltsspanneVon": 28000.0,
+   "gehaltsspanneBis": 50000.0,
+   "vertragsdauer": "UNBEFRISTET",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "plz": "66111",
+      "ort": "Saarbrücken",
+      "region": "SAARLAND",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 49.235998798,
+     "laenge": 6.998526691
+    },
+    {
+     "adresse": {
+      "plz": "65183",
+      "ort": "Wiesbaden",
+      "region": "HESSEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 50.084208428,
+     "laenge": 8.236399213
+    },
+    {
+     "adresse": {
+      "plz": "17214",
+      "ort": "Alt Schwerin",
+      "region": "MECKLENBURG_VORPOMMERN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 53.51826578,
+     "laenge": 12.327485147
+    },
+    {
+     "adresse": {
+      "plz": "14467",
+      "ort": "Potsdam",
+      "region": "BRANDENBURG",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.403464935,
+     "laenge": 13.065359599
+    },
+    {
+     "adresse": {
+      "plz": "30159",
+      "ort": "Hannover",
+      "region": "NIEDERSACHSEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.374554933,
+     "laenge": 9.740111872
+    },
+    {
+     "adresse": {
+      "plz": "99084",
+      "ort": "Erfurt",
+      "region": "THUERINGEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 50.975898045,
+     "laenge": 11.026496086
+    },
+    {
+     "adresse": {
+      "plz": "01067",
+      "ort": "Dresden",
+      "region": "SACHSEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 51.058162739,
+     "laenge": 13.720396281
+    },
+    {
+     "adresse": {
+      "plz": "55116",
+      "ort": "Mainz am Rhein",
+      "region": "RHEINLAND_PFALZ",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 49.998722713,
+     "laenge": 8.272761134
+    },
+    {
+     "adresse": {
+      "plz": "24103",
+      "ort": "Kiel",
+      "region": "SCHLESWIG_HOLSTEIN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 54.32309168,
+     "laenge": 10.131796673
+    },
+    {
+     "adresse": {
+      "plz": "39104",
+      "ort": "Magdeburg",
+      "region": "SACHSEN_ANHALT",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.119565088001,
+     "laenge": 11.63478039
+    }
+   ],
+   "veroeffentlichungszeitraum": {
+    "von": "2026-11-04"
+   },
+   "datumErsteVeroeffentlichung": "2026-11-04",
+   "aenderungsdatum": "2026-11-04T12:09:58.093",
+   "hauptberuf": "Vertriebsassistent/in",
+   "alternativBeruf1": "Callcenteragent/in",
+   "firma": "persoperm GmbH",
+   "arbeitgeberKundennummerHash": "Opg0AURTtbxDPC_1kzQAnnYzNklFPv7h9En1VZZEXp4=",
+   "referenznummer": "13057-k12542.5339-S",
+   "alleBerufe": [
+    "Vertriebsassistent/in",
+    "Callcenteragent/in"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Steuerfachangestellter (m/w/d) Homeoffice",
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": false,
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-11-10"
+   },
+   "verguetungsangabe": "JAHRESGEHALT",
+   "artDerVerguetung": "FESTGEHALT",
+   "festgehalt": 35000.0,
+   "vertragsdauer": "UNBEFRISTET",
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Hindenburgstraße",
+      "hausnummer": "77",
+      "plz": "28717",
+      "ort": "Bremen",
+      "ortsteil": "Bremen - Lesum",
+      "region": "BREMEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 53.170209,
+     "laenge": 8.687277
+    },
+    {
+     "adresse": {
+      "strasse": "Knorrenkamp",
+      "hausnummer": "1",
+      "plz": "27711",
+      "ort": "Osterholz-Scharmbeck",
+      "region": "NIEDERSACHSEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 53.236737,
+     "laenge": 8.797221
+    },
+    {
+     "adresse": {
+      "strasse": "Hohenstaufenstraße",
+      "hausnummer": "39",
+      "plz": "27570",
+      "ort": "Bremerhaven",
+      "region": "BREMEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 53.540325,
+     "laenge": 8.591751
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-11-10"
+   },
+   "datumErsteVeroeffentlichung": "2026-10-14",
+   "aenderungsdatum": "2026-11-10T10:26:26.625",
+   "hauptberuf": "Steuerfachangestellte/r",
+   "alternativBeruf1": "Fachwirt/in - Steuer",
+   "firma": "Ehlers und Schaefer Steuerberater PartG mbB",
+   "arbeitgeberKundennummerHash": "1c-hdtGdiYzqnY-cCE-zSCeCGch9FL8Xo20Fer2GxTI=",
+   "referenznummer": "10001-1003856829-S",
+   "alleBerufe": [
+    "Steuerfachangestellte/r",
+    "Fachwirt/in - Steuer"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Notarfachangestellte (m/w/d) - Gehalt & Homeoffice",
+   "quereinstiegGeeignet": false,
+   "arbeitszeitSchichtNachtWochenende": false,
+   "arbeitszeitTeilzeitAbend": false,
+   "arbeitszeitTeilzeitNachmittag": false,
+   "arbeitszeitTeilzeitVormittag": false,
+   "arbeitszeitTeilzeitFlexibel": false,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-11-01"
+   },
+   "verguetungsangabe": "JAHRESGEHALT",
+   "artDerVerguetung": "GEHALTSSPANNE",
+   "gehaltsspanneVon": 60000.0,
+   "gehaltsspanneBis": 75000.0,
+   "vertragsdauer": "UNBEFRISTET",
+   "istGeringfuegigeBeschaeftigung": false,
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "plz": "60323",
+      "ort": "Frankfurt am Main",
+      "region": "HESSEN",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 50.1238643,
+     "laenge": 8.6649952
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "chiffrenummer": "32971",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-16"
+   },
+   "datumErsteVeroeffentlichung": "2026-10-16",
+   "aenderungsdatum": "2026-10-16T11:04:02.941",
+   "hauptberuf": "Notarfachangestellte/r",
+   "firma": "MK Solutions GmbH",
+   "arbeitgeberKundennummerHash": "y4bhasNdsA_5ag5Mamgr0OOwA4M_Gfq32oNQD6F9iio=",
+   "referenznummer": "20997-BB-638302-7878-4419-S",
+   "alleBerufe": [
+    "Notarfachangestellte/r"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Steuerfachangestellter (m/w/d) Homeoffice",
+   "arbeitszeitTeilzeitNachmittag": true,
+   "arbeitszeitTeilzeitVormittag": true,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-10-20"
+   },
+   "verguetungsangabe": "KEINE_ANGABEN",
+   "vertragsdauer": "UNBEFRISTET",
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "strasse": "Karlsburgstr.",
+      "hausnummer": "2",
+      "plz": "76227",
+      "ort": "Karlsruhe, Baden",
+      "region": "BADEN_WUERTTEMBERG",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 48.99861,
+     "laenge": 8.4747015
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "NACH_VEREINBARUNG",
+   "veroeffentlichungszeitraum": {
+    "von": "2026-10-20"
+   },
+   "datumErsteVeroeffentlichung": "2026-08-27",
+   "aenderungsdatum": "2026-10-20T09:34:39.578",
+   "hauptberuf": "Steuerfachangestellte/r",
+   "alternativBeruf1": "Fachwirt/in - Steuer",
+   "firma": "Kurz & Schmitt PartG mbB Steuerberatungsgesellschaft Buchprüfungsges. PartG mbB",
+   "arbeitgeberKundennummerHash": "rmBXKRhueGPSfjihXoN7NcnJKFnT_YFCd0Fakqe614g=",
+   "referenznummer": "10001-1003613747-S",
+   "alleBerufe": [
+    "Steuerfachangestellte/r",
+    "Fachwirt/in - Steuer"
+   ]
+  }
+ ],
+ "maxErgebnisse": 37103,
+ "page": 1,
+ "size": 15
+}

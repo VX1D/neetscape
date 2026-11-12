@@ -1,0 +1,386 @@
+{
+ "total": 336,
+ "offers": [
+  {
+   "id": "261189-senior-frontend-developer-react-react-native-warszawa-teamquest",
+   "title": "Senior Frontend Developer (React + React Native)",
+   "company": "TeamQuest",
+   "city": "Warszawa",
+   "remote": true,
+   "remotePossible": null,
+   "level": "senior",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": "20 000 - 24 000",
+    "currency": "PLN",
+    "hidden": false
+   },
+   "b2b": true,
+   "uop": true,
+   "other": null,
+   "skills": [
+    "React Native",
+    "TypeScript",
+    "GraphQL",
+    "Redux"
+   ],
+   "redirect": null
+  },
+  {
+   "id": "261188-senior-frontend-developer-react-react-native-warsaw-teamquest",
+   "title": "Senior Frontend Developer (React + React Native)",
+   "company": "TeamQuest",
+   "city": "Warsaw",
+   "remote": true,
+   "remotePossible": null,
+   "level": "senior",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": "20 000 - 24 000",
+    "currency": "PLN",
+    "hidden": false
+   },
+   "b2b": true,
+   "uop": true,
+   "other": null,
+   "skills": [
+    "React Native",
+    "TypeScript",
+    "GraphQL",
+    "Redux"
+   ],
+   "redirect": null
+  },
+  {
+   "id": "261183-konsultant-sap-hcm-py-poznan-teamquest",
+   "title": "Konsultant SAP HCM (PY)",
+   "company": "TeamQuest",
+   "city": "Poznań",
+   "remote": true,
+   "remotePossible": null,
+   "level": "medium",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": "20 000 - 28 000",
+    "currency": "PLN",
+    "hidden": false
+   },
+   "b2b": true,
+   "uop": true,
+   "other": null,
+   "skills": [
+    "ABAP"
+   ],
+   "redirect": null
+  },
+  {
+   "id": "261181-devops-engineer-rzeszow-teamquest",
+   "title": "DevOps Engineer",
+   "company": "TeamQuest",
+   "city": "Rzeszów",
+   "remote": true,
+   "remotePossible": null,
+   "level": "medium",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": "24 000 - 32 000",
+    "currency": "PLN",
+    "hidden": false
+   },
+   "b2b": true,
+   "uop": null,
+   "other": null,
+   "skills": [
+    "Kubernetes",
+    "Docker",
+    "Terraform",
+    "Python"
+   ],
+   "redirect": null
+  },
+  {
+   "id": "261180-sap-abap-developer-sap-consultant-hcm-poznan-teamquest",
+   "title": "SAP ABAP Developer / SAP Consultant (HCM)",
+   "company": "TeamQuest",
+   "city": "Poznan",
+   "remote": true,
+   "remotePossible": null,
+   "level": "medium",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": "25 000 - 30 000",
+    "currency": "PLN",
+    "hidden": false
+   },
+   "b2b": true,
+   "uop": true,
+   "other": null,
+   "skills": [
+    "ABAP"
+   ],
+   "redirect": null
+  },
+  {
+   "id": "261178-fullstack-mobile-developer-kotlin-java-backend-bialystok-gdansk-katowice-krakow-lublin-poznan-rzeszow-warszawa-wroclaw-lodz-teamquest",
+   "title": "Fullstack Mobile Developer ( Kotlin, Java Backend)",
+   "company": "TeamQuest",
+   "city": "Białystok, Gdańsk, Katowice, Kraków, Lublin, Poznań, Rzeszów, Warszawa, Wrocław, Łódź",
+   "remote": true,
+   "remotePossible": null,
+   "level": "senior",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": "26 000 - 32 000",
+    "currency": "PLN",
+    "hidden": false
+   },
+   "b2b": true,
+   "uop": null,
+   "other": null,
+   "skills": [
+    "Java",
+    "Spring Boot",
+    "Kotlin Multiplatform"
+   ],
+   "redirect": null
+  },
+  {
+   "id": "261174-operations_resource_bss_development-sofia-warsaw-teamquest",
+   "title": "Operations_Resource_BSS_Development",
+   "company": "TeamQuest",
+   "city": "Sofia, Warsaw",
+   "remote": true,
+   "remotePossible": null,
+   "level": "medium",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": "4 500 - 5 500",
+    "currency": "EUR",
+    "hidden": false
+   },
+   "b2b": true,
+   "uop": null,
+   "other": null,
+   "skills": [
+    "PostgreSQL",
+    "Grafana",
+    "Kubernetes",
+    "Python"
+   ],
+   "redirect": null
+  },
+  {
+   "id": "261121-specjalista-ds-sap-hr-poznan-teamquest",
+   "title": "Specjalista ds. SAP HR",
+   "company": "TeamQuest",
+   "city": "Poznań",
+   "remote": true,
+   "remotePossible": null,
+   "level": "medium",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": "22 000 - 28 000",
+    "currency": "PLN",
+    "hidden": false
+   },
+   "b2b": true,
+   "uop": true,
+   "other": null,
+   "skills": [
+    "ABAP",
+    "SAP PA",
+    "SAP PY"
+   ],
+   "redirect": null
+  },
+  {
+   "id": "260158-senior-ai-platform-infrastructure-engineer-luxoft-dxc",
+   "title": "Senior AI Platform Infrastructure Engineer",
+   "company": "Luxoft DXC",
+   "city": "",
+   "remote": true,
+   "remotePossible": null,
+   "level": "senior",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": null,
+    "currency": null,
+    "hidden": false
+   },
+   "b2b": false,
+   "uop": true,
+   "other": null,
+   "skills": [
+    "AWS",
+    "Python",
+    "Terraform",
+    "Kafka"
+   ],
+   "redirect": null
+  },
+  {
+   "id": "261198-sr-market-data-software-engineer-luxoft-dxc",
+   "title": "Sr. Market Data Software Engineer",
+   "company": "Luxoft DXC",
+   "city": "",
+   "remote": true,
+   "remotePossible": null,
+   "level": "medium",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": null,
+    "currency": null,
+    "hidden": false
+   },
+   "b2b": false,
+   "uop": true,
+   "other": null,
+   "skills": [
+    "Linux",
+    "Python",
+    "TCP/IP",
+    "Git"
+   ],
+   "redirect": null
+  },
+  {
+   "id": "236453-sap-iam-analyst-consultant-she-he-they-accenture-polska",
+   "title": "SAP IAM Analyst / Consultant (She/He/They)",
+   "company": "Accenture Polska",
+   "city": "",
+   "remote": true,
+   "remotePossible": 100,
+   "level": "junior",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": null,
+    "currency": null,
+    "hidden": false
+   },
+   "b2b": false,
+   "uop": true,
+   "other": false,
+   "skills": [
+    "SAP IAG",
+    "SAP IAS",
+    "SAP S/4HANA",
+    "SAP BTP"
+   ],
+   "redirect": null
+  },
+  {
+   "id": "227897-one-identity-manager-consultant-developer-architect-she-he-they-accenture-polska",
+   "title": "One Identity Manager consultant/developer/architect (She/He/They)",
+   "company": "Accenture Polska",
+   "city": "",
+   "remote": true,
+   "remotePossible": 100,
+   "level": "medium",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": null,
+    "currency": null,
+    "hidden": false
+   },
+   "b2b": false,
+   "uop": true,
+   "other": false,
+   "skills": [
+    ".NET",
+    "SQL",
+    "Active Directory",
+    "PowerShell"
+   ],
+   "redirect": null
+  },
+  {
+   "id": "261152-staff-lead-front-end-engineer-edinburgh-prague-dublin-amsterdam-berlin-buenos-aires-krakow-mimica",
+   "title": "Staff/Lead Front-end Engineer",
+   "company": "Mimica",
+   "city": "Edinburgh, Prague, Dublin, Amsterdam, Berlin, Buenos-aires, Krakow",
+   "remote": true,
+   "remotePossible": 100,
+   "level": "lead",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": null,
+    "currency": null,
+    "hidden": false
+   },
+   "b2b": false,
+   "uop": false,
+   "other": true,
+   "skills": [
+    "JavaScript",
+    "TypeScript",
+    "HTML",
+    "CSS"
+   ],
+   "redirect": null
+  },
+  {
+   "id": "261141-java-team-lead-krakow-warsaw-wroclaw-luxoft-dxc",
+   "title": "Java Team Lead",
+   "company": "Luxoft DXC",
+   "city": "Krakow, Warsaw, Wroclaw",
+   "remote": true,
+   "remotePossible": null,
+   "level": "lead",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": null,
+    "currency": null,
+    "hidden": false
+   },
+   "b2b": false,
+   "uop": true,
+   "other": null,
+   "skills": [
+    "Spark",
+    "Hadoop",
+    "SQL"
+   ],
+   "redirect": null
+  },
+  {
+   "id": "259232-senior-engineer-ai-agents-luxoft-dxc",
+   "title": "Senior Engineer (AI agents)",
+   "company": "Luxoft DXC",
+   "city": "",
+   "remote": true,
+   "remotePossible": null,
+   "level": "senior",
+   "worktime": "full_time",
+   "salary": {
+    "__typename": "Salary",
+    "money": null,
+    "currency": null,
+    "hidden": false
+   },
+   "b2b": false,
+   "uop": true,
+   "other": false,
+   "skills": [
+    "TypeScript",
+    ".NET",
+    "Docker",
+    "Kubernetes"
+   ],
+   "redirect": null
+  }
+ ]
+}

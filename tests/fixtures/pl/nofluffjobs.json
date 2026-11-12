@@ -1,0 +1,481 @@
+{
+ "total": 1010,
+ "pages": 51,
+ "offers": [
+  {
+   "url": "business-system-analyst-devire-remote",
+   "title": "Business/System Analyst",
+   "company": "Devire",
+   "posted": 1792411410366,
+   "renewed": 1794488610366,
+   "category": "businessAnalyst",
+   "seniority": [
+    "Senior"
+   ],
+   "salary": {
+    "from": 130,
+    "to": 165,
+    "type": "b2b",
+    "currency": "PLN",
+    "period": "Hour",
+    "disclosedAt": "VISIBLE",
+    "flexibleUpperBound": false,
+    "containsSalary": "VISIBLE"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote"
+   ],
+   "skills": [
+    "System analyst",
+    "UML",
+    "BPMN"
+   ]
+  },
+  {
+   "url": "c-developer-connectis--remote-3",
+   "title": "C++ Developer",
+   "company": "Connectis_",
+   "posted": 1793970160609,
+   "renewed": 1794488560609,
+   "category": "backend",
+   "seniority": [
+    "Senior"
+   ],
+   "salary": {
+    "from": 24000,
+    "to": 26000,
+    "type": "b2b",
+    "currency": "PLN",
+    "period": "Month",
+    "disclosedAt": "VISIBLE",
+    "flexibleUpperBound": false,
+    "containsSalary": "VISIBLE"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote",
+    "Warszawa",
+    "Katowice"
+   ],
+   "skills": [
+    "C++",
+    "Qt6",
+    "Desktop"
+   ]
+  },
+  {
+   "url": "kotlin-cloud-engineer-k-m-astek-polska-remote",
+   "title": "Kotlin / Cloud Engineer (K/M)",
+   "company": "ASTEK Polska",
+   "posted": 1794315748243,
+   "renewed": 1794488548243,
+   "category": "backend",
+   "seniority": [
+    "Senior"
+   ],
+   "salary": {
+    "from": 1000,
+    "to": 1120,
+    "type": "b2b",
+    "currency": "PLN",
+    "period": "Day",
+    "disclosedAt": "VISIBLE",
+    "flexibleUpperBound": false,
+    "containsSalary": "VISIBLE"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote"
+   ],
+   "skills": [
+    "Kotlin",
+    "Java",
+    "Spring Boot"
+   ]
+  },
+  {
+   "url": "business-analyst-devire-remote-10",
+   "title": "Business Analyst",
+   "company": "Devire",
+   "posted": 1792411257930,
+   "renewed": 1794488457930,
+   "category": "businessAnalyst",
+   "seniority": [
+    "Senior"
+   ],
+   "salary": {
+    "from": 140,
+    "to": 175,
+    "type": "b2b",
+    "currency": "PLN",
+    "period": "Hour",
+    "disclosedAt": "VISIBLE",
+    "flexibleUpperBound": false,
+    "containsSalary": "VISIBLE"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote"
+   ],
+   "skills": [
+    "Business Analyst",
+    "User stories",
+    "CIS"
+   ]
+  },
+  {
+   "url": "microsoft-365-onedrive-administrator-upvanta-remote",
+   "title": "Microsoft 365 OneDrive Administrator",
+   "company": "Upvanta",
+   "posted": 1794315124262,
+   "renewed": 1794487924262,
+   "category": "sysAdministrator",
+   "seniority": [
+    "Senior"
+   ],
+   "salary": {
+    "from": 1200,
+    "to": 1400,
+    "type": "b2b",
+    "currency": "PLN",
+    "period": "Day",
+    "disclosedAt": "VISIBLE",
+    "flexibleUpperBound": false,
+    "containsSalary": "VISIBLE"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote"
+   ],
+   "skills": [
+    "SharePoint",
+    "DLP",
+    "SCCM"
+   ]
+  },
+  {
+   "url": "ai-developer-connectis--remote",
+   "title": "AI Developer",
+   "company": "Connectis_",
+   "posted": 1794487322626,
+   "category": "artificialIntelligence",
+   "seniority": [
+    "Mid"
+   ],
+   "salary": {
+    "from": 120,
+    "to": 142,
+    "type": "b2b",
+    "currency": "PLN",
+    "period": "Hour",
+    "disclosedAt": "VISIBLE",
+    "flexibleUpperBound": false,
+    "containsSalary": "VISIBLE"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote",
+    "Warszawa"
+   ],
+   "skills": [
+    "Python",
+    "AI",
+    "AI/ML"
+   ]
+  },
+  {
+   "url": "reporting-data-analyst-l2-l3-avenga-agencja-pracy-nr-kraz-8448-remote",
+   "title": "Reporting & Data Analyst (L2/L3)",
+   "company": "AVENGA (Agencja Pracy, nr KRAZ: 8448)",
+   "posted": 1792410027632,
+   "renewed": 1794487227632,
+   "category": "data",
+   "seniority": [
+    "Senior"
+   ],
+   "salary": {
+    "from": 130,
+    "to": 140,
+    "type": "b2b",
+    "currency": "PLN",
+    "period": "Hour",
+    "disclosedAt": "VISIBLE",
+    "flexibleUpperBound": false,
+    "containsSalary": "VISIBLE"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote",
+    "Warszawa"
+   ],
+   "skills": [
+    "AWS S3",
+    "SQL",
+    "Business analysis"
+   ]
+  },
+  {
+   "url": "senior-java-developer-euvic-remote-10",
+   "title": "Senior Java Developer",
+   "company": "Euvic S.A.",
+   "posted": 1793968715267,
+   "renewed": 1794487115267,
+   "category": "backend",
+   "seniority": [
+    "Senior"
+   ],
+   "salary": {
+    "from": 100,
+    "to": 150,
+    "type": "b2b",
+    "currency": "PLN",
+    "period": "Hour",
+    "disclosedAt": "VISIBLE",
+    "flexibleUpperBound": false,
+    "containsSalary": "VISIBLE"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote"
+   ],
+   "skills": [
+    "Java",
+    "Jakarta EE",
+    "JEE"
+   ]
+  },
+  {
+   "url": "security-risk-compliance-architect-payments-certification-emerge-soft-remote",
+   "title": "Security, Risk & Compliance Architect (Payments Certification)",
+   "company": "Emerge Soft",
+   "posted": 1794487242205,
+   "category": "security",
+   "seniority": [
+    "Mid"
+   ],
+   "salary": {
+    "type": "b2b",
+    "period": "Month",
+    "disclosedAt": "AFTER_LAST_INTERVIEW",
+    "flexibleUpperBound": false,
+    "containsSalary": "NOT_PROVIDED"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote"
+   ],
+   "skills": [
+    "Cryptography",
+    "PCI-MPOC / CPoC / SPoC",
+    "PCI-DSS"
+   ]
+  },
+  {
+   "url": "senior-android-software-engineer-euvic-remote",
+   "title": "Senior Android Software Engineer",
+   "company": "Euvic S.A.",
+   "posted": 1793968548821,
+   "renewed": 1794486948821,
+   "category": "mobile",
+   "seniority": [
+    "Expert"
+   ],
+   "salary": {
+    "type": "b2b",
+    "currency": "PLN",
+    "period": "Hour",
+    "disclosedAt": "AT_LAST_INTERVIEW",
+    "flexibleUpperBound": false,
+    "containsSalary": "SALARY_MATCH"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote"
+   ],
+   "skills": [
+    "Android",
+    "Kotlin",
+    "Java"
+   ]
+  },
+  {
+   "url": "servicenow-architect-1dea-remote",
+   "title": "ServiceNow Architect",
+   "company": "1dea",
+   "posted": 1793968509117,
+   "renewed": 1794486909117,
+   "category": "architecture",
+   "seniority": [
+    "Expert"
+   ],
+   "salary": {
+    "from": 165,
+    "to": 210,
+    "type": "b2b",
+    "currency": "PLN",
+    "period": "Hour",
+    "disclosedAt": "VISIBLE",
+    "flexibleUpperBound": false,
+    "containsSalary": "VISIBLE"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote"
+   ],
+   "skills": [
+    "ServiceNow"
+   ]
+  },
+  {
+   "url": "php-react-consultant-rits-center-remote",
+   "title": "PHP React Consultant",
+   "company": "Rits Center",
+   "posted": 1794313844143,
+   "renewed": 1794486644143,
+   "category": "backend",
+   "seniority": [
+    "Senior"
+   ],
+   "salary": {
+    "from": 130,
+    "to": 150,
+    "type": "b2b",
+    "currency": "PLN",
+    "period": "Hour",
+    "disclosedAt": "VISIBLE",
+    "flexibleUpperBound": false,
+    "containsSalary": "VISIBLE"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote",
+    "Warszawa"
+   ],
+   "skills": [
+    "PHP",
+    "Symfony",
+    "React.js"
+   ]
+  },
+  {
+   "url": "senior-tosca-automation-qa-upvanta-remote",
+   "title": "Senior Tosca Automation QA",
+   "company": "Upvanta",
+   "posted": 1794486617067,
+   "category": "testing",
+   "seniority": [
+    "Senior"
+   ],
+   "salary": {
+    "from": 880,
+    "to": 980,
+    "type": "b2b",
+    "currency": "PLN",
+    "period": "Day",
+    "disclosedAt": "VISIBLE",
+    "flexibleUpperBound": false,
+    "containsSalary": "VISIBLE"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote"
+   ],
+   "skills": [
+    "Tricentis Tosca",
+    "API",
+    "UI"
+   ]
+  },
+  {
+   "url": "software-engineer-java-python-machine-learning-scalo-remote",
+   "title": "Software Engineer (Java/Python + Machine Learning)",
+   "company": "Scalo",
+   "posted": 1794486581348,
+   "category": "backend",
+   "seniority": [
+    "Mid"
+   ],
+   "salary": {
+    "from": 115,
+    "to": 125,
+    "type": "b2b",
+    "currency": "PLN",
+    "period": "Hour",
+    "disclosedAt": "VISIBLE",
+    "flexibleUpperBound": false,
+    "containsSalary": "VISIBLE"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote",
+    "Kraków"
+   ],
+   "skills": [
+    "Java",
+    "Python",
+    "Machine learning"
+   ]
+  },
+  {
+   "url": "senior-software-engineer-product-foundations-cast-ai-remote",
+   "title": "Senior Software Engineer | Product Foundations",
+   "company": "Cast AI",
+   "posted": 1792409344941,
+   "renewed": 1794486544941,
+   "category": "backend",
+   "seniority": [
+    "Senior"
+   ],
+   "salary": {
+    "from": 26000,
+    "to": 39000,
+    "type": "permanent",
+    "currency": "PLN",
+    "period": "Month",
+    "disclosedAt": "VISIBLE",
+    "flexibleUpperBound": false,
+    "containsSalary": "VISIBLE"
+   },
+   "promoted": false,
+   "remote": true,
+   "type": "remote",
+   "cities": [
+    "Remote"
+   ],
+   "skills": [
+    "Go",
+    "API",
+    "Performance tuning"
+   ]
+  }
+ ]
+}

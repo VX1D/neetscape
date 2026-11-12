@@ -1,0 +1,67 @@
+# ---------------------------------------------------------------------------
+# Personal data: never commit. Your profile, CV, crawl results and notes stay local.
+# (CI fails if any of these slip into a pull request; see .github/workflows/test.yml)
+# ---------------------------------------------------------------------------
+/profile*.json
+/profiles/
+/cv/
+/cv.*
+/CV*
+/resume*
+*.pdf
+*.doc
+*.docx
+*.odt
+*.rtf
+shortlist*.md
+notes/
+/runs/
+/out/
+recordings/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# secrets and local environment
+.env
+.env.*
+*.key
+*.pem
+cookies*.json
+
+# local settings of coding agents (shared instructions live in AGENTS.md / CLAUDE.md)
+.claude/
+CLAUDE.local.md
+.codex/
+.cursor/
+.aider*
+
+# Python, build and test artefacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# editors and OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# docs tooling
+node_modules/
