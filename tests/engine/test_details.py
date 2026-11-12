@@ -198,3 +198,14 @@ def test_first_publication_date_from_the_posting_replaces_a_refresh_date(db, mon
     db.db.execute("UPDATE offers SET published='2026-11-12' WHERE id=1")
     details._save(db, db.offer(1), 200, "text", {"published": "2026-10-15"})
     assert db.offer(1)["published"] == "2026-11-12"                                   # other boards keep the card's date
+
+
+def test_internship_from_a_posting_only_when_named_in_the_title_or_a_field():
+    langs = ("pl", "en")
+    row = {"mode": "remote", "worktime": "full_time", "contracts": "", "title": "Junior SAP Consultant"}
+    text = "Firma z 37-letnim stażem. Doświadczenie z pracy lub staży mile widziane. Umowa o pracę."
+    assert details._from_posting(row, text, {}, {}, langs) == {"contracts": "employment"}
+    linkedin = "Seniority level: Internship\nEmployment type: Internship"
+    assert details._from_posting(row, linkedin, {}, {}, langs)["contracts"] == "internship"
+    titled = {**row, "title": "Stażysta w dziale IT"}
+    assert details._from_posting(titled, "Oferujemy płatny staż.", {}, {}, langs)["contracts"] == "internship"
