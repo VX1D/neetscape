@@ -12,14 +12,56 @@ It is built to be driven by a coding agent (Claude Code, Codex or similar): the 
 CV, writes the profile, runs the crawl, reads the postings and gives you a shortlist, following
 [AGENTS.md](AGENTS.md). neetscape itself makes no LLM calls and needs no API keys.
 
+## Who it is for
+
+Anyone looking for work, in any job: an accountant, a nurse, a warehouse worker, a developer, a
+student after a side job. You (or your agent) write a `profile.json` with one search per intent.
+The keys are the same in every country; phrases in `what` go to the boards as they are, so write them
+in the boards' language. Three examples for Poland, one search each:
+
+A remote IT role:
+
+```json
+{"id": "it", "where": "remote", "what": ["it support", "helpdesk"],
+ "fields": ["it_support", "it_admin"], "levels_exclude": ["senior", "lead", "manager"]}
+```
+
+An on-site job near a city (*księgowa*: accountant):
+
+```json
+{"id": "accounting", "where": {"city": "Poznań", "radius_km": 25},
+ "what": ["księgowa", "accountant"], "fields": ["finance"], "contracts": ["employment"]}
+```
+
+Side jobs, any field:
+
+```json
+{"id": "side", "where": "remote", "what": "all", "worktime": ["part_time", "flexible"],
+ "contracts": ["mandate", "freelance"], "pay": {"min": 40, "per": "hour"}}
+```
+
+`neetscape init --preset focused|broad|local|side` writes a starting profile to edit;
+[docs/profile.md](docs/profile.md) has every key.
+
 ## Features
 
 - **Composable searches**: remote or a city with a radius, specific phrases or everything, plus
   filters for work time, contract type, level, pay, posting age and title/text patterns.
+- **Job fields, domains and functions**: every offer's title (and the board's category) is read as
+  what the work is about (`domains`: `finance`, `health`, `logistics`, `it`...) and what the person
+  does (`functions`: `account`, `care`, `transport`, `sell`...), combined into one job field (`fields`).
+  Filter by a role, or by a subject in any role ("healthcare, but not sales").
+- **Unknown is not a failure**: a card without pay or a title nothing is read from is kept or dropped
+  per dimension (`"unknown": {"default": "keep", "pay": "drop"}`).
+- **Explained values**: `neetscape show ID` prints where each value came from (board data, the
+  search, the title, the posting) and the phrase that set it, plus why each search passed or failed.
+- **Re-judge without crawling**: after changing the profile or the vocabularies, `neetscape eval`
+  derives and filters the stored offers again in seconds.
+- **Countries as packages, languages as packs**: Poland and Germany today, each with its boards,
+  currency, presets and contract words; titles and postings are read with per-language vocabularies
+  (Polish, German, English). Adding a country is adding a directory.
 - **Many boards, one listing**: duplicates across boards are merged; new and removed offers are
   tracked between runs.
-- **Countries as plug-ins**: Poland and Germany today, each with its own boards, currency,
-  language and presets. Adding a country is adding a directory.
 - **Postings only for matches**: listing cards are filtered first; full postings are fetched only
   for matching offers (once per job), and then settle unknown work mode, hours and contracts.
 - **Your own blacklist**: companies, links or phrases to drop or flag.
@@ -28,6 +70,20 @@ CV, writes the profile, runs the crawl, reads the postings and gives you a short
 - **Local and polite**: your data stays on your machine; public pages only, no logins, rate-limited
   per host.
 
+## Requirements
+
+Python 3.10+ (`pip install -e .` adds its one dependency, `websockets`) and, for the boards that need
+one, a Chromium-family browser.
+neetscape starts its own private browser instance with a separate profile; it never uses yours.
+
+- **Linux**: tested. The browser is found on `PATH` (`chromium`, `google-chrome`, `brave`...) or
+  set with `NEETSCAPE_BROWSER`. With `Xvfb` installed it runs on a virtual display (fewer bot walls),
+  otherwise headless.
+- **macOS**: untested. Browsers in `/Applications` are not on `PATH`, so set `NEETSCAPE_BROWSER`, e.g.
+  `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`; without Xvfb it runs headless.
+- **Windows**: not supported natively (the CLI relies on POSIX signals and process groups). WSL2
+  should behave like Linux but is untested.
+
 ## Quick start
 
 With an agent:
@@ -35,14 +91,14 @@ With an agent:
 ```
 git clone https://github.com/VX1D/neetscape && cd neetscape
 claude    # or any agent that reads AGENTS.md
-> Here is my CV: ~/cv.pdf. Find me remote work; side jobs welcome.
+> Here is my CV: ~/cv.pdf. Find me work near Wrocław; part-time is fine.
 ```
 
-By hand (Python 3.10+, a Chromium-family browser, ideally `Xvfb`):
+By hand:
 
 ```
 python3 -m venv .venv && . .venv/bin/activate && pip install -e .
-neetscape init --preset broad      # write profile.json (add --country de for Germany)
+neetscape init --preset focused    # write profile.json, then edit it (add --country de for Germany)
 neetscape plan                     # what will be fetched from which board
 neetscape run --limit-pages 2      # a quick first crawl
 neetscape list --group title       # skim the results

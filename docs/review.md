@@ -13,7 +13,7 @@ Two principles:
   stored offer in seconds without crawling. Tighten the profile until the listing is a few hundred
   offers before anyone reads anything.
 - **Precision over recall.** The person acts on the shortlist. An offer that wrongly survives (a hybrid
-  job in a "remote only" list, an HR role for an IT profile) costs their trust; a borderline offer that is
+  job in a "remote only" list, a sales role for an accountant) costs their trust; a borderline offer that is
   dropped costs little. Prefer rules that drop doubtful offers, and say how many were dropped.
 
 ## The funnel
@@ -29,7 +29,19 @@ Two principles:
 ### 0. Make the profile do the filtering
 
 Write the profile from the CV and the person's answers (AGENTS.md, sections 1–2), then add rules that
-remove what they would never apply to. For example, for someone who wants remote IT or AI work:
+remove what they would never apply to. Two examples of what that looks like; the same keys fit any
+other job.
+
+Someone who wants warehouse work within 20 km of Łódź, without driving (*kierowca*, *kurier*: driver,
+courier) or shift-lead roles; a city search with `what: "all"` and the job's field does most of the work:
+
+```json
+{"id": "warehouse", "where": {"city": "Łódź", "radius_km": 20}, "what": "all",
+ "fields": ["logistics"], "title_exclude": ["kierowca|kurier|driver"],
+ "levels_exclude": ["manager"], "contracts": ["employment", "temp_agency"]}
+```
+
+Someone who wants remote IT or AI work, in any role except selling, marketing, recruiting or accounting:
 
 ```json
 {"id": "main", "where": "remote", "what": "all", "remote_proof": true,
@@ -125,8 +137,8 @@ for this kind of reading.
 
 ```
 neetscape mark 12 shortlisted --note "Apply now
-✅ n8n + API integrations, fully remote
-⚠ asks for 2 years of B2B integrations"
+✅ uses their invoicing and Excel experience, 10 km away
+⚠ asks for 2 years in an accounting office"
 neetscape mark 40 rejected --note "requires German C1"
 neetscape report
 ```
