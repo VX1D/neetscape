@@ -15,6 +15,7 @@ import datetime as dt
 import json
 
 from . import country as countries
+from .boards import REGISTRY
 from .model import Search, canonical_contract, fold, parse_date
 from .pay import HOURS_PER_MONTH
 from .profile import Profile
@@ -60,11 +61,27 @@ def _city_in(city: str, country: str, hay: str) -> bool:
     return any(n in hay for n in names)
 
 
+def _found_in_area(o, s: Search) -> bool:
+    """The board itself placed the offer within the search's area: a request with the board's own city and radius
+    filter for the same city, at no larger radius, found it (a town 25 km away matches a 30 km search although its
+    name differs). Only boards whose radius filter is verified (`Caps.radius`) count: a board with a city filter
+    only may answer an unknown town with the whole country (seen live), and LinkedIn ignores the distance. Boards
+    that round a radius up to their own steps may include slightly farther offers."""
+    areas = (o["areas"] if "areas" in o.keys() else "") or ""
+    for area in filter(None, areas.split(",")):
+        board, city, radius = (area.split("|") + ["", "", ""])[:3]
+        b = REGISTRY.get(board)
+        if b and b.caps.radius and _city_in(s.where.city, s.where.country, fold(city)) \
+                and float(radius or 0) <= (s.where.radius_km or 0):
+            return True
+    return False
+
+
 def _check_where(o, s: Search, v: _Verdict) -> None:
     locations = " ".join(json.loads(o["locations"] or "[]"))
     if s.where.city:
         in_city = _city_in(s.where.city, s.where.country, fold(locations + " " + (o["snippet"] or "")))
-        if in_city or (s.where.remote and o["mode"] == "remote"):
+        if in_city or _found_in_area(o, s) or (s.where.remote and o["mode"] == "remote"):
             return
         if locations:
             v.fail(f"not in {s.where.city}")

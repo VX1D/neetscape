@@ -30,7 +30,7 @@ Search fields:
 
 | Field | Meaning |
 |---|---|
-| `where` | `"remote"` (default), `"anywhere"`, `{"city", "radius_km", "or_remote", "country"}`, or `{"remote": true, "country": "de"}` (search another country's boards; they must be in `boards`) |
+| `where` | `"remote"` (default), `"anywhere"`, `{"city", "radius_km", "or_remote", "country"}`, or `{"remote": true, "country": "de"}` (search another country's boards; they must be in `boards`). A city search passes offers whose location names the city (or an alias), and offers a board with a verified radius filter (`neetscape boards`) found with that filter for the same city at no larger radius (a town 25 km away matches a 30 km search; OLX measures its radius loosely) |
 | `what` | `"all"` or a list of phrases; `keywords_for` overrides phrases per board |
 | `worktime`, `contracts` | allowed values; an offer passes if its work time **or** one of its contracts is allowed. Contracts: `employment` (old name `uop` still accepted), `b2b`, `mandate`, `specific_task`, `internship`, `freelance`, `mini_job`, `working_student`, `temp_agency`, `other`; local words of the profile's country (`minijob`, `werkstudent`) are accepted too |
 | `levels_exclude` | `intern junior mid senior lead manager unknown` |

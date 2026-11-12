@@ -127,3 +127,14 @@ def test_explain_an_offer_never_sighted(tmp_path):
     db.db.execute("INSERT INTO offers(board, key, url, title) VALUES ('x', '1', 'https://x/1', 'Job')")
     p = profile.validate({"version": 2, "searches": [{"id": "x"}], "blacklist": {"companies": ["x"], "action": "flag"}})
     assert ev.explain(db, p, 1) == {} and ev.flagged(db, p, 1) == []
+
+
+def test_city_search_trusts_the_boards_radius_filter():
+    search = s(where={"city": "Andrychów", "radius_km": 30})
+    bielsko = row(mode="onsite", locations='["Bielsko-Biała"]')
+    assert ev.check(R(bielsko), search)[1] == ["not in Andrychów"]                     # by name alone: out
+    assert ev.check(R({**bielsko, "areas": "olx|Andrychów|30"}), search)[0]            # the board placed it within 30 km
+    assert ev.check(R({**bielsko, "areas": "olx|Andrychów|50"}), search)[1] == ["not in Andrychów"]   # a wider radius
+    assert ev.check(R({**bielsko, "areas": "olx|Kraków|30"}), search)[1] == ["not in Andrychów"]      # another city
+    warsaw = row(mode="onsite", locations='["Warszawa"]', areas="theprotocol|Andrychów|30,linkedin|Andrychów|30")
+    assert ev.check(R(warsaw), search)[1] == ["not in Andrychów"]   # boards without a verified radius are no evidence
