@@ -51,9 +51,9 @@ def test_markup_helpers():
 
 def test_value_helpers():
     assert pages.slug("Bielsko-Biała") == "bielsko-biala" and pages.slug("automatyzacja procesów") == "automatyzacja-procesow"
-    assert pages.epoch_or_iso_date(1794231934738) == dt.date(2026, 11, 9)
-    assert pages.epoch_or_iso_date("2026-11-12T10:00:00Z") == dt.date(2026, 11, 12) and pages.epoch_or_iso_date("x") is None
-    assert pages.feed_date("Thu, 12 Nov 2026 10:00:00 +0000") == dt.date(2026, 11, 12)
+    assert pages.date_of(1794231934738) == dt.date(2026, 11, 9)
+    assert pages.date_of("2026-11-12T10:00:00Z") == dt.date(2026, 11, 12) and pages.date_of("x") is None
+    assert pages.date_of("Thu, 12 Nov 2026 10:00:00 +0000") == dt.date(2026, 11, 12)
     assert pages.pay_range("b2b", 12000.0, 18000, "PLN", "month", gross=True) == "b2b:12000-18000 PLN/month gross"
     assert pages.pay_range("b2b", None, 5000, "PLN", "month") == "b2b:5000-5000 PLN/month"  # a missing end takes the other
     assert pages.pay_range("b2b", 31.4, None, "PLN", "hour") == "b2b:31.4-31.4 PLN/hour"
