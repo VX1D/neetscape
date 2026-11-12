@@ -2,7 +2,7 @@
 from neetscape import evaluate as ev
 from neetscape import profile, report
 from neetscape.model import Offer
-from neetscape.store import Store
+from neetscape.store import PAGE_LIMIT, PAGE_LIMIT_ASKED, Store
 
 PROFILE = profile.validate({"version": 2, "boards": ["justjoin"], "searches": [{"id": "all", "where": "remote", "what": "all"}]})
 
@@ -173,3 +173,70 @@ def test_capped_requests_are_listed_in_the_report(tmp_path):
     db.finish_request(req, 25, 1000, False, "page limit; capped: matches 1500, the board shows 1000", "")
     text = report.write_reports(db, PROFILE, rid, tmp_path / "out").read_text()
     assert "Capped (offers beyond" in text and 'olx * {"category": "hr"}: matches 1500, the board shows 1000' in text
+    assert "Page limit" not in text                                     # listed once, as capped
+
+
+def _crawled(db, run_id, board, offers, complete=True, stop="last page", keyword=None):
+    """One request to `board` in `run_id` that saw `offers`."""
+    req = db.start_request(run_id, board, "all", keyword, {}, ())
+    db.ingest(offers, run_id, req, 1)
+    db.finish_request(req, 1, len(offers), complete, stop)
+
+
+def test_listing_is_the_current_state_of_every_board(tmp_path):
+    """A run crawling one board keeps the other boards' offers (as of their latest crawl) in its listing."""
+    db = Store(tmp_path / "j.db")
+    r1 = db.start_run({}, [])
+    _crawled(db, r1, "justjoin", [_job("justjoin", "1", title="Support A")])
+    _crawled(db, r1, "pracuj", [_job("pracuj", "2", title="Support B"), _job("pracuj", "3", title="Support C")])
+    ev.evaluate(db, PROFILE, r1)
+    r2 = db.start_run({}, ["run", "--boards", "pracuj"])
+    _crawled(db, r2, "pracuj", [_job("pracuj", "2", title="Support B"), _job("pracuj", "4", title="Support D")])
+    assert db.mark_gone(r2) == 1                                        # 3: the complete request no longer shows it
+    assert db.unevaluated(r2) == 3
+    ev.evaluate(db, PROFILE, r2)
+    assert db.unevaluated(r2) == 0
+    rows = report.listing(db, PROFILE, r2)
+    assert {(d["title"], d["is_new"]) for d in rows} == {("Support A", 0), ("Support B", 0), ("Support D", 1)}
+    assert [d["title"] for d in report.listing(db, PROFILE, r2, new_only=True)] == ["Support D"]
+    assert {d["title"] for d in report.listing(db, PROFILE, r1)} == {"Support A", "Support B", "Support C"}  # run 1's state
+    db.mark("https://justjoin/1", "applied")
+    db.mark("https://pracuj/3", "applied")
+    assert [m["listed"] for m in db.tracked(r2)] == ["yes", "gone"]
+
+
+def test_a_partial_request_carries_the_offers_it_did_not_reach(tmp_path):
+    """An incremental (or page-limit) stop says nothing about deeper offers; an offer that only a request no
+    longer made found leaves the state with the board's next crawl."""
+    db = Store(tmp_path / "j.db")
+    r1 = db.start_run({}, [])
+    _crawled(db, r1, "justjoin", [_job("justjoin", "1", title="Support A"), _job("justjoin", "2", title="Support B")])
+    _crawled(db, r1, "justjoin", [_job("justjoin", "3", title="Support C")], keyword="old phrase")
+    r2 = db.start_run({}, [])
+    _crawled(db, r2, "justjoin", [_job("justjoin", "1", title="Support A")], complete=False,
+             stop="incremental: page already known")
+    assert {o["key"] for o in db.current_offers(r2)} == {"1", "2"}       # 2 lies deeper, 3's request was not repeated
+
+
+def test_a_split_request_carries_nothing(tmp_path):
+    db = Store(tmp_path / "j.db")
+    r1 = db.start_run({}, [])
+    _crawled(db, r1, "olx", [_job("olx", "1", title="Support A")])
+    r2 = db.start_run({}, [])
+    _crawled(db, r2, "olx", [], complete=False, stop="split into 2 (matches 1000+, the board shows 1000)")
+    assert db.current_offers(r2) == []                                  # its narrower requests cover the listing
+
+
+def test_page_limited_requests_are_listed_in_the_report(tmp_path):
+    import json
+    import re
+    db = Store(tmp_path / "j.db")
+    for stop, label, cut in ((PAGE_LIMIT, "the board's max_pages", 1), (PAGE_LIMIT_ASKED, "--limit-pages (deliberate)", 0)):
+        rid = db.start_run({}, [])
+        req = db.start_request(rid, "linkedin", "all", "n8n", {"country": "pl"}, ())
+        db.finish_request(req, 2, 50, False, stop)
+        out = tmp_path / f"out{rid}"
+        text = report.write_reports(db, PROFILE, rid, out).read_text()
+        assert "Page limit (the listing may go on" in text and f'linkedin n8n {{"country": "pl"}}: 2 pages, {label}' in text
+        meta = json.loads(re.search(r"id=meta>(.*?)</script>", (out / "REPORT.html").read_text(), re.S).group(1))
+        assert meta["cut"] == cut

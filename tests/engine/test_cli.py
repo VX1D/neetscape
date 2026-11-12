@@ -204,3 +204,26 @@ def test_show_flags_a_blacklisted_offer(fake, tmp_path, monkeypatch, capsys):
     capsys.readouterr()
     cli.main(["show", "1"])
     assert "blacklist (flag): blacklisted company /acme/" in capsys.readouterr().out
+
+
+def test_resumed_run_labels_page_limits_by_the_limit_that_cut_them(fake, tmp_path, monkeypatch, capsys):
+    """A run started with --limit-pages 2 and resumed without it: the request fetched again stops at the board's
+    max_pages, not at the original command's --limit-pages."""
+    import sys
+    from neetscape import cli
+    from neetscape.store import Store
+    monkeypatch.chdir(tmp_path)
+    _profile(tmp_path)
+    fake.pages = {("*", p): [[f"{p}-{i}", f"Job {p}-{i}", {}] for i in range(3)] for p in range(1, 11)}
+    monkeypatch.setattr("sys.argv", ["neetscape", "run", "--limit-pages", "2"])   # the run stores its command line
+    cli.main(sys.argv[1:])
+    db = Store(tmp_path / "runs" / "neetscape.db")
+    db.db.execute("UPDATE runs SET status='running'")
+    db.db.execute("UPDATE requests SET status='running'")          # interrupted before the request finished
+    db.db.commit()
+    monkeypatch.setattr("sys.argv", ["neetscape", "run", "--resume"])
+    cli.main(sys.argv[1:])
+    capsys.readouterr()
+    text = next((tmp_path / "runs").glob("*-run1/REPORT.md")).read_text()
+    assert "2 pages, --limit-pages (deliberate)" in text                    # the interrupted request
+    assert "10 pages, the board's max_pages" in text and "10 pages, --limit-pages" not in text

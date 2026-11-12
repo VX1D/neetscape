@@ -172,6 +172,11 @@ rejected, ignored), `u` undoes, `n` edits the note. Decisions made on the page a
 and copied as one block of `neetscape mark` commands (plus `neetscape report`) to paste in a terminal.
 `#review` / `#all` in the URL pick the tab. `neetscape report` rewrites the page, e.g. after `neetscape mark`.
 
+The listing is the **current state** of every board, not only what the run crawled: offers seen by
+their board's latest crawl (or deeper in a listing that crawl stopped early), not marked gone,
+judged by `eval` against the current profile. `run --boards olx` therefore refreshes OLX and keeps
+the other boards' offers as of their last crawl; `new` means first seen in this run.
+
 `neetscape list` prints the same listing (one row per job, duplicates across boards merged) with
 filters: `--search ID`, `--new`, `--where "o.pay_max > 10000"` (an SQL condition on `offers o`),
 `--limit N`, `--format tsv|md|json`. `--group title` collapses it to one row per normalised title

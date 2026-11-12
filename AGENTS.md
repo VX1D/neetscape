@@ -151,7 +151,8 @@ boards. For a quick trial use `--limit-pages 2`. If it is interrupted, `neetscap
 continues and skips finished requests. `--boards a,b` limits a run to some boards.
 
 When it finishes, `run.log` ends with the counts per search and the report path
-(`runs/<date>-run<N>/REPORT.md`). Check the board table at the top of the report, or:
+(`runs/<date>-run<N>/REPORT.md`). Check the board table at the top of the report and its "Capped" and
+"Page limit" lists (a listing cut there is missing offers), or:
 
 ```
 neetscape sql "SELECT board, COUNT(*) req, SUM(pages), SUM(found), SUM(error != '') errors
@@ -196,6 +197,8 @@ and are often unknown or wrong.
 `listing.tsv` in the run directory has one row per job (duplicates across boards merged):
 `id new score title company pay_<cur>_month mode worktime contracts level age boards searches tags mark url`
 (`pay_pln_month`, `pay_eur_month`: the profile country's currency).
+The listing is the current state: every offer still listed on any board as of that board's latest
+crawl, not only what this run crawled; `new` = jobs first seen in this run.
 With broad searches it can have thousands of rows. Never load it whole; read it in chunks and
 slice it:
 
@@ -295,5 +298,6 @@ whether they are still listed.
 Re-run `neetscape run` with the same profile. Crawling is incremental (newest-first boards stop at
 pages already seen), offers are flagged new only when the job was not seen in any earlier run,
 offers are marked gone when a complete request no longer returns them, and in `auto` mode only
-postings of new matches are fetched. Review with `neetscape list --new`. Update the profile when the person's situation changes, and tighten it when
+postings of new matches are fetched. `run --boards a,b` refreshes only those boards; the report still
+lists the other boards' offers as of their last crawl. Review with `neetscape list --new`. Update the profile when the person's situation changes, and tighten it when
 the review keeps rejecting the same kind of offer. Keep runs infrequent (once or twice a week).

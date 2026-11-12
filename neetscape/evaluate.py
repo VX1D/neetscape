@@ -4,9 +4,10 @@
 including those a board already applied server-side; the board having applied them is used only as
 evidence for fields the board did not return (e.g. remote mode, keyword relevance).
 
-`evaluate` stores both outcomes per run: passing offers in `evals` (score, matched rules, tags) and
-failing ones in `rejections` (the reasons, `; `-separated), so `neetscape show` and SQL can tell why an
-offer is missing without re-running the filters.
+`evaluate` judges the current state as of a run (`Store.current_offers`: every offer presumed still listed,
+from every board, not only those the run crawled) and stores both outcomes under the run: passing offers in
+`evals` (score, matched rules, tags) and failing ones in `rejections` (the reasons, `; `-separated), so
+`neetscape show` and SQL can tell why an offer is missing without re-running the filters.
 """
 from __future__ import annotations
 
@@ -182,10 +183,11 @@ def rank(o, profile: Profile, s: Search) -> tuple[int, list[str], list[str]]:
 
 
 def evaluate(store: Store, profile: Profile, run_id: int) -> dict[str, int]:
-    """Store the verdict of every search on every offer sighted in the run. Returns passed counts per search."""
+    """Store the verdict of every search on every offer of the current state as of the run (replacing the run's
+    earlier verdicts). Returns passed counts per search."""
     passed, rejected, counts = [], [], {s.id: 0 for s in profile.searches}
     hours = profile.country.hours_per_month
-    for o in store.run_offers(run_id):
+    for o in store.current_offers(run_id):
         black, drop = _blacklist_verdict(o, profile)
         for s in profile.searches:
             ok, reasons = check(o, s, hours_per_month=hours)
@@ -204,9 +206,9 @@ def evaluate(store: Store, profile: Profile, run_id: int) -> dict[str, int]:
 
 
 def offer_row(store: Store, offer_id: int, run_id: int | None = None):
-    """An offer as `evaluate` reads it, with the keyword evidence of `run_id` (any run when the offer was not
-    sighted in it); None for an offer never sighted."""
-    rows = store.run_offers(run_id, offer_id) or store.run_offers(None, offer_id)
+    """An offer as `evaluate` reads it for `run_id` (with the keyword evidence of every run when the offer is
+    not in that run's current state, or no run is given); None for an offer never sighted."""
+    rows = (store.current_offers(run_id, offer_id) if run_id else []) or store.run_offers(None, offer_id)
     return rows[0] if rows else None
 
 

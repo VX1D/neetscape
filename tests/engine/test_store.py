@@ -26,11 +26,14 @@ def test_crawl_stop_rules_new_and_gone(fake, tmp_path):
     req = db.q("SELECT * FROM requests WHERE run_id=?", r2)[0]
     assert req["stop_reason"].startswith("incremental") and not req["complete"]
     assert db.mark_gone(r2) == 0                                      # incomplete request: nothing is declared gone
+    assert {o["key"] for o in db.current_offers(r2)} == {"a", "b", "c", "d"}   # d lies beyond the stop: still listed
 
     r3 = db.start_run({}, [])
     run_crawl(db, r3, fake, [ALL_REMOTE], incremental=False)          # --full
     assert db.mark_gone(r3) == 1                                      # d
     assert db.offer("https://fake/d")["gone_at"]
+    assert {o["key"] for o in db.current_offers(r3)} == {"a", "b", "c", "e"}
+    assert {o["key"] for o in db.current_offers(r2)} == {"a", "b", "c", "d"}   # d was gone only after run 2
     new = {o["key"] for o in db.run_offers(r3) if o["cluster_first_run"] == r3}
     assert new == {"e"}
 
