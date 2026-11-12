@@ -30,6 +30,42 @@ def _rename_contracts(db: sqlite3.Connection) -> None:
             db.execute("UPDATE offers SET contracts=? WHERE id=?", (new, oid))
 
 
+MIN_PREFIX = 12  # a normalised title this long that starts another one of the same company names the same job
+
+
+def same_job_title(a: str, b: str) -> bool:
+    """Normalised titles of one company that name the same job: equal, or one extends the other with a qualifier
+    ("seniorfullstackdeveloper" / "seniorfullstackdeveloperjavareact")."""
+    short, long_ = sorted((a, b), key=len)
+    return short == long_ or (len(short) >= MIN_PREFIX and long_.startswith(short))
+
+
+def _cluster_columns(db: sqlite3.Connection) -> None:
+    """v5: clusters keep their title and company apart (indexed), and clusters of one company whose titles extend
+    one another unambiguously are merged (the same job on two boards, one title carrying a "(Java / React)")."""
+    db.execute("ALTER TABLE clusters ADD COLUMN title TEXT")
+    db.execute("ALTER TABLE clusters ADD COLUMN company TEXT")
+    for cid, key in db.execute("SELECT id, dedup_key FROM clusters").fetchall():
+        title, _, company = key.partition("|")
+        db.execute("UPDATE clusters SET title=?, company=? WHERE id=?", (title, company, cid))
+    db.execute("CREATE INDEX clusters_company ON clusters(company)")
+    by_company: dict[str, list] = {}
+    for cid, title, company, first in db.execute(
+            "SELECT id, title, company, first_seen_run FROM clusters WHERE company != '' ORDER BY id").fetchall():
+        by_company.setdefault(company, []).append([cid, title, first])
+    for clusters in by_company.values():
+        for c in sorted(clusters, key=lambda c: len(c[1])):
+            if c not in clusters:
+                continue
+            partners = [d for d in clusters if d is not c and same_job_title(c[1], d[1])]
+            if len(partners) == 1 and len(partners[0][1]) > len(c[1]):  # merge the longer title into the shorter
+                d = partners[0]
+                db.execute("UPDATE offers SET cluster_id=? WHERE cluster_id=?", (c[0], d[0]))
+                db.execute("UPDATE clusters SET first_seen_run=MIN(first_seen_run, ?) WHERE id=?", (d[2], c[0]))
+                db.execute("DELETE FROM clusters WHERE id=?", (d[0],))
+                clusters.remove(d)
+
+
 MIGRATIONS = [
     """
     CREATE TABLE runs(id INTEGER PRIMARY KEY, started_at TEXT, finished_at TEXT, status TEXT,
@@ -67,6 +103,7 @@ MIGRATIONS = [
     CREATE INDEX offers_url ON offers(url);  -- marks, reports and `--marked` look offers up by URL or key
     CREATE INDEX offers_key ON offers(key);
     """,
+    _cluster_columns,
 ]
 
 MARK_STATUSES = ("shortlisted", "applied", "interview", "offer", "rejected", "ignored")
@@ -216,6 +253,11 @@ class Store:
         t, c = o.title_norm, norm_company(o.company)
         if c:
             key = f"{t}|{c}"
+            if not self.db.execute("SELECT 1 FROM clusters WHERE dedup_key=?", (key,)).fetchone():
+                partners = [r for r in self.db.execute("SELECT id, title FROM clusters WHERE company=?", (c,))
+                            if same_job_title(t, r[1])]
+                if len(partners) == 1:  # the same job under a longer or shorter title (one unambiguous match)
+                    return partners[0][0]
         else:
             hay = norm(o.snippet + " " + o.title)
             cands = self.q("SELECT dedup_key FROM clusters WHERE dedup_key LIKE ?", t + "|%")
@@ -224,7 +266,9 @@ class Store:
         row = self.db.execute("SELECT id FROM clusters WHERE dedup_key=?", (key,)).fetchone()
         if row:
             return row[0]
-        return self.db.execute("INSERT INTO clusters(dedup_key, first_seen_run) VALUES (?,?)", (key, run_id)).lastrowid
+        title, _, company = key.partition("|")
+        return self.db.execute("INSERT INTO clusters(dedup_key, first_seen_run, title, company) VALUES (?,?,?,?)",
+                               (key, run_id, title, company)).lastrowid
 
     @staticmethod
     def _offer_values(o: Offer) -> dict:

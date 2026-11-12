@@ -20,15 +20,17 @@ DEFAULT_FX = {"PLN": 1.0, "EUR": 4.3, "USD": 4.0, "GBP": 5.1, "CHF": 4.6}  # PLN
 
 # per currency, applied to the amount as written (before conversion):
 #   hourly_below  a bare amount below this is an hourly rate
+#   b2b_day_below a board's structured "b2b:lo-hi .../month" below this is a day rate the employer filed as monthly
+#                 (solid.jobs: "b2b:800-1100 PLN/month" for a release manager)
 #   yearly_above  a bare amount above this is a yearly salary
 #   month_min/max the monthly amount must fall in this range, else it is not a salary (dates, ids, counts)
 #   single_min    a lone amount without a unit word below this is too ambiguous to read
 THRESHOLDS = {
-    "PLN": dict(hourly_below=400, yearly_above=60000, month_min=500, month_max=500_000, single_min=1000),
-    "EUR": dict(hourly_below=100, yearly_above=15000, month_min=120, month_max=120_000, single_min=250),
-    "USD": dict(hourly_below=100, yearly_above=15000, month_min=120, month_max=120_000, single_min=250),
-    "GBP": dict(hourly_below=100, yearly_above=12000, month_min=100, month_max=100_000, single_min=200),
-    "CHF": dict(hourly_below=120, yearly_above=25000, month_min=120, month_max=120_000, single_min=250),
+    "PLN": dict(hourly_below=400, yearly_above=60000, month_min=500, month_max=500_000, single_min=1000, b2b_day_below=2000),
+    "EUR": dict(hourly_below=100, yearly_above=15000, month_min=120, month_max=120_000, single_min=250, b2b_day_below=500),
+    "USD": dict(hourly_below=100, yearly_above=15000, month_min=120, month_max=120_000, single_min=250, b2b_day_below=500),
+    "GBP": dict(hourly_below=100, yearly_above=12000, month_min=100, month_max=100_000, single_min=200, b2b_day_below=450),
+    "CHF": dict(hourly_below=120, yearly_above=25000, month_min=120, month_max=120_000, single_min=250, b2b_day_below=550),
 }
 
 _CUR = r"(?:zł|pln|eur|€|usd|\$|gbp|£|chf)"
@@ -136,6 +138,8 @@ def parse_pay(text: str, fx: dict | None = None, base: str = "PLN", assume: str 
         if single and lo < t["single_min"] and not _has_unit(seg):
             continue  # a lone small number without a unit is too ambiguous
         f = _factor(seg, lo, t, hours, days)
+        if structured and f == 1.0 and seg.strip().lower().startswith("b2b") and hi < t["b2b_day_below"]:
+            f = days  # no B2B contract pays under ~2000 PLN a month full time: it is a day rate
         lo_src, hi_src = lo * f, hi * f
         if hi_src < t["month_min"] or hi_src > t["month_max"]:  # not a salary (dates, ids, counts)
             continue
