@@ -171,7 +171,7 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
                        limit_pages: int | None, incremental: bool, record: Path | None, base: str = "PLN",
                        hours: int | None = None, days: int | None = None, save_fixture: Path | None = None,
                        max_age: float = math.inf, progress: Progress | None = None, depth: int = 0,
-                       parsed: set, pauses: tuple, window: str = "") -> None:
+                       parsed: set, pauses: tuple, window: str = "", skip: frozenset | set = frozenset()) -> None:
     """Fetch one request page by page.
 
     Result cap: a request reaches the board's `result_cap` when page 1's `total()` says so or, on a board without a
@@ -182,7 +182,11 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
     with neither is fetched up to the cap and logged as capped.
 
     `parsed`: names of boards with a page parsed in this crawl (a later parse error there is taken as transient and
-    retried); `pauses`: the transient retries' pauses; `window`: the label of the newest window `r` is limited to."""
+    retried); `pauses`: the transient retries' pauses; `window`: the label of the newest window `r` is limited to;
+    `skip`: keys of requests already done in this run (`--resume`).
+
+    A request replaced by narrower ones is recorded as done only after all of them, so an interrupted run resumes
+    it: page 1 is fetched again, the same split comes out and the parts already done are skipped."""
     children: list[Request] = []
     child_window = ""
     capped = 0
@@ -295,18 +299,19 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
         reason = f"{reason}; capped: matches {capped}+, the board shows {cap}"
     if window:  # offers outside the window may still be listed: never complete, so none is marked gone
         complete, reason = False, f"newest {window} (cap {cap})" + (f": {reason}" if reason else "")
-    store.finish_request(req_id, pages, found, complete, reason, error)
     log(*_label(r), f"{pages}p +{found}", reason or "", ("ERROR " + error) if error else "")
     if children:
         if progress:
             progress.total += len(children)
         for child in children:
-            await _run_request(board, fetcher, child, search, store, run_id, fx=fx, limit_pages=limit_pages,
-                               incremental=incremental, record=record, base=base, hours=hours, days=days,
-                               max_age=max_age, progress=progress, depth=depth + 1, parsed=parsed, pauses=pauses,
-                               window=child_window)
+            if child.key not in skip:
+                await _run_request(board, fetcher, child, search, store, run_id, fx=fx, limit_pages=limit_pages,
+                                   incremental=incremental, record=record, base=base, hours=hours, days=days,
+                                   max_age=max_age, progress=progress, depth=depth + 1, parsed=parsed, pauses=pauses,
+                                   window=child_window, skip=skip)
             if progress:
                 progress.step()
+    store.finish_request(req_id, pages, found, complete, reason, error)  # after the parts: see the docstring
 
 
 async def crawl(requests: list[Request], searches: dict[str, Search], store: Store, run_id: int, *, port: int,
@@ -337,7 +342,7 @@ async def crawl(requests: list[Request], searches: dict[str, Search], store: Sto
                                        limit_pages=limit_pages, incremental=incremental, record=record, base=base,
                                        hours=hours, days=days, save_fixture=save_fixture,
                                        max_age=max_age.get(r.key, math.inf), progress=progress, parsed=parsed,
-                                       pauses=pauses)
+                                       pauses=pauses, skip=skip_keys)
                     progress.step()
         except Exception as e:
             log("ERROR", name, f"{type(e).__name__}: {e}")

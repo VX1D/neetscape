@@ -421,3 +421,32 @@ def test_empty_probe_contradicted_by_full_pages_is_fetched_again(fake, monkeypat
     req = requests_by(db, rid)[""]
     assert calls == ["@/1", "@/10"] + [f"@/{p}" for p in range(2, 11)]  # page 10 fetched again at its turn
     assert (req["complete"], req["found"], req["stop_reason"]) == (0, 30, "page limit")
+
+
+def test_resume_finishes_the_parts_of_a_split_request(fake, monkeypatch, tmp_path):
+    """A split parent is done only after its parts: an interrupted run resumes the parts not fetched yet."""
+    fake.caps = Caps(keywords=True, remote="filter", page_size=3, max_pages=10, result_cap=5, transport="http")
+    fake.total = lambda raw, r: 2 if r.params.get("cat") else 9
+    fake.split = lambda raw, r, seen=(): [replace(r, params={**r.params, "cat": c}) for c in ("a", "b")]
+    fake.page_url = lambda r, page: f"fake://{r.params.get('cat', '')}/{page}"
+    calls, stop = [], {"at": "b"}
+
+    async def get(self, url):
+        cat, page = url[len("fake://"):].rsplit("/", 1)
+        calls.append(url)
+        if cat == stop["at"]:
+            raise KeyboardInterrupt                                    # the run is interrupted in part b
+        return json.dumps([[f"{cat or 'r'}{i}", f"Job {cat}{i}", {}] for i in range(2 if cat else 3)])
+
+    monkeypatch.setattr(Http, "get", get)
+    db = Store(tmp_path / "j.db")
+    rid = db.start_run({}, [])
+    with pytest.raises(KeyboardInterrupt):
+        run_crawl(db, rid, fake, [ALL_REMOTE])
+    assert set(requests_by(db, rid)) == {"", "a", "b"} and db.done_request_keys(rid) == {requests_by(db, rid)["a"]["req_key"]}
+
+    stop["at"], calls[:] = None, []
+    run_crawl(db, rid, fake, [ALL_REMOTE], skip_keys=db.done_request_keys(rid))   # --resume
+    assert calls == ["fake:///1", "fake://b/1"]                        # page 1 again, part a skipped, part b fetched
+    done = {r["req_key"] for r in db.q("SELECT req_key FROM requests WHERE run_id=? AND status='done'", rid)}
+    assert len(done) == 3
