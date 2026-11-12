@@ -22,8 +22,8 @@ from .pay import HOURS_PER_MONTH
 from .profile import Profile
 from .store import Store
 
-_TEXT_FIELDS = ("title", "company", "category", "skills", "pay_text", "snippet")   # what rank rules on `any` read
-_CARD_FIELDS = (*_TEXT_FIELDS, "industry", "locations")
+_TEXT_FIELDS = ("title", "company", "category", "industry", "skills", "pay_text", "snippet")  # rank rules on `any`
+_CARD_FIELDS = (*_TEXT_FIELDS, "locations")
 
 
 def _text(o, fields=_TEXT_FIELDS) -> str:
@@ -210,7 +210,7 @@ def _check_patterns(o, s: Search, v: _Verdict) -> None:
         text = _filter_text(o)
         if any(rx.search(text) for rx in s.text_exclude):
             v.fail("text excluded")
-    if s.category_include and not any(rx.search(o["category"] or "") for rx in s.category_include):
+    if s.category_include and not any(rx.search(_text(o, ("category", "industry"))) for rx in s.category_include):
         v.fail("category not included")
 
 

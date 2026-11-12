@@ -33,12 +33,10 @@ import json
 import re
 import urllib.parse
 
-from .... import infer
 from ....boards.base import Board, Caps, Request, narrowed, register
 from ....boards.pages import clean_spaces, date_of, pay_range, present, slug, snippet, with_query
 from ....model import Offer
 from ....posting import html_to_text
-from .vocab import LANGS
 
 BASE = "https://www.olx.pl"
 WORKTIME = {"fulltime": "full_time", "parttime": "part_time", "halftime": "part_time"}
@@ -153,7 +151,7 @@ class Olx(Board):
                 board=self.name, key=url, url=url, title=title, company=company(ad.get("user") or {}),
                 mode=work_mode(as_list(params.get("workplace"))), locations=present(city),
                 worktime=WORKTIME.get(params.get("type"), "unknown"), contracts=contracts,
-                level=infer.level_from_text(title, LANGS), pay_text=pay_text(ad.get("salary")),
+                pay_text=pay_text(ad.get("salary")),
                 category=clean_spaces(ad.get("category")),
                 published=date_of(ad.get("lastRefreshTime") or ad.get("createdTime")), promoted=bool(ad.get("isPromoted")),
                 snippet=snippet(title, description), description=description)

@@ -86,7 +86,7 @@ class Arbeitnow(Board):
             out.append(Offer(
                 board=self.name, key=url, url=url, title=o.get("title") or "", company=o.get("company_name") or "",
                 mode=mode, locations=present(o.get("location")), worktime=worktime, contracts=contracts,
-                level=level if level != "unknown" else infer.level_from_text(o.get("title") or "", LANGS),
+                level=level,
                 category=", ".join(o.get("tags") or []), skills=list(o.get("tags") or []),
                 published=date_of(created * 1000) if created else None,
                 snippet=", ".join(o.get("job_types") or []), description=text))

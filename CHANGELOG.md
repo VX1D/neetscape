@@ -4,6 +4,13 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
 
 ## Unreleased
 
+- Facts are what boards ship: adapters no longer infer a level from the title (olx, useme, indeed, praca.pl,
+  arbeitnow, bundesagentur), the title is read by `derive` like every board's. Schema v10 marks the facts
+  schema v6 copied from inferences (LinkedIn's mode/work time/contracts/level, nofluffjobs' and theprotocol's
+  work time, a few boards' level: `store._INFERRED_IN_V6`) as `_stored`, the weakest source, so the posting's
+  criteria and the current vocabularies win; an offer's next sighting replaces its facts with the adapter's
+  own, also when they are empty. On a 32k-offer database 161 values change, all on LinkedIn.
+- Rank rules on `any` and `category_include` also read the board's `industry`.
 - Vocabulary regression gate: `tests/test_vocab.py` reads every board fixture's titles against the boards'
   categories with `infer_audit --agreement`'s measure (now shared: `reading`, `agreement`) and fails, listing the
   titles, when the category's domain is among the title's domains for less than 78% of offers (81.9% today) or
@@ -83,7 +90,7 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
   Specialist" AI and automation; a qualifier such as "(GenAI)" counts less than the title's head). Columns
   `job_field`, `job_function`, `job_domain`; search filters `fields` and `fields_exclude`; a `field` column
   in listing.tsv; REPORT.html shows the field and groups by it.
-- Tests: every board's parser is checked by one table (`COVERAGE` in `tests/countries/test_countries.py`:
+- Tests: every board's parser is checked by one table (`COVERAGE` in `tests/test_boards.py`:
   the fields it must fill on its recorded page); per-board files keep only the board's own rules. Exact
   URLs and per-offer values are no longer pinned (`neetscape probe` checks a board live); a few report
   formatting tests and `tests/affected.py` are removed.

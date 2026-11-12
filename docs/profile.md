@@ -39,7 +39,7 @@ Search fields:
 | `functions`, `functions_exclude` | what the person does: `assist test automate develop design teach care serve sell market people account transport operate build manage_project cook_clean shop law support administer engineer analyse consult manage specialist`. An offer with no function is unknown to `functions` (dimension `function`) and passes `functions_exclude` |
 | `pay` | `{"min", "per": "month"\|"hour", "required"}`; amounts are in the profile country's currency (PLN, EUR), compared against the top of the offer's range |
 | `max_age_days` | drop offers published earlier |
-| `title_include`, `title_exclude`, `text_exclude`, `category_include` | case-insensitive Python regexes; `text_exclude` reads title, company, category, skills, pay text, card text and, once fetched, the posting |
+| `title_include`, `title_exclude`, `text_exclude`, `category_include` | case-insensitive Python regexes; `text_exclude` reads title, company, category, industry, skills, pay text, card text and, once fetched, the posting; `category_include` the board's category and industry |
 | `unknown` | `keep` (default) or `drop` offers whose filtered field is unknown, for every dimension, or a mapping per dimension (below) |
 | `boost` | score added to offers passing this search |
 | `remote_proof` | remote searches: once the posting is fetched, it must describe remote work and mention no hybrid model or required presence (client visits, business trips, office days, relocation); before that the field is unknown (`unknown`). Precision over recall: "remote or hybrid, your choice" fails |

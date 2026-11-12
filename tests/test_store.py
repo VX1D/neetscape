@@ -164,6 +164,23 @@ def test_rederive_reads_the_postings_structured_criteria(db, title, facts, crite
     if not facts and criteria[0] == "Entry level":
         assert evidence["level"] == ["posting_struct", "LinkedIn: Seniority level Entry level"]
         assert evidence["contracts"] == ["posting_struct", "LinkedIn: Employment type Internship"]
+def test_inferred_v6_facts_rank_below_every_source(tmp_path):
+    """v6 stored old inferences as facts (LinkedIn has no structured mode/level); v10 marks them, so the current
+    reading wins, while a board's own data stays board data; the next sighting replaces the facts."""
+    facts = json.dumps({"level": "senior", "mode": "onsite"})
+    s = Store(old_database(tmp_path / "old.db", MIGRATIONS.index(store._stored_facts), [
+        "INSERT INTO offers(board, key, url, title, facts, cluster_id, first_seen_run) VALUES "
+        f"('linkedin', '1', 'https://linkedin/1', 'Junior Data Analyst (remote)', '{facts}', 1, 1), "
+        f"('justjoin', '2', 'https://justjoin/2', 'Junior Data Analyst (remote)', '{facts}', 2, 1)"]))
+    s.rederive()
+    li, jj = s.offer("https://linkedin/1"), s.offer("https://justjoin/2")
+    assert (li["level"], li["mode"]) == ("junior", "remote")      # the title, not the old guess
+    assert (jj["level"], jj["mode"]) == ("senior", "onsite")      # justjoin's own data
+    assert json.loads(li["facts"])["_stored"] == ["level", "mode"]
+    ingest(s, job("linkedin", "1", "Junior Data Analyst (remote)"), board="linkedin")   # sighted again
+    assert json.loads(s.offer("https://linkedin/1")["facts"]) == {}
+
+
 def test_migration_splits_mixed_categories_into_industry(tmp_path):
     s = Store(old_database(tmp_path / "old.db", MIGRATIONS.index(store._industry_column), [
         "INSERT INTO offers(board, key, url, title, category, cluster_id) VALUES "

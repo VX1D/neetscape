@@ -103,7 +103,8 @@ ORDER = {
                "manufacturing", "logistics", "hr", "finance", "legal", "health", "education", "hospitality", "retail",
                "customer", "sales", "marketing", "office", "design", "product", "tech"),
 }
-SOURCES = ("board", "request", "posting_struct", "title", "qualifier", "card", "category", "posting")  # strongest first
+# strongest first; `stored`: values an offer had before facts were kept apart (schema v10), weakest of all
+SOURCES = ("board", "request", "posting_struct", "title", "qualifier", "card", "category", "posting", "stored")
 COLUMNS = {"mode": "mode", "worktime": "worktime", "contracts": "contract", "level": "level",
            "job_function": "function", "job_domain": "domain"}  # derived offer column -> lexicon field
 
@@ -304,8 +305,11 @@ def derive(*, title: str = "", card: str = "", facts: dict | None = None, reques
     employer's industry (`Offer.industry`, context that names no domain: a salesperson at an IT company is not in
     IT). A long posting mentions "remote" and "staż" for many reasons: its mode counts only from full-remote
     statements and hybrid words, an internship only from an explicit statement ("Employment type: Internship")."""
-    ms = [(COLUMNS[k], value, "board", True, "board data")
-          for k, v in (facts or {}).items() for value in (v if isinstance(v, list) else [v])]
+    facts = dict(facts or {})
+    stored = set(facts.pop("_stored", ()))  # inferences stored as facts by schema v6 (store._stored_facts)
+    ms = [(COLUMNS[k], value, *(("stored", "stored before v6") if k in stored else ("board", "board data")), )
+          for k, v in facts.items() for value in (v if isinstance(v, list) else [v])]
+    ms = [(fld, value, source, True, phrase) for fld, value, source, phrase in ms]
     if request_remote:
         ms.append(("mode", "remote", "request", True, "board's remote filter"))
     if posting_remote:

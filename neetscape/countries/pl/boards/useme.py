@@ -23,11 +23,9 @@ from __future__ import annotations
 import html
 import re
 
-from .... import infer
 from ....boards.base import Board, Caps, Request, register
 from ....boards.pages import html_field, html_text, snippet, with_query
 from ....model import Offer
-from .vocab import LANGS
 
 BASE = "https://useme.com"
 _ARTICLE = re.compile(r'<article class="job[^"]*">(.*?)</article>', re.S)
@@ -63,7 +61,7 @@ class Useme(Board):
                 board=self.name, key=url, url=url, title=title[:140],
                 company=html.unescape(client.group(1))[:80] if client else "", mode="remote", worktime="flexible",
                 contracts=["freelance"], category=html_field(r'class="job__category">(.*?)</div>', card),
-                skills=[s for s in skills if s], level=infer.level_from_text(title, LANGS),
+                skills=[s for s in skills if s],
                 pay_text=budget if re.search(r"\d", budget) else "", pay_period="project",
                 snippet=snippet(title, description, budget))
         return list(out.values())

@@ -83,7 +83,7 @@ it passes any search. `defaults` are merged into every search. Full schema:
 | `title_include` | regexes; at least one must match the title: `["support\|helpdesk\|automat"]` |
 | `title_exclude` | regexes that drop by title: `["senior\|\\blead\\b\|architect"]` |
 | `text_exclude` | regexes on title, company, category, skills, pay text, card text and, once fetched, the posting |
-| `category_include` | regexes on the board's own category string |
+| `category_include` | regexes on the board's own category and industry strings |
 | `unknown` | `keep` (default) or `drop` when a filtered field is unknown, or per dimension: `{"default": "keep", "domain": "drop"}`. Dimensions: `location`, `mode`, `remote_proof`, `worktime`, `pay`, `date`, `field`, `domain`, `function`. A mapping in `defaults` and one in a search merge per dimension (a string is `{"default": ...}`); the search's win |
 | `boost` | score added to offers passing this search (e.g. favour side jobs or a city) |
 

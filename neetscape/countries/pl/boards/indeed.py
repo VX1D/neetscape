@@ -117,7 +117,7 @@ class Indeed(Board):
             out[url] = Offer(
                 board=self.name, key=url, url=url, title=title, company=clean_spaces(j.get("company"))[:80],
                 mode=work_mode(j), locations=place(j.get("location") or "", j.get("remote_location")),
-                worktime=worktime, contracts=contracts, level=infer.level_from_text(title, LANGS),
+                worktime=worktime, contracts=contracts,
                 pay_text=clean_spaces(j.get("salary")), published=date_of(j.get("created")),
                 promoted=bool(j.get("sponsored")), snippet=html_to_text(j.get("snippet") or "")[:600])
         return list(out.values())

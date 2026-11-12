@@ -152,6 +152,28 @@ def derivation_fingerprint(home: str) -> str:
     return h.hexdigest()[:16]
 
 
+# Fields an adapter did not read from its board's data when v6 ran (an inference from text, or nothing the board
+# ships), by board: their v6 "facts" were stored inferences. A historical record of the adapters at that time.
+_INFERRED_IN_V6 = {
+    "linkedin": ("mode", "worktime", "contracts", "level"), "remoteok": ("worktime", "contracts", "level"),
+    "weworkremotely": ("contracts", "level"), "nofluffjobs": ("worktime",), "theprotocol": ("worktime",),
+    "olx": ("level",), "useme": ("level",), "indeed": ("level",), "bundesagentur": ("level",),
+}
+
+
+def _stored_facts(db: sqlite3.Connection) -> None:
+    """v10: v6 turned every offer's stored values into its facts, also values inferred from text, so old
+    inferences outranked better evidence (a posting's criteria, the current vocabularies). Such facts, by
+    board and field (`_INFERRED_IN_V6`), are marked `_stored`: they rank below every source and only fill a field
+    nothing else states. The offer's next sighting replaces its facts with the adapter's own."""
+    for oid, board, facts in db.execute("SELECT id, board, facts FROM offers WHERE facts NOT IN ('', '{}')").fetchall():
+        f = json.loads(facts)
+        stored = sorted(k for k in _INFERRED_IN_V6.get(board, ()) if k in f)
+        if stored:
+            db.execute("UPDATE offers SET facts=? WHERE id=?", (json.dumps({**f, "_stored": stored}, sort_keys=True), oid))
+    db.execute("DELETE FROM meta WHERE key='derivation'")
+
+
 MIGRATIONS = [
     """
     CREATE TABLE runs(id INTEGER PRIMARY KEY, started_at TEXT, finished_at TEXT, status TEXT,
@@ -194,6 +216,7 @@ MIGRATIONS = [
     _domains_column,
     _industry_column,
     _meta_table,
+    _stored_facts,
 ]
 
 # The current state as of run :run, as CTEs ending in `cur(offer_id)`. A board's latest crawl is the latest run
@@ -385,7 +408,8 @@ class Store:
         values = self._offer_values(o)
         cur = self._one("SELECT * FROM offers WHERE board=? AND key=?", o.board, o.key)
         if cur:
-            merged = {k: (cur[k] if v in _EMPTY else v) for k, v in values.items()}
+            # the new sighting's facts replace the stored ones, even when the adapter read none
+            merged = {k: (cur[k] if v in _EMPTY and k != "facts" else v) for k, v in values.items()}
             if posting_date_is_first and self._posting_set_published(cur, values["published"]):
                 merged["published"] = cur["published"]
             self.db.execute(f"UPDATE offers SET {', '.join(f'{k}=?' for k in merged)}, last_seen_run=?, gone_at=NULL WHERE id=?",
