@@ -25,7 +25,7 @@ from . import infer
 from .boards import REGISTRY
 from .boards.fetch import BrowserFetch, BrowserRender, FetchError, Http, Limiter
 from .boards.linkedin import LinkedIn
-from .log import log
+from .log import Progress, log, tick
 from .model import parse_date
 from .posting import parse_posting
 from .store import GONE, Store
@@ -57,6 +57,7 @@ def _save(store: Store, row, status: int, text: str, meta: dict, home: str = "pl
     languages = _languages(row["board"], home)
     hints = infer.hints(text, languages)
     store.save_detail(row["id"], status, text, meta, hints)
+    tick()
     if (meta.get("company") or "").strip().lower() in PLACEHOLDER_COMPANIES:
         meta = {**meta, "company": ""}
     updates = {k: meta[k] for k in ("company", "published") if meta.get(k) and not row[k]} | _from_posting(row, text, meta, hints, languages)
@@ -175,9 +176,11 @@ async def fetch_details(store: Store, ids: list[int], port: int, limiter: Limite
             except Exception as e:
                 log("details error:", type(e).__name__, e)
 
-    await asyncio.gather(*[guarded(_origin(store, o, rs, port, limiter, retries, home)) for o, rs in groups.items()],
-                         guarded(_over_http(store, linkedin, limiter, retries, home, "*/*", _linkedin)),
-                         guarded(_over_http(store, api, limiter, retries, home, "application/json", _posting_api)))
+    with Progress(len(rows), "postings") as progress:
+        progress.done = sum(1 for r in rows if route(r) == "text")   # saved above, before the bar existed
+        await asyncio.gather(*[guarded(_origin(store, o, rs, port, limiter, retries, home)) for o, rs in groups.items()],
+                             guarded(_over_http(store, linkedin, limiter, retries, home, "*/*", _linkedin)),
+                             guarded(_over_http(store, api, limiter, retries, home, "application/json", _posting_api)))
     log("details fetched:", len(rows))
     return len(rows)
 
