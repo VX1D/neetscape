@@ -6,7 +6,13 @@ URLs (verified live 2026-11-12): path segments `/praca/[<kw>;st/][<city>;l/][<ty
 the order the board's own `seo.next` links use (`krakow;l/2;pg/50;km`, `czesc-etatu;e/zdalna;tr/2;pg`).
 - keywords: `<slug>;st` (the search box sends the slug of the typed text: "automatyzacja procesów" ->
   `automatyzacja-procesow;st`, 4 offers). It searches the board's position names and titles; a slug close to a
-  known position is redirected (302) to it ("python" -> `programista-python;st`, 24 offers);
+  known position is redirected (302) to it ("python" -> `programista-python;st`, 24 offers). A slug starting with
+  "praca" is an alias of a filter ("praca-zdalna;st" -> `zdalna;tr`, "praca;st" -> `praca;l`); any other
+  (`praca-dodatkowa;st`, `praca-biurowa;st`, `pracadodatkowa;st`, also with `zdalna;tr`, `1;pg` or a radius) gets a
+  302 to itself on page 1 (in a browser too: "Failed to fetch"), while page 2 is served (`praca-dodatkowa;st/2;pg`:
+  144 results). So the word "praca" is dropped from the start of a phrase ("praca dodatkowa" -> `dodatkowa;st`,
+  493 results, a broader search; "praca biurowa" -> `biurowa;st`), and a phrase with nothing left is skipped with a
+  warning (verified live 2026-11-12; "automatyzacja" and "helpdesk" were served with 200 that day, 0 remote results);
 - remote: `zdalna;tr` (464 offers; the `workMode` checkbox "Zdalna"): it keeps offers that list "Zdalna" among
   their modes, often next to "Stacjonarna"/"Hybrydowa"; the mode is the most remote one listed. "Mobilna"
   (field work) is on site;
@@ -29,6 +35,8 @@ the order the board's own `seo.next` links use (`krakow;l/2;pg/50;km`, `czesc-et
 - pay: `netSalary` / `grossSalary` {min, max, currency "zł" or "€", period m/h/d} in hundredths (900000 = 9000 zł).
 """
 from __future__ import annotations
+
+import re
 
 from ....boards.base import Board, Caps, Request, register
 from ....boards.pages import (clean_spaces, epoch_or_iso_date, labelled_contracts, most_remote_mode, nearest_radius,
@@ -93,6 +101,16 @@ def pay_text(o: dict) -> str:
     return "; ".join(out)
 
 
+def keyword_slug(phrase: str) -> str:
+    """The `;st` slug of a phrase without a leading word "praca" ("praca dodatkowa" -> "dodatkowa"); '' when nothing
+    searchable is left or the slug still starts with "praca" ("praca", "pracadodatkowa"): the board answers page 1 of
+    every `/praca/praca...;st` search with a redirect to itself."""
+    kw = slug(phrase)
+    while re.match(r"praca(-|$)", kw):
+        kw = kw[len("praca"):].lstrip("-")
+    return "" if kw.startswith("praca") else kw
+
+
 def snippet(o: dict) -> str:
     s = o.get("aiSummary") or {}
     parts = [o.get("title") or ""] + [s.get(k) or "" for k in ("responsibilities", "skills", "experience", "benefits")]
@@ -106,9 +124,17 @@ class GoWork(Board):
                 max_pages=1400, huge_unfiltered=True, transport="http")
     accept = "text/html,application/xhtml+xml"
 
+    def requests(self, s):
+        """Phrases with nothing searchable once the leading "praca" is dropped are skipped (see `keyword_slug`)."""
+        reqs, warnings = super().requests(s)
+        bad = sorted({r.keyword for r in reqs if r.keyword and not keyword_slug(r.keyword)})
+        warnings += [f"{self.name}: phrase {kw!r} cannot be searched (the board loops on '/praca/praca...' result "
+                     f"pages); skipped for '{s.id}'" for kw in bad]
+        return [r for r in reqs if r.keyword not in bad], warnings
+
     def page_url(self, r: Request, page: int) -> str | None:
         parts = []
-        kw = slug(r.keyword or "")
+        kw = keyword_slug(r.keyword or "")
         if kw:
             parts.append(f"{kw};st")
         if r.params.get("city"):

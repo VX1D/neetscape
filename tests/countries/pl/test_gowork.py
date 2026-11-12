@@ -70,6 +70,19 @@ def test_requests_remote_everything_but_not_whole_board():
     assert not reqs and warns  # 26 000 offers without a keyword or a city
 
 
+def test_phrases_starting_with_praca():
+    """Page 1 of a `/praca/praca...;st` search redirects to itself: the leading word "praca" is dropped."""
+    assert [gowork.keyword_slug(p) for p in ("praca dodatkowa", "Praca  zdalna", "praca praca biurowa", "pracownik biurowy")] \
+        == ["dodatkowa", "zdalna", "biurowa", "pracownik-biurowy"]
+    assert gowork.keyword_slug("praca") == gowork.keyword_slug("pracadodatkowa") == ""
+    r = Request("gowork", "t", "praca dodatkowa", {"remote": True})
+    assert BOARD.page_url(r, 1) == "https://www.gowork.pl/praca/dodatkowa;st/zdalna;tr"
+    s = Search(id="side", label="side", where=Where(remote=True), keywords=("praca dodatkowa", "praca", "helpdesk"))
+    reqs, warns = BOARD.requests(s)
+    assert [r.keyword for r in reqs] == ["praca dodatkowa", "helpdesk"]
+    assert len(warns) == 1 and "'praca'" in warns[0] and "skipped for 'side'" in warns[0]
+
+
 def test_page_without_payload_raises():
     with pytest.raises(ValueError):
         BOARD.parse("<html>blocked</html>", Request("gowork", "t", None))
