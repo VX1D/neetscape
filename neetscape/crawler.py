@@ -98,6 +98,7 @@ class _Crawl:
     hours: int | None = None
     days: int | None = None
     limit_pages: int | None = None
+    incremental: bool = True          # incremental stops allowed (`--full` turns them off)
     record: Path | None = None        # directory keeping every raw page (`run --record`)
     save_fixture: Path | None = None  # file for the raw first page of each top-level request (`probe --save-fixture`)
     progress: Progress | None = None
@@ -185,8 +186,8 @@ async def _fetch_page(board, fetcher, r: Request, page: int, url: str, parsed_be
     raise AssertionError("unreachable")
 
 
-async def _run_request(board, fetcher, r: Request, search: Search, c: _Crawl, *, incremental: bool = True,
-                       max_age: float = math.inf, depth: int = 0, window: str = "") -> None:
+async def _run_request(board, fetcher, r: Request, search: Search, c: _Crawl, *, max_age: float = math.inf,
+                       depth: int = 0, window: str = "") -> None:
     """Fetch one request page by page.
 
     Result cap: a request reaches the board's `result_cap` when page 1's `total()` says so or, on a board without a
@@ -196,7 +197,7 @@ async def _run_request(board, fetcher, r: Request, search: Search, c: _Crawl, *,
     never complete (offers outside the window are not gone) and its stop reason names the window. A capped request
     with neither is fetched up to the cap and logged as capped.
 
-    `incremental`: incremental stops are allowed; `max_age`: the loosest `max_age_days` of the searches sharing the
+    `max_age`: the loosest `max_age_days` of the searches sharing the
     request; `window`: the label of the newest window `r` is limited to.
 
     A request replaced by narrower ones is recorded as done only after all of them, so an interrupted run resumes
@@ -213,8 +214,9 @@ async def _run_request(board, fetcher, r: Request, search: Search, c: _Crawl, *,
     newest_first = r.params.get("sort") == "newest"
     cap = caps.result_cap
     # an incremental stop is sound only for a listing crawled to its end before: offers known from other
-    # requests (other phrases, other searches) say nothing about what lies deeper in this one
-    incremental = incremental and store.completed_before(r.key, c.run_id)
+    # requests (other phrases, other searches) say nothing about what lies deeper in this one; a split part is
+    # judged on its own past, not on its parent's (a capped parent never completes)
+    incremental = c.incremental and store.completed_before(r.key, c.run_id)
     max_pages = min(caps.max_pages, c.limit_pages or caps.max_pages)
     # the offer's text is in the board's country's language and currency, or the searched country's
     code = countries.text_country(caps.country, r.params.get("country") or search.where.country)
@@ -315,8 +317,8 @@ async def _run_request(board, fetcher, r: Request, search: Search, c: _Crawl, *,
             progress.total += len(children)
         for child in children:
             if child.key not in c.skip:
-                await _run_request(board, fetcher, child, search, c, incremental=incremental, max_age=max_age,
-                                   depth=depth + 1, window=child_window)
+                await _run_request(board, fetcher, child, search, c, max_age=max_age, depth=depth + 1,
+                                   window=child_window)
             if progress:
                 progress.step()
     store.finish_request(req_id, pages, found, complete, reason, error)  # after the parts: see the docstring
@@ -336,7 +338,7 @@ async def crawl(requests: list[Request], searches: dict[str, Search], store: Sto
     max_age = age_limits(requests, searches)
     tabs = asyncio.Semaphore(4)  # browser tabs open at once
     c = _Crawl(store, run_id, fx, retry_pauses(retries), base=base, hours=hours, days=days, limit_pages=limit_pages,
-               record=record, save_fixture=save_fixture, skip=skip_keys)
+               incremental=incremental, record=record, save_fixture=save_fixture, skip=skip_keys)
 
     async def one_board(name: str, reqs: list[Request], progress: Progress) -> None:
         board = REGISTRY[name]
@@ -346,8 +348,7 @@ async def crawl(requests: list[Request], searches: dict[str, Search], store: Sto
         try:
             async with transport_for(board, port, limiter) as fetcher:
                 for r in reqs:
-                    await _run_request(board, fetcher, r, searches[r.search_id], c, incremental=incremental,
-                                       max_age=max_age.get(r.key, math.inf))
+                    await _run_request(board, fetcher, r, searches[r.search_id], c, max_age=max_age.get(r.key, math.inf))
                     progress.step()
         except Exception as e:
             log("ERROR", name, f"{type(e).__name__}: {e}")

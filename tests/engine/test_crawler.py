@@ -450,3 +450,21 @@ def test_resume_finishes_the_parts_of_a_split_request(fake, monkeypatch, tmp_pat
     assert calls == ["fake:///1", "fake://b/1"]                        # page 1 again, part a skipped, part b fetched
     done = {r["req_key"] for r in db.q("SELECT req_key FROM requests WHERE run_id=? AND status='done'", rid)}
     assert len(done) == 3
+
+
+def test_split_parts_stop_incrementally_once_crawled_to_their_end(fake, monkeypatch, tmp_path):
+    """A capped request is split again every run, so it never completes itself; its parts are listings of their
+    own and get incremental stops once an earlier run fetched them to their end."""
+    fake.caps = Caps(keywords=True, remote="filter", sort_newest=True, page_size=3, max_pages=10, result_cap=10,
+                     transport="http")
+    fake.total = lambda raw, r: 5 if r.params.get("cat") else 100
+    fake.split = lambda raw, r, seen=(): [replace(r, params={**r.params, "cat": c}) for c in ("a", "b")]
+    serve(monkeypatch, fake, {"": None, "a": 9, "b": 2})
+    db = Store(tmp_path / "j.db")
+    first = db.start_run({}, [])
+    run_crawl(db, first, fake, [ALL_REMOTE])
+    assert requests_by(db, first)["a"]["complete"]
+    second = db.start_run({}, [])
+    run_crawl(db, second, fake, [ALL_REMOTE])
+    a = requests_by(db, second)["a"]
+    assert (a["pages"], a["stop_reason"]) == (1, "incremental: page already known")
