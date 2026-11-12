@@ -23,11 +23,11 @@ from .profile import Profile
 from .store import Store
 
 _TEXT_FIELDS = ("title", "company", "category", "skills", "pay_text", "snippet")   # what rank rules on `any` read
-_CARD_FIELDS = (*_TEXT_FIELDS, "locations")
+_CARD_FIELDS = (*_TEXT_FIELDS, "industry", "locations")
 
 
 def _text(o, fields=_TEXT_FIELDS) -> str:
-    return " ".join(str(o[k] or "") for k in fields)
+    return " ".join(str(_optional(o, k)) for k in fields)
 
 
 def _optional(o, key: str) -> str:

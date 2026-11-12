@@ -241,8 +241,8 @@ def board_facts(offer) -> dict:
 def card_text(row) -> str:
     """Offer.text() of a stored offer row."""
     locations = " ".join(json.loads(row["locations"] or "[]"))
-    return " ".join([row["title"] or "", row["company"] or "", row["category"] or "", row["skills"] or "",
-                     row["pay_text"] or "", row["snippet"] or "", locations])
+    return " ".join([row["title"] or "", row["company"] or "", row["category"] or "", row["industry"] or "",
+                     row["skills"] or "", row["pay_text"] or "", row["snippet"] or "", locations])
 
 
 def _job_field(function: tuple, domain: tuple) -> tuple[str, str]:
@@ -298,9 +298,10 @@ def derive(*, title: str = "", card: str = "", facts: dict | None = None, reques
 
     `card`: Offer.text(); `request_remote`: a request that found the offer had the board's remote filter;
     `posting_remote`: the posting's JSON-LD says TELECOMMUTE; `category`: the board's category and the
-    categories of the requests that found the offer. A long posting mentions "remote" and "staż" for many
-    reasons: its mode counts only from full-remote statements and hybrid words, an internship only from an
-    explicit statement ("Employment type: Internship")."""
+    categories of the requests that found the offer: the role, never the employer's industry (`Offer.industry`,
+    context that names no domain: a salesperson at an IT company is not in IT). A long posting mentions "remote"
+    and "staż" for many reasons: its mode counts only from full-remote statements and hybrid words, an internship
+    only from an explicit statement ("Employment type: Internship")."""
     ms = [(COLUMNS[k], value, "board", True, "board data")
           for k, v in (facts or {}).items() for value in (v if isinstance(v, list) else [v])]
     if request_remote:

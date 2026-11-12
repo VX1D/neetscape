@@ -52,6 +52,11 @@ All of them follow the same rules.
    `nuxt_data`, markup `html_field`, board labels -> vocabulary `most_remote_mode`, `labelled_contracts`,
    `worktime_from_labels`, `prefix_level`, `lowest_level`) and `base.py` (`with_params`, `narrowed`).
    A country's shared label tables and `LANGS` live in its `boards/vocab.py`.
+   Put the board's role or job category in `Offer.category` and the employer's industry, when the board
+   names it, in `Offer.industry` (the domain is read from the category, never from the industry). When one
+   label mixes both (rocketjobs' "sales it i telekomunikacja"), split it in a pure `split_category(category)
+   -> (category, industry)` method: the store also applies it to offers stored before the split. Say in the
+   docstring which the board's labels are.
    Optional parts, when the board needs them:
    - `Caps(whole_listing=True)`: one response is the request's whole listing (a feed, a whole-category
      download), so fetching it completes the request. Otherwise a request is complete only on an

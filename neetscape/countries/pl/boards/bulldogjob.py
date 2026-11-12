@@ -13,6 +13,7 @@ Verified live 2026-11-12:
 - `workModes` (`full-remote`, `hybrid`, `on-site`, several), `roles` (category), `locations[].location.cityPl`;
   `denominatedSalaryLong.money` is a range without a unit ("20 000 - 24 000", currency apart);
 - the URL's query string is ignored by the API: it only makes request records differ per page and search.
+- category vs industry: `roles` (`backend`, `project_manager`, `support`) are the role; no industry.
 """
 from __future__ import annotations
 

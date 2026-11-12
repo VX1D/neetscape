@@ -24,6 +24,8 @@ Verified live 2026-11-12:
   klienta"), or the name alone for a top-level category ("Sprzątanie"); 52 of 52 remote ads had one;
 - the employer is `user.company_name` when set; other business accounts' company line comes from a later client-side
   request, and `user.name` is often a recruiter's first name: used only with a legal form ("Sp. z o.o.").
+- category vs industry: the job category tree names roles ("Obsługa klienta i call center - Specjalista ds.
+  obsługi klienta"), also in the request's `category`; no industry.
 """
 from __future__ import annotations
 

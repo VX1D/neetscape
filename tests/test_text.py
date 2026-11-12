@@ -132,6 +132,14 @@ def test_job_domains_from_title_and_category(title, category, languages, domains
     assert set(evidence) == domains and all(len(why) == 2 for why in evidence.values())
 
 
+def test_industry_is_context_not_a_domain():
+    o = Offer(board="rocketjobs", key="1", url="u", title="Account Manager", category="sales", industry="IT i telekomunikacja")
+    infer.fill(o, DEFAULT_FX, languages=("pl", "en"))
+    assert set(o.evidence["job_domains"]) == {"sales"}
+    as_category = infer.derive(title="Account Manager", category="sales IT i telekomunikacja", languages=("pl", "en"))
+    assert as_category["job_domains"] == "it,sales"
+
+
 def test_job_domains_ignore_the_posting_and_keep_the_single_field():
     got = infer.derive(title="AI Gateway Product Owner", posting="We build logistics software for retail.", languages=("en",))
     assert got["job_domains"] == "ai,product"

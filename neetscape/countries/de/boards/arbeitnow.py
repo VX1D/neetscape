@@ -10,6 +10,7 @@ Verified live 2026-11-12:
   German, English, French), location, created_at (unix time); mostly Germany, also Paris, London, Zürich, Amsterdam;
   no pay;
 - free API; the terms ask for moderate use and a link back.
+- category vs industry: `tags` ("Software Development", "Customer Success") are roles; no industry.
 """
 from __future__ import annotations
 

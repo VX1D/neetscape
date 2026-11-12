@@ -112,6 +112,20 @@ def _domains_column(db: sqlite3.Connection) -> None:
     db.execute("ALTER TABLE offers ADD COLUMN job_domains TEXT DEFAULT ''")
 
 
+def _industry_column(db: sqlite3.Connection) -> None:
+    """v8: `industry`, the employer's industry as the board names it, apart from `category` (the role). Offers stored
+    earlier held both in `category`: a board whose category mixes the two (`split_category`, rocketjobs) splits it
+    again; other boards' categories are roles and stay."""
+    db.execute("ALTER TABLE offers ADD COLUMN industry TEXT DEFAULT ''")
+    for name, board in REGISTRY.items():
+        if split := getattr(board, "split_category", None):
+            for oid, category in db.execute("SELECT id, category FROM offers WHERE board=? AND category != ''",
+                                            (name,)).fetchall():
+                role, industry = split(category)
+                if industry:
+                    db.execute("UPDATE offers SET category=?, industry=? WHERE id=?", (role, industry, oid))
+
+
 MIGRATIONS = [
     """
     CREATE TABLE runs(id INTEGER PRIMARY KEY, started_at TEXT, finished_at TEXT, status TEXT,
@@ -152,6 +166,7 @@ MIGRATIONS = [
     _cluster_columns,
     _observation_columns,
     _domains_column,
+    _industry_column,
 ]
 
 # The current state as of run :run, as CTEs ending in `cur(offer_id)`. A board's latest crawl is the latest run
@@ -319,7 +334,8 @@ class Store:
         return dict(url=o.url, title=o.title, title_norm=o.title_norm, company=o.company, mode=o.mode,
                     locations=json.dumps(o.locations, ensure_ascii=False), worktime=o.worktime,
                     contracts=",".join(sorted({canonical_contract(c) for c in o.contracts})), level=o.level,
-                    category=o.category, skills=", ".join(o.skills), pay_text=o.pay_text, pay_period=o.pay_period,
+                    category=o.category, industry=o.industry, skills=", ".join(o.skills), pay_text=o.pay_text,
+                    pay_period=o.pay_period,
                     pay_min=o.pay_min, pay_max=o.pay_max, published=o.published.isoformat() if o.published else None,
                     promoted=int(o.promoted), snippet=o.snippet[:1000], description=o.description,
                     facts=json.dumps(infer.board_facts(o) if o.facts is None else o.facts, ensure_ascii=False, sort_keys=True),

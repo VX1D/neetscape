@@ -139,6 +139,25 @@ def test_migration_adds_job_domains_and_eval_fills_them(tmp_path):
     assert s.offer("u1")["job_domains"] == "ai,product"
 
 
+def test_migration_splits_mixed_categories_into_industry(tmp_path):
+    s = Store(old_database(tmp_path / "old.db", MIGRATIONS.index(store._industry_column), [
+        "INSERT INTO offers(board, key, url, title, category, cluster_id) VALUES "
+        "('rocketjobs', '1', 'u1', 'Account Manager', 'sales it i telekomunikacja', 1), "
+        "('rocketjobs', '2', 'u2', 'SEO Specialist', 'marketing seo', 2), ('justjoin', '3', 'u3', 'Agent', 'support', 3)"]))
+    assert [tuple(r) for r in s.q("SELECT category, industry FROM offers ORDER BY key")] == [
+        ("sales", "it i telekomunikacja"), ("marketing seo", ""), ("support", "")]
+    s.rederive()
+    assert s.offer("u1")["job_domains"] == "sales"  # a salesperson at an IT company is not in IT
+
+
+def test_industry_is_stored_and_names_no_domain(db):
+    ingest(db, job("rocketjobs", "1", "Account Manager", category="sales", industry="it i telekomunikacja"),
+           job("rocketjobs", "2", "Account Manager", category="sales it"))
+    o = db.offer("https://rocketjobs/1")
+    assert o["industry"] == "it i telekomunikacja" and o["job_domains"] == "sales"
+    assert db.offer("https://rocketjobs/2")["job_domains"] == "it,sales"  # the same words as a category do
+
+
 def test_job_domains_are_read_in_each_offers_language(db):
     ingest(db, job("arbeitnow", "1", "Sachbearbeiter (m/w/d) Buchhaltung"),          # a German board
            job("justjoin", "2", "Sachbearbeiter Buchhaltung"),                         # a Polish board: not Polish words
