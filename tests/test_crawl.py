@@ -1,6 +1,8 @@
 """The crawl on the fake board: where a request stops, result caps (split, end probe, newest windows), retries,
 --resume, and the HTTP transport's own retries and host pauses."""
 import asyncio
+import urllib.error
+import urllib.request
 from dataclasses import replace
 
 import pytest
@@ -312,6 +314,14 @@ def test_http_short_retries_for_details(monkeypatch, status, calls, sleeps, held
         asyncio.run(Http(lim, retries=2).get("https://host/x"))
     assert e.value.status == status and len(got) == calls
     assert [s for s in slept if s is not None] == sleeps and paused == held
+
+
+@pytest.mark.parametrize("failure", [urllib.error.URLError("connection reset"), TimeoutError("timed out")])
+def test_a_connection_failure_is_a_transient_status_0(monkeypatch, failure):
+    def urlopen(req, timeout):
+        raise failure
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    assert fetch._http_get("https://host/x", "*/*") == (0, "")   # retried like a 5xx, not an exception
 
 
 def test_limiter_pause_holds_the_host(monkeypatch):
