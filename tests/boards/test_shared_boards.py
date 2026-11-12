@@ -91,3 +91,28 @@ def test_linkedin_split_by_region_then_city(monkeypatch):
     assert li.page_url(regions[0], 1) == linkedin.SEARCH + "keywords=&geoId=102996679&start=0"
     assert li.page_url(cities[0], 3) == linkedin.SEARCH + "keywords=&geoId=105076658&start=20"
     assert li.page_url(regions[1], 1) == linkedin.SEARCH + "keywords=&location=Opolskie&start=0"   # no geoId: free text
+
+
+def test_linkedin_newest_window_7_days_then_24_hours(monkeypatch):
+    li = REGISTRY["linkedin"]
+    r = Request("linkedin", "t", "remote", {"country": "pl"})
+    week, label = li.newest(r)
+    assert (week.params, label) == ({"country": "pl", "posted_days": 7}, "7 days")
+    day, label = li.newest(week)
+    assert (day.params, label) == ({"country": "pl", "posted_days": 1}, "24 hours")
+    assert li.newest(day) is None and week.key != r.key != day.key
+    assert li.page_url(week, 100) == linkedin.SEARCH + "keywords=remote&location=Poland&f_TPR=r604800&start=990"
+    assert li.page_url(day, 1) == linkedin.SEARCH + "keywords=remote&location=Poland&f_TPR=r86400&start=0"
+    monkeypatch.setattr(linkedin, "geo_id", lambda place, cc: "105076658")
+    city = Request("linkedin", "t", None, {"country": "pl", "city": "Warsaw", "posted_days": 7})
+    assert li.page_url(city, 2) == linkedin.SEARCH + "keywords=&geoId=105076658&f_TPR=r604800&start=10"
+
+
+def test_linkedin_probe_page_and_min_interval():
+    from neetscape import crawler
+    from neetscape.boards.base import min_intervals
+    li = REGISTRY["linkedin"]
+    assert crawler.probe_page(li, None, 100) == 100                     # start=990, the last page LinkedIn serves
+    assert crawler.probe_page(li, None, 99) == 0                        # --limit-pages below it: no probe
+    assert min_intervals()["linkedin.com"] == li.min_interval["linkedin.com"] >= 3
+    assert min_intervals({"linkedin.com": 5})["linkedin.com"] == 5       # the profile still overrides it
