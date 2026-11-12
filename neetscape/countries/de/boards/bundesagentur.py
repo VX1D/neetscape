@@ -13,6 +13,7 @@ Verified live 2026-11-12:
   `homeofficemoeglich` (typically "NACH_VEREINBARUNG", by arrangement) = hybrid, false = on site;
 - pay, when given: `verguetungsangabe` STUNDENLOHN/MONATSGEHALT/JAHRESGEHALT with `gehaltsspanneVon`/`Bis`;
 - offer page: https://www.arbeitsagentur.de/jobsuche/jobdetail/<referenznummer>.
+- category vs industry: `hauptberuf`, the occupation ("Finanzbuchhalter/in"), is the role; no industry.
 """
 from __future__ import annotations
 

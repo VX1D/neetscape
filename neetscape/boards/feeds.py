@@ -3,6 +3,8 @@ Work Remotely RSS feed. Each is one download per run (`whole_listing`), filtered
 
 Not part of the 2026-11-12 live audit (which covered the Polish boards): the formats are those of the recorded
 fixtures in tests/fixtures/shared/.
+Category vs industry: We Work Remotely's `category` ("Customer Support", "Management and Finance") is the role;
+remoteok has none; neither names an industry.
 """
 from __future__ import annotations
 

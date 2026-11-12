@@ -38,6 +38,8 @@ Verified live 2026-11-12:
   end on its first page of copies, which parses to no offers and ends the request; `max_pages` (1400, about twice
   the whole board) is only a safety stop;
 - pay: `netSalary` / `grossSalary` {min, max, currency "zł" or "€", period m/h/d} in hundredths (900000 = 9000 zł).
+- category vs industry: `position`, the board's position name ("Doradca finansowy", "Kierowca CE"), is the role;
+  no industry.
 """
 from __future__ import annotations
 

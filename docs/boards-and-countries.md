@@ -28,6 +28,15 @@ boards, or `no`), city search, a part-time filter, newest-first sorting, and its
 | LinkedIn | any | public guest search and posting endpoints (HTTP) | ignores remote, job-type, distance and sort filters |
 | remoteok, We Work Remotely | intl, opt-in | JSON / RSS feed | remote only; enable with `"boards": ["pl", "intl"]` |
 
+A board's labels for an offer go into two fields. `category` is the role or job category ("backend",
+"Specjalista ds. obsługi klienta", "Finanzbuchhalter/in"): job fields, functions and domains are read from
+it when the title says nothing, and `category_include` filters on it. `industry` is the employer's industry
+("it i telekomunikacja"): context, shown by `neetscape show` and read by `text_exclude` and the blacklist,
+but never a domain, so a salesperson at a telecom is in sales, not in IT. Every board's categories are roles
+except rocketjobs' `sales` and `support` categories, whose subcategory is the industry ("sales it i
+telekomunikacja" -> category `sales`, industry `it i telekomunikacja`). Each adapter's docstring says which
+its labels are.
+
 "Browser" boards are read with a same-origin fetch from a tab of the private browser
 (`browser_fetch`), because they do not serve a plain HTTP client; the result is still the board's own
 data, not the rendered page.

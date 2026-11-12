@@ -379,6 +379,20 @@ def test_rocketjobs_internship_work_time():
     assert o.worktime == "part_time" and o.contracts == ["internship"] and o.url.startswith("https://rocketjobs.pl/")
 
 
+def test_rocketjobs_splits_sales_and_support_categories_into_role_and_industry():
+    sales, support, marketing = parse("rocketjobs", rsc([
+        offer_json(slug, pay_types("b2b", 9000, 12000, "PLN")) for slug in (
+            "acme-account-manager-krakow-sales-it-i-telekomunikacja-1a2b3c4d",   # a sales role in the IT industry
+            "acme-agent-krakow-support-finanse-bankowosc-ubezpieczenia", "acme-seo-krakow-marketing-seo")]))
+    assert (sales.category, sales.industry) == ("sales", "it i telekomunikacja")
+    assert (support.category, support.industry) == ("support", "finanse bankowosc ubezpieczenia")
+    assert (marketing.category, marketing.industry) == ("marketing seo", "")   # a role subcategory stays whole
+    assert "it i telekomunikacja" in sales.text()                               # filters still read it
+    (jj,) = parse("justjoin", rsc([offer_json("acme-dev-krakow-support", pay_types("b2b", 1, 2, "PLN"))]))
+    assert (jj.category, jj.industry) == ("support", "")                         # justjoin: roles only
+    assert REGISTRY["rocketjobs"].split_category("support") == ("support", "")
+
+
 # nofluffjobs
 
 def nfj_posting(url, ref, city="Remote", salary=None):

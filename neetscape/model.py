@@ -98,7 +98,8 @@ class Offer:
     worktime: str = "unknown"
     contracts: list[str] = field(default_factory=list)
     level: str = "unknown"
-    category: str = ""            # the board's own category, verbatim
+    category: str = ""            # the board's own role or job category, verbatim
+    industry: str = ""            # the employer's industry as the board names it, verbatim: context, never a domain
     skills: list[str] = field(default_factory=list)
     pay_text: str = ""            # as published
     pay_period: str = ""          # "project" when the amount is per project (not normalised)
@@ -118,8 +119,8 @@ class Offer:
 
     def text(self) -> str:
         """Everything a filter may look at besides the title."""
-        return " ".join([self.title, self.company, self.category, " ".join(self.skills), self.pay_text, self.snippet,
-                         " ".join(self.locations)])
+        return " ".join([self.title, self.company, self.category, self.industry, " ".join(self.skills), self.pay_text,
+                         self.snippet, " ".join(self.locations)])
 
 
 @dataclass(frozen=True)

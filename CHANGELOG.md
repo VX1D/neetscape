@@ -16,6 +16,14 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
   and level intern. Associate, Mid-Senior level, Not Applicable, Volunteer, Other and unlisted labels stay
   unknown. Postings stored earlier are read from their text's criteria lines; `neetscape eval` applies it.
 
+- Board categories have a meaning: `category` is the role or job category, and a new `industry` field holds
+  the employer's industry as the board names it. Only the category gives domains, so "Account Manager" in
+  rocketjobs' "sales it i telekomunikacja" is `sales`, not `it, sales`. rocketjobs' `sales` and `support`
+  categories are split into role and industry (`split_category`); every other board's categories are roles.
+  Schema v8 adds `industry` and splits the stored rocketjobs categories; `neetscape show` prints it and
+  `text_exclude` and the blacklist still read it. On a 32k-offer database 295 rocketjobs offers change
+  domains (119 lose `it`), and the category's domain is among the title's domains for 82.2% of the offers
+  (81.3% before).
 - Every language-specific word now lives in its language pack or country package, so a new language is one
   module (`neetscape/lang/<code>.py`) and a new country one package: pay periods, pay words, the thousand
   suffix and range words (`VOCAB["pay"]`, read by `pay.py`); words offering options (`choice`, for

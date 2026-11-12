@@ -23,7 +23,13 @@ Verified live 2026-11-12 on both boards:
   fits). `max_pages` is the cap's 200 pages: the 404 after page 200 must not end a capped request as complete;
 - an offer published for several cities is listed once per city (own slug), so it appears as several offers with the
   same title and company. `categoryId` is always 0; the category is the slug tail after the city
-  (`...-krakow-security`, rocketjobs `...-lodz-finanse-ksiegowosc`);
+  (`...-krakow-security`, rocketjobs `...-lodz-finanse-ksiegowosc`): "<category> <subcategory>", one of the 24
+  top-level slugs the page links to and its subcategory;
+- category vs industry: justjoin's categories are roles (technologies and specialisations: `security`, `erp`,
+  `pm`), `category` alone. rocketjobs' are roles too ("finanse ksiegowosc", "marketing seo"), except for its `sales`
+  and `support` categories, whose subcategories are the employer's industry ("sales it i telekomunikacja": a
+  sales role in IT and telecoms; 1518 stored rocketjobs offers, 2026-11-12: 407 sales, 124 support):
+  `split_category` keeps the role in `category` and the industry in `industry`;
 - pay: one range per contract type in the currency the employer gave (`currencySource: original`, PLN, EUR, USD...);
   the board's conversions are skipped. Some employers enter an hourly rate with the unit "month" ("120 - 150 PLN per
   month"); the board shows it like that and `pay.py` reads it as hourly. Contract type `any` ("Any") is no
@@ -84,6 +90,14 @@ def category_from_slug(offer_slug: str, city: str) -> str:
     return tail.replace("-", " ")
 
 
+def split_category(category: str, by_industry: tuple = ()) -> tuple[str, str]:
+    """(role category, industry) of a slug category: the subcategory of a top-level category in `by_industry` is
+    the employer's industry ("sales it i telekomunikacja" -> ("sales", "it i telekomunikacja")); any other
+    category is a role, whole."""
+    head, _, rest = category.partition(" ")
+    return (head, rest) if head in by_industry and rest else (category, "")
+
+
 def pay_text(types: list[dict]) -> str:
     """One range per contract type in the employer's currency ("original"); the board's conversions are skipped."""
     return "; ".join(pay_range(e.get("type"), e["from"], e.get("to") or e["from"], e.get("currency") or "PLN",
@@ -101,6 +115,11 @@ class JustJoinEngine(Board):
     worktime_param: str = ""
     part_time_values: str = ""
     level_param: str = ""
+    industry_categories: tuple = ()  # top-level categories whose subcategories are industries (`split_category`)
+
+    def split_category(self, category: str) -> tuple[str, str]:
+        """(role category, industry) of a stored or parsed category; the store's migration v8 reuses it."""
+        return split_category(category, self.industry_categories)
 
     def page_url(self, r: Request, page: int) -> str | None:
         p = r.params
@@ -143,6 +162,7 @@ class JustJoinEngine(Board):
         out = []
         for o in offers:
             url = self.offer_base + o["slug"]
+            category, industry = self.split_category(category_from_slug(o["slug"], o.get("city") or ""))
             types = o.get("employmentTypes") or []
             out.append(Offer(
                 board=self.name, key=url, url=url, title=o.get("title") or "", company=o.get("companyName") or "",
@@ -150,7 +170,7 @@ class JustJoinEngine(Board):
                 locations=places([m.get("city") for m in o.get("multilocation") or [] if m.get("city")] or [o.get("city")]),
                 worktime=infer.worktime(WORKTIME_ALIASES.get(o.get("workingTime"), o.get("workingTime"))),
                 contracts=sorted({infer.contract(e.get("type")) for e in types if e.get("type") != "any"}),
-                level=infer.level(o.get("experienceLevel")), category=category_from_slug(o["slug"], o.get("city") or ""),
+                level=infer.level(o.get("experienceLevel")), category=category, industry=industry,
                 skills=list(o.get("requiredSkills") or []), pay_text=pay_text(types),
                 published=date_of(o.get("publishedAt")), promoted=bool(o.get("isPromoted") or o.get("isSuperOffer"))))
         return out
@@ -176,3 +196,4 @@ class RocketJobs(JustJoinEngine):
     offer_base = "https://rocketjobs.pl/oferta-pracy/"
     remote_path, all_path, page_param = "praca-zdalna", "wszystkie-lokalizacje", "strona"  # ignores ?page
     worktime_param, part_time_values, level_param = "wymiar-godzin", "niepelny-wymiar,freelance", "doswiadczenie"
+    industry_categories = ("sales", "support")

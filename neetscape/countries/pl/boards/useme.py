@@ -15,6 +15,8 @@ Verified live 2026-11-12:
   stays unknown in the listing and comes from the posting's JSON-LD `datePosted` when it is opened (`neetscape
   details`). That is the first publication: the "Opublikowano" date the project page shows; projects are not
   refreshed (their ids grow with that date: 147434 -> 11-12, 144943 -> 09-24, 144097 -> 09-09).
+- category vs industry: the project's category ("Video", "Social media", "Strony internetowe") is the kind of
+  work, a role; no industry.
 """
 from __future__ import annotations
 
