@@ -1,7 +1,8 @@
 """neetscape — remote/local job offer radar for the job boards of one country (pl, de, ...).
 
 Setup
-  neetscape init [--country CC] [--preset broad|focused|local|side ...]   write profile.json (presets combine)
+  neetscape init [--country CC] [--interactive]          write profile.json from questions (default on a terminal)
+  neetscape init [--country CC] --preset broad|focused|local|side ...   ... or from presets (they combine)
   neetscape check                                         validate the profile
   neetscape plan                                          show what would be fetched (no network)
   neetscape boards [--country CC]                         board capabilities
@@ -33,6 +34,7 @@ from pathlib import Path
 
 from . import country as countries
 from . import evaluate as ev
+from . import infer
 from . import planner, report
 from . import profile as prof_mod
 from .boards import REGISTRY, expand
@@ -42,7 +44,7 @@ from .browser import Browser
 from .crawler import crawl
 from .details import detail, fetch_details, route
 from .log import log
-from .model import Search, Where
+from .model import LEVELS, Search, Where
 from .store import MARK_STATUSES, Store
 
 _SIGNALS = (signal.SIGTERM, signal.SIGINT, signal.SIGHUP)
@@ -111,7 +113,7 @@ def _profile(a) -> prof_mod.Profile:
         p = prof_mod.load(a.profile)
     except prof_mod.ProfileError as e:
         sys.exit(f"profile error: {e}")
-    if a.boards:
+    if getattr(a, "boards", None):  # init has no --boards
         p.boards = expand([b.strip() for b in a.boards.split(",")])
         bad = set(p.boards) - set(REGISTRY)
         if bad:
@@ -277,6 +279,11 @@ def cmd_init(a) -> None:
     target = Path(a.profile)
     if target.exists():
         sys.exit(f"{target} already exists")
+    if a.interactive and a.preset:
+        sys.exit("--interactive builds the profile from questions; leave out --preset")
+    if a.interactive or (not a.preset and _is_terminal()):
+        _init_interactive(a, target)
+        return
     names = a.preset or ["focused"]
     try:
         data = prof_mod.combine(names, a.country or countries.DEFAULT_COUNTRY)
@@ -284,6 +291,111 @@ def cmd_init(a) -> None:
         sys.exit(str(e))
     target.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
     print(f"wrote {target} ({data['country']}) from preset(s) {', '.join(names)}; edit it, then `neetscape check` and `neetscape plan`")
+
+
+def _is_terminal() -> bool:
+    return bool(sys.stdin and sys.stdin.isatty())
+
+
+def _ask(question: str, default: str, parse):
+    """Ask until `parse` accepts the answer (Enter takes `default`); a ValueError's message is the hint shown."""
+    while True:
+        try:
+            reply = input(f"{question} [{default}]: ").strip()
+        except EOFError:
+            sys.exit("\ninit cancelled; nothing written")
+        try:
+            return parse(reply or default)
+        except ValueError as e:
+            print(f"  {e}")
+
+
+def _one_of(allowed):
+    def parse(reply: str) -> str:
+        if reply.lower() not in allowed:
+            raise ValueError(f"answer one of: {', '.join(allowed)}")
+        return reply.lower()
+    return parse
+
+
+def _some_of(allowed):
+    """Comma-separated values from `allowed`; "any" or "none" is []."""
+    def parse(reply: str) -> list[str]:
+        values = [v.strip().lower() for v in reply.split(",") if v.strip()]
+        if values in (["any"], ["none"]):
+            return []
+        bad = [v for v in values if v not in allowed]
+        if bad:
+            raise ValueError(f"unknown: {', '.join(bad)}; choose from: {', '.join(allowed)}")
+        return list(dict.fromkeys(values))
+    return parse
+
+
+def _number(kind=int, none: bool = False):
+    """A positive number; with `none`, "none" is None."""
+    def parse(reply: str):
+        if none and reply.lower() == "none":
+            return None
+        try:
+            value = kind(reply.replace(",", "."))
+        except ValueError:
+            raise ValueError("a number" + (" or none" if none else "")) from None
+        if value <= 0:
+            raise ValueError("a number above 0" + (" or none" if none else ""))
+        return int(value) if value == int(value) else value
+    return parse
+
+
+def _phrases(reply: str) -> list[str]:
+    return [] if reply.lower() == "everything" else [w.strip() for w in reply.split(",") if w.strip()]
+
+
+def _city(reply: str) -> str:
+    if reply == "-":
+        raise ValueError("name a city, e.g. Kraków or München")
+    return reply
+
+
+def init_answers(default_country: str) -> dict:
+    """Ask `neetscape init`'s questions on the terminal; returns the answers for `profile.from_answers`."""
+    print("A few questions build profile.json. Enter accepts the [default]; lists are comma-separated.")
+    codes = countries.codes()
+    names = ", ".join(f"{c} ({countries.get(c).name})" for c in codes)
+    ans: dict = {"country": _ask(f"Country: {names}", default_country, _one_of(codes))}
+    home = countries.get(ans["country"])
+    ans["where"] = _ask("Where: remote, city, or both (the city or remote)", "remote", _one_of(prof_mod.WHERE_ANSWERS))
+    if ans["where"] != "remote":
+        ans["city"] = _ask("City", "-", _city)
+        ans["radius_km"] = _ask("Distance from the city, km", "30", _number())
+    ans["what"] = _ask("What work: phrases sent to the boards, e.g. n8n, helpdesk, data analyst", "everything", _phrases)
+    domains, functions = list(infer.DOMAINS), list(infer.FUNCTIONS)
+    ans["domains"] = _ask(f"Job domains to keep ({', '.join(domains)})", "any", _some_of(domains))
+    ans["functions_exclude"] = _ask(f"Functions to exclude ({', '.join(functions)})", "none", _some_of(functions))
+    ans["worktime"] = _ask("Work time: full, part, or any", "any", _one_of(list(prof_mod.WORKTIME_ANSWERS)))
+    contracts = [c for c in home.contracts if c != "other"]
+    ans["contracts"] = _ask(f"Contract types ({', '.join(contracts)})", "any", _some_of(contracts))
+    ans["pay_min"] = _ask(f"Minimum pay in {home.currency}", "none", _number(float, none=True))
+    if ans["pay_min"]:
+        ans["pay_per"] = _ask("Per month or per hour", "month", _one_of(["month", "hour"]))
+    levels = [lv for lv in LEVELS if lv != "unknown"]
+    ans["levels_exclude"] = _ask(f"Seniority to exclude ({', '.join(levels)})", "none", _some_of(levels))
+    ans["max_age_days"] = _ask("Ignore postings older than, days", "30", _number(none=True))
+    return ans
+
+
+def _init_interactive(a, target: Path) -> None:
+    default = a.country or countries.DEFAULT_COUNTRY
+    if default not in countries.codes():
+        sys.exit(f"unknown country {default!r}; available: {', '.join(countries.codes())}")
+    try:
+        data = prof_mod.from_answers(init_answers(default))
+    except prof_mod.ProfileError as e:
+        sys.exit(str(e))
+    target.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+    print(f"\nwrote {target}")
+    cmd_check(a)
+    print("next: `neetscape plan` (what would be fetched, no network), then `neetscape run --limit-pages 2` for a "
+          f"quick trial; edit {target} for anything the questions did not cover")
 
 
 def cmd_check(a) -> None:
@@ -463,8 +575,10 @@ def _parser() -> argparse.ArgumentParser:
         p.set_defaults(handler=handler)
         return p
 
-    p = command("init", cmd_init, "write profile.json from presets (they combine)")
-    p.add_argument("--preset", action="append", default=[], help="preset name, repeatable")
+    p = command("init", cmd_init, "write profile.json from questions, or from presets (they combine)")
+    p.add_argument("--preset", action="append", default=[],
+                   help="preset name, repeatable (without it, on a terminal, init asks questions instead)")
+    p.add_argument("--interactive", action="store_true", help="build the profile from questions (the default on a terminal)")
     p.add_argument("--country", help=f"the profile's country (default {countries.DEFAULT_COUNTRY})")
     command("check", cmd_check, "validate the profile", boards)
     command("plan", cmd_plan, "show what would be fetched (no network)", boards)

@@ -249,3 +249,60 @@ def test_progress_writes_plain_lines_off_a_terminal():
     assert lines[-1] == "[██████████░░░░░░░░░░] 2/4 requests · 3 pages · 150 offers · now: pracuj p12"
     assert log._progress is None                                                  # no stray bar after the step
     log.tick()                                                                    # no bar: a no-op
+
+
+def feed(monkeypatch, *replies):
+    """Answer `input()` with `replies` in order; returns the prompts asked."""
+    asked, replies = [], list(replies)
+
+    def answer(prompt):
+        asked.append(prompt)
+        return replies.pop(0)
+    monkeypatch.setattr("builtins.input", answer)
+    return asked
+
+
+def test_interactive_init(cwd, capsys, monkeypatch):
+    monkeypatch.setattr(cli, "_is_terminal", lambda: True)
+    asked = feed(monkeypatch, "", "both", "", "Kraków", "ten", "25", "n8n, helpdesk", "ai, it, robots", "ai, it",
+                 "sell, market", "part", "mandate, freelance", "40", "hour", "senior,lead", "")
+    cli.main(["init"])
+    text = out(capsys)
+    data = json.loads((cwd / "profile.json").read_text())
+    assert data["country"] == "pl" and data["defaults"] == {"max_age_days": 30}
+    assert data["searches"] == [{"id": "local-or-remote", "label": "Near Kraków or remote",
+                                 "where": {"city": "Kraków", "radius_km": 25, "or_remote": True},
+                                 "what": ["n8n", "helpdesk"], "worktime": ["part_time", "flexible"],
+                                 "contracts": ["mandate", "freelance"], "levels_exclude": ["senior", "lead"],
+                                 "domains": ["ai", "it"], "functions_exclude": ["sell", "market"],
+                                 "pay": {"min": 40, "per": "hour"}}]
+    assert "Minimum pay in PLN [none]: " in asked and len(asked) == 16    # city, radius and domains each asked twice
+    assert "name a city" in text and "a number" in text and "unknown: robots" in text
+    assert "profile OK (pl" in text and "neetscape plan" in text and "run --limit-pages 2" in text
+    with pytest.raises(SystemExit, match="already exists"):
+        cli.main(["init", "--interactive"])
+
+
+def test_interactive_init_defaults_and_cancel(cwd, capsys, monkeypatch):
+    feed(monkeypatch, *[""] * 10)
+    cli.main(["init", "--interactive", "--country", "de"])
+    data = json.loads((cwd / "profile.json").read_text())
+    assert data["country"] == "de" and data["searches"] == [{"id": "remote", "label": "Remote", "where": "remote", "what": "all"}]
+    (cwd / "profile.json").unlink()
+
+    def eof(prompt):
+        raise EOFError
+    monkeypatch.setattr("builtins.input", eof)
+    with pytest.raises(SystemExit, match="cancelled"):
+        cli.main(["init", "--interactive"])
+    assert not (cwd / "profile.json").exists()
+    with pytest.raises(SystemExit, match="leave out --preset"):
+        cli.main(["init", "--interactive", "--preset", "broad"])
+
+
+def test_init_off_a_terminal_writes_the_focused_preset(cwd, monkeypatch):
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: False, raising=False)
+    monkeypatch.setattr("builtins.input", lambda prompt: pytest.fail("init asked a question off a terminal"))
+    cli.main(["init"])
+    data = json.loads((cwd / "profile.json").read_text())
+    assert data["country"] == "pl" and [s["id"] for s in data["searches"]] == ["main"]

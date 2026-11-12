@@ -330,6 +330,53 @@ def combine(names: list[str], country: str = countries.DEFAULT_COUNTRY) -> dict:
     return out
 
 
+WORKTIME_ANSWERS = {"full": ["full_time"], "part": ["part_time", "flexible"], "any": None}
+WHERE_ANSWERS = ("remote", "city", "both")
+
+
+def from_answers(ans: dict) -> dict:
+    """A profile from the answers of `neetscape init`'s questions, validated; raises `ProfileError`.
+
+    Keys (all optional): country, where ("remote", "city", "both"), city, radius_km, what (phrases; empty: every
+    offer), domains, functions_exclude, worktime ("full", "part", "any"), contracts, pay_min, pay_per ("month",
+    "hour"), levels_exclude, max_age_days (None: no limit). The settings besides the one search come from the `broad` preset."""
+    code = ans.get("country") or countries.DEFAULT_COUNTRY
+    where = ans.get("where") or "remote"
+    if where not in WHERE_ANSWERS:
+        raise ProfileError(f"where must be one of {list(WHERE_ANSWERS)}, not {where!r}")
+    data = combine(["broad"], code)
+    search: dict = {}
+    if where == "remote":
+        search |= {"id": "remote", "label": "Remote", "where": "remote"}
+    else:
+        if not ans.get("city"):
+            raise ProfileError("a city search needs a city")
+        place = {"city": ans["city"], "radius_km": ans.get("radius_km") or 30}
+        if where == "both":
+            place["or_remote"] = True
+        search |= {"id": "local" if where == "city" else "local-or-remote",
+                   "label": f"Near {ans['city']}" + (" or remote" if where == "both" else ""), "where": place}
+    search["what"] = list(ans.get("what") or []) or "all"
+    worktime = WORKTIME_ANSWERS.get(ans.get("worktime") or "any", KeyError)
+    if worktime is KeyError:
+        raise ProfileError(f"worktime must be one of {list(WORKTIME_ANSWERS)}, not {ans.get('worktime')!r}")
+    if worktime:
+        search["worktime"] = worktime
+    for key in ("contracts", "levels_exclude", "domains", "functions_exclude"):
+        if ans.get(key):
+            search[key] = list(ans[key])
+    if ans.get("pay_min"):
+        search["pay"] = {"min": ans["pay_min"], "per": ans.get("pay_per") or "month"}
+    data["label"] = search["label"]
+    data["searches"] = [search]
+    if "max_age_days" in ans:  # absent: the preset's; None: no age limit
+        data["defaults"] = {k: v for k, v in (data.get("defaults") or {}).items() if k != "max_age_days"}
+        if ans["max_age_days"]:
+            data["defaults"]["max_age_days"] = ans["max_age_days"]
+    validate(data)
+    return data
+
+
 def _resolve(node, defs: dict):
     """`node` with every `{"$ref": "#/$defs/name", ...}` replaced by that definition (siblings of `$ref` win)."""
     if isinstance(node, list):
