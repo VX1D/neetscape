@@ -33,6 +33,12 @@ URLs (verified live 2026-11-12; robots.txt allows `/s-*.html` and offer pages, t
   shown "przed chwilą" had JSON-LD `datePosted` two weeks earlier); the page footer's "Numer wydania: N" is the
   server's day as days since 1970-01-01 (20769 = 2026-11-12), so `published` = that day minus the whole days shown
   (hours count as today: up to one day off around midnight); without the footer `published` stays unknown;
+- first publication (checked 2026-11-12): the result page carries no other date (a card has only the relative
+  date; no data attribute, no JSON). The offer page's JSON-LD `datePosted` (read by `details`) is older than the
+  listing date (4 of 4 cards shown today: 10-22, 10-23, 10-23, 10-29) and `validThrough` is 20-30 days after it,
+  so it starts the current publication period; whether it is the first publication cannot be told from public
+  pages (the offer page shows no date, and offer ids are not in `datePosted` order: 11597278 -> 10-23,
+  11605810 -> 10-22);
 - each card ships title, employer, location (`title` attribute "Polska, <voivodeship>, <town>[, street]"), the work
   modes, contract types, levels, work time, the salary as published ("4 850 - 6 000 zł brutto/mies.") when given,
   and a teaser of the description; no category.

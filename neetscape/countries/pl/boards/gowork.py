@@ -24,6 +24,9 @@ the order the board's own `seo.next` links use (`krakow;l/2;pg/50;km`, `czesc-et
   of other sites' ads), then roughly by `publishedAt`, not strictly (a page of segment 5 mixes 11-03 and 11-12):
   no newest-first order. `publishedAt` is the last refresh; the posting date (`createdAt`, JSON-LD `datePosted`
   on the offer page) can be weeks older. No sort parameter was found;
+- dates (verified live 2026-11-12): a listing result carries only `publishedAt` (no `createdAt` or other date in
+  the result page), so `published` is the last refresh. The offer page's JSON-LD `datePosted` is its `createdAt`,
+  the first publication (3 of 3 sampled offers refreshed 11-11/11-12: datePosted 10-15, 11-10, 10-29);
 - the whole board is 26 300 offers (658 pages): about 10 600 own postings (segments 6 and 5, pages 1-265, refreshed
   in the last ~6 weeks; employers post them on gowork: 12 of 15 sampled offers take the application on gowork,
   3 redirect to the employer's ATS), then ~14 000 `/oferta-zewnetrzna/` copies of lento.pl / nuzle.pl ads (segment 2,
