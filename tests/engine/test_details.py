@@ -184,3 +184,17 @@ def test_marked_offers_whose_posting_failed_are_fetched_again(db):
     assert cli._ids(ns, db, None, 1) == [1, 3]
     db.save_detail(3, 404, "", {}, {})
     assert cli._ids(ns, db, None, 1) == [1]                     # gone: nothing to fetch
+
+
+def test_first_publication_date_from_the_posting_replaces_a_refresh_date(db, monkeypatch):
+    from neetscape.boards import REGISTRY
+    db.db.execute("UPDATE offers SET published='2026-11-12' WHERE id IN (1, 2)")
+    db.db.commit()
+    monkeypatch.setattr(REGISTRY["pracuj"], "posting_date_is_first", True)
+    details._save(db, db.offer(1), 200, "text", {"published": "2026-10-15"})
+    details._save(db, db.offer(2), 200, "text", {"published": "2026-11-20"})        # later than the card: ignored
+    assert db.offer(1)["published"] == "2026-10-15" and db.offer(2)["published"] == "2026-11-12"
+    monkeypatch.setattr(REGISTRY["pracuj"], "posting_date_is_first", False)
+    db.db.execute("UPDATE offers SET published='2026-11-12' WHERE id=1")
+    details._save(db, db.offer(1), 200, "text", {"published": "2026-10-15"})
+    assert db.offer(1)["published"] == "2026-11-12"                                   # other boards keep the card's date

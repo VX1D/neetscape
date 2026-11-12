@@ -61,6 +61,10 @@ def _save(store: Store, row, status: int, text: str, meta: dict, home: str = "pl
     if (meta.get("company") or "").strip().lower() in PLACEHOLDER_COMPANIES:
         meta = {**meta, "company": ""}
     updates = {k: meta[k] for k in ("company", "published") if meta.get(k) and not row[k]} | _from_posting(row, text, meta, hints, languages)
+    first = parse_date(meta.get("published"))
+    board = REGISTRY.get(row["board"])
+    if first and board and board.posting_date_is_first and (not parse_date(row["published"]) or first < parse_date(row["published"])):
+        updates["published"] = meta["published"]  # the listing showed the last refresh; the posting the first publication
     if updates.get("published") and not parse_date(updates["published"]):
         del updates["published"]
     if updates:

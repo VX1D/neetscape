@@ -59,6 +59,8 @@ class Board:
     headers: ClassVar[dict] = {}              # http: extra request headers (e.g. a public API key)
     content_type: ClassVar[str] = ""          # http: Content-Type of the `post_body` of a POST search
     min_interval: ClassVar[dict] = {}         # host -> seconds between requests, for boards that throttle hard
+    posting_date_is_first: ClassVar[bool] = False  # the posting's date (JSON-LD datePosted) is the first publication,
+    #                                               earlier than the listing's refresh date: `details` replaces it
     posting_selector: ClassVar[str] = ""      # CSS selector of the posting body on the rendered offer page, used
     #                                           when `posting()` finds no text; empty: never fall back to rendering
 

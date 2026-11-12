@@ -123,6 +123,7 @@ def snippet(o: dict) -> str:
 @register
 class GoWork(Board):
     name = "gowork"
+    posting_date_is_first = True  # JSON-LD datePosted = createdAt (first publication); the listing has the refresh date
     caps = Caps(keywords=True, remote="filter", city=True, radius=True, worktime=True, sort_newest=False, page_size=40,
                 max_pages=1400, huge_unfiltered=True, transport="http")
     accept = "text/html,application/xhtml+xml"
