@@ -1,29 +1,26 @@
-"""olx.pl (jobs) — the listing state embedded in the result page (`window.__PRERENDERED_STATE__`), read with a
-same-origin fetch (transport browser_fetch) and cut down in the tab by `fetch_js` to the fields parsed here.
+"""olx.pl (jobs) — the listing state embedded in the result page (`window.__PRERENDERED_STATE__`), same-origin fetch
+(Python's HTTP client gets 403 from CloudFront), cut down in the tab.
 
-URL: `/praca/[<city-slug>/][q-<kw>/]?search[dist]=KM&search[order]=created_at:desc&search[filter_enum_...]...&page=N`.
-Verified live 2026-11-12 (Python's HTTP client gets 403 from CloudFront, a browser tab is served):
-- `search[filter_enum_workplace][0]=remote_work_possibility` ("Miejsce pracy: Praca zdalna") is a real
-  server-side filter ("asystent": 1000+ results -> 106). The workplace values are checkboxes: of 44 remote
-  results 20 had only remote, 24 also hybrid and/or on_site, and those postings mostly describe partial remote
-  work ("częściowo zdalnej", "80/20", field work), rarely full remote; so remote alone is remote, remote with
-  hybrid or on_site is hybrid (see `work_mode`);
-- `search[filter_enum_type][0]=parttime&search[filter_enum_type][1]=halftime` keeps part-time and "Praca
-  dodatkowa" offers; `search[dist]=30` adds towns around the city;
-- each page holds ~40 organic ads plus promoted ones (`isPromoted`, the same ones repeat on every page);
-  a search shows at most 25 pages, 1000 ads (`totalElements` is capped at 1000; verified 2026-11-12: pages 5,
-  10 and 25 of the remote listing hold distinct ads, page 26 redirects), so the board declares
-  `result_cap=1000` and `split()` narrows a capped request into the subcategories of its category, read from
-  the category tree embedded in the page (`/praca/<subcategory>/`; remote ads per subcategory stay far below
-  the cap, e.g. customer service 180, extra work 290); a page past the last redirects to page 1 (so the
-  request ends with "no new offers");
-- `created_at:desc` orders by the last refresh (`lastRefreshTime`, the "Odświeżono dnia ..." date the card
-  shows), which is used as `published`; `createdTime` may be a year older for refreshed ads;
-- each ad ships its structured fields: salary {from, to, period monthly/hourly}, `params` type (work time),
-  agreement (contracts), workplace, location {cityName, districtName}, and the full description;
-- the employer's name is `user.company_name` when the account set one; the card's company line for other
-  business accounts comes from a later client-side request, and `user.name` is often a recruiter's first name,
-  so it is used only when it carries a legal form ("Sp. z o.o.", "S.A.").
+    GET https://www.olx.pl/praca/[<category>/][<city-slug>/][q-<kw>/]?search[dist]=KM&search[order]=created_at:desc
+        &search[filter_enum_workplace][0]=remote_work_possibility&search[filter_enum_type][0]=parttime&...&page=N
+
+Verified live 2026-11-12:
+- the workplace filter `remote_work_possibility` ("Praca zdalna") is server-side ("asystent": 1000+ -> 106). Its
+  values are checkboxes: of 44 remote results 20 had only remote, 24 also hybrid and/or on_site, and those postings
+  mostly describe partial remote work ("częściowo zdalnej", "80/20", field work), so remote alone is remote, remote
+  with hybrid or on_site is hybrid (`work_mode`);
+- types `parttime` + `halftime` keep part-time and "Praca dodatkowa" offers; `search[dist]=30` adds towns around;
+- each page holds ~40 organic ads plus promoted ones (`isPromoted`, the same ones on every page);
+- result cap: at most 25 pages, 1000 ads (`totalElements` capped at 1000; pages 5, 10 and 25 of the remote listing
+  hold distinct ads, page 26 redirects): `split()` narrows a capped request into the subcategories of its category,
+  from the category tree in the page (`/praca/<subcategory>/`; remote ads per subcategory stay far below the cap,
+  e.g. customer service 180, extra work 290); a page past the last redirects to page 1 ("no new offers");
+- `created_at:desc` orders by the last refresh (`lastRefreshTime`, "Odświeżono dnia ..." on the card), which is
+  `published`; `createdTime` may be a year older for refreshed ads;
+- each ad ships salary {from, to, period}, `params` type (work time), agreement (contracts), workplace, location
+  {cityName, districtName} and the full description;
+- the employer is `user.company_name` when set; other business accounts' company line comes from a later client-side
+  request, and `user.name` is often a recruiter's first name: used only with a legal form ("Sp. z o.o.").
 """
 from __future__ import annotations
 
@@ -33,20 +30,20 @@ import urllib.parse
 
 from .... import infer
 from ....boards.base import Board, Caps, Request, narrowed, register
-from ....boards.pages import clean_spaces, epoch_or_iso_date, pay_range, slug
+from ....boards.pages import clean_spaces, date_of, pay_range, present, slug, snippet, with_query
 from ....model import Offer
 from ....posting import html_to_text
 from .vocab import LANGS
 
+BASE = "https://www.olx.pl"
 WORKTIME = {"fulltime": "full_time", "parttime": "part_time", "halftime": "part_time"}
 AGREEMENT = {"part": "employment", "contract": "specific_task", "zlecenie": "mandate", "selfemployment": "b2b",
              "practice": "internship", "other": "other"}
-LEGAL_FORM = re.compile(r"\b(?:sp\.? ?z\.? ?o\.? ?o|spółka|s\.a\.|sp\.? ?[kj]\.|ltd|gmbh|inc|llc)", re.I)
 PERIOD = {"monthly": "month", "hourly": "hour", "weekly": "week", "daily": "day", "yearly": "year"}
+LEGAL_FORM = re.compile(r"\b(?:sp\.? ?z\.? ?o\.? ?o|spółka|s\.a\.|sp\.? ?[kj]\.|ltd|gmbh|inc|llc)", re.I)
 
-
-# the ads of the page, shrunk in the tab ('[]' for a page without the state)
-# (the state is one 3-4 MB JSON string literal ending its line: it is cut out by index, not by a regex)
+# the page shrunk in the tab: the match count, the category tree and the ads ('{"ads":[]}' without the state;
+# the state is one 3-4 MB JSON string literal ending its line: it is cut out by index, not by a regex)
 FETCH_JS = r"""(t)=>{const i=t.indexOf('window.__PRERENDERED_STATE__');if(i<0)return '{"ads":[]}';
 const lo=t.indexOf('"',i),hi=t.lastIndexOf('"',t.indexOf('\n',lo));
 let s;try{s=JSON.parse(JSON.parse(t.slice(lo,hi+1)))}catch(e){return '{"ads":[]}'}
@@ -58,6 +55,13 @@ return JSON.stringify({total:L.totalElements??null,categories:tree,ads:ads.map(a
  period:a.salary.period}:null,params:(a.params||[]).map(p=>({key:p.key,normalizedValue:p.normalizedValue})),
  location:{cityName:(a.location||{}).cityName,districtName:(a.location||{}).districtName},
  user:{company_name:(a.user||{}).company_name||'',name:(a.user||{}).name||''},description:(a.description||'').slice(0,12000)}))})}"""
+
+
+def page_data(raw: str) -> dict:
+    """The shrunk page {"total": matches, "categories": [{"path", "parent"}], "ads": [...]}; a bare list (an older
+    recording) holds the ads alone."""
+    data = json.loads(raw or "{}")
+    return {"ads": data} if isinstance(data, list) else {"ads": [], **data}
 
 
 def work_mode(workplace: list) -> str:
@@ -84,70 +88,65 @@ def pay_text(salary: dict | None) -> str:
     return pay_range("salary", lo, hi, salary.get("currencyCode") or "PLN", PERIOD.get(salary.get("period"), "month"))
 
 
-def _page(raw: str) -> dict:
-    """The shrunk result page: {"total": matches, "categories": [{"path", "parent"}], "ads": [...]}."""
-    data = json.loads(raw or "{}")
-    return {"ads": data} if isinstance(data, list) else {"ads": [], **data}
+def as_list(v) -> list:
+    """A param's value: OLX ships one value bare and several as a list."""
+    return v if isinstance(v, list) else [v] if v else []
 
 
 @register
 class Olx(Board):
     name = "olx"
-    caps = Caps(keywords=True, remote="filter", city=True, radius=True, worktime=True, sort_newest=True, page_size=0,
-                max_pages=25, result_cap=1000, huge_unfiltered=True, transport="browser_fetch", origin="https://www.olx.pl/praca/")
+    caps = Caps(keywords=True, remote="filter", city=True, radius=True, worktime=True, sort_newest=True, max_pages=25,
+                result_cap=1000, huge_unfiltered=True, transport="browser_fetch", origin=BASE + "/praca/")
 
     def page_url(self, r: Request, page: int) -> str | None:
         # never None: the listing goes on past `max_pages`, so a request stopped there is partial (no "gone" marks)
-        kw = (r.keyword or "").strip()
-        path = ("praca/" + (r.params["category"] + "/" if r.params.get("category") else "")
-                + (slug(r.params["city"]) + "/" if r.params.get("city") else ""))
+        p, kw = r.params, (r.keyword or "").strip()
+        path = "".join(x + "/" for x in ("praca", p.get("category"), slug(p["city"]) if p.get("city") else None) if x)
         query = {}
-        if r.params.get("city"):
-            query["search[dist]"] = r.params.get("radius_km", 0)
-        if r.params.get("sort") == "newest":
+        if p.get("city"):
+            query["search[dist]"] = p.get("radius_km", 0)
+        if p.get("sort") == "newest":
             query["search[order]"] = "created_at:desc"
-        if r.params.get("remote"):
+        if p.get("remote"):
             query["search[filter_enum_workplace][0]"] = "remote_work_possibility"
-        if r.params.get("part_time"):
+        if p.get("part_time"):
             query["search[filter_enum_type][0]"] = "parttime"
             query["search[filter_enum_type][1]"] = "halftime"
         if page > 1:
             query["page"] = page
-        return (f"https://www.olx.pl/{path}" + (f"q-{urllib.parse.quote(kw)}/" if kw else "")
-                + (f"?{urllib.parse.urlencode(query)}" if query else ""))
+        return with_query(f"{BASE}/{path}" + (f"q-{urllib.parse.quote(kw)}/" if kw else ""), query)
+
+    def fetch_js(self) -> str | None:
+        return FETCH_JS
 
     def total(self, raw: str, r: Request) -> int | None:
-        return _page(raw).get("total")
+        return page_data(raw).get("total")
 
-    def split(self, raw: str, r: Request) -> list[Request]:
+    def split(self, raw: str, r: Request, seen: tuple = ()) -> list[Request]:
         """One request per subcategory of the request's category, read from the page's category tree."""
         here = "praca" + ("/" + r.params["category"] if r.params.get("category") else "")
-        subs = [c["path"].removeprefix("praca/") for c in _page(raw).get("categories") or [] if c.get("parent") == here]
+        subs = [c["path"].removeprefix("praca/") for c in page_data(raw).get("categories") or [] if c.get("parent") == here]
         return narrowed(r, "category", sorted(subs))
-
-    def fetch_js(self) -> str:
-        return FETCH_JS
 
     def parse(self, raw: str, r: Request) -> list[Offer]:
         out: dict[str, Offer] = {}
-        for ad in _page(raw)["ads"]:
+        for ad in page_data(raw)["ads"]:
             url = re.sub(r"[?#].*$", "", ad.get("url") or "")
             if not url or not ad.get("title"):
                 continue
             params = {p.get("key"): p.get("normalizedValue") for p in ad.get("params") or []}
-            as_list = lambda v: v if isinstance(v, list) else [v] if v else []
             contracts = sorted({AGREEMENT[a] for a in as_list(params.get("agreement")) if a in AGREEMENT}
                                | ({"b2b"} if params.get("type") == "b2b" else set()))
-            workplace = as_list(params.get("workplace"))
             loc = ad.get("location") or {}
-            city = ", ".join(x for x in (loc.get("cityName"), loc.get("districtName")) if x)
+            city = ", ".join(present(loc.get("cityName"), loc.get("districtName")))
             title = clean_spaces(ad["title"])[:140]
             description = html_to_text(ad.get("description") or "")
             out[url] = Offer(
                 board=self.name, key=url, url=url, title=title, company=company(ad.get("user") or {}),
-                mode=work_mode(workplace),
-                locations=[city] if city else [], worktime=WORKTIME.get(params.get("type"), "unknown"), contracts=contracts,
+                mode=work_mode(as_list(params.get("workplace"))), locations=present(city),
+                worktime=WORKTIME.get(params.get("type"), "unknown"), contracts=contracts,
                 level=infer.level_from_text(title, LANGS), pay_text=pay_text(ad.get("salary")),
-                published=epoch_or_iso_date(ad.get("lastRefreshTime") or ad.get("createdTime")), promoted=bool(ad.get("isPromoted")),
-                snippet=clean_spaces(f"{title} {description}")[:1000], description=description)
+                published=date_of(ad.get("lastRefreshTime") or ad.get("createdTime")), promoted=bool(ad.get("isPromoted")),
+                snippet=snippet(title, description), description=description)
         return list(out.values())

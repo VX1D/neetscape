@@ -1,11 +1,12 @@
 """Helpers shared by board adapters.
 
-- embedded data: `script_json` (JS for `Board.fetch_js()` cutting a page down in the tab to the JSON of one
-  <script>, e.g. Next.js `__NEXT_DATA__`) and `page_script_json` (the same JSON from a page source);
-- server-rendered markup: `html_text`, `html_field`;
-- values: `clean_spaces`, `slug`, `epoch_or_iso_date`, `feed_date`, `amount`, `pay_range`, `nearest_radius`,
-  `most_remote_mode`, `labelled_contracts`, `worktime_from_labels`, `prefix_level`, `lowest`, `lowest_level`
-  (+ `LEVEL_WORDS`).
+- embedded data: `script_json` (JS for `Board.fetch_js()`: one <script>'s JSON, cut down in the tab),
+  `page_script_json` (the same JSON from a page source), `json_at`, `nuxt_data`;
+- markup: `html_text`, `html_field`;
+- URLs: `with_query`, `slug`, `nearest_radius`;
+- values: `clean_spaces`, `snippet`, `present`, `places`, `date_of`, `amount`, `pay_range`, `currency_code`;
+- board labels -> vocabulary: `most_remote_mode`, `labelled_contracts`, `worktime_from_labels`, `prefix_level`,
+  `lowest`, `lowest_level` (+ `LEVEL_WORDS`).
 """
 from __future__ import annotations
 
@@ -13,10 +14,13 @@ import datetime as dt
 import html
 import json
 import re
+import urllib.parse
 from email.utils import parsedate_to_datetime
 
 from .. import infer
 from ..model import LEVELS, fold
+
+# embedded data
 
 
 def script_json(script_id: str, body: str) -> str:
@@ -35,6 +39,53 @@ def page_script_json(page: str, script_id: str):
         return None
 
 
+def json_at(text: str, start: int):
+    """The JSON value starting at `text[start]` (an object, array or string embedded in a script); None when it
+    is truncated or malformed."""
+    try:
+        return json.JSONDecoder().raw_decode(text, start)[0]
+    except ValueError:
+        return None
+
+
+_NUXT_WRAPPERS = {"Reactive", "ShallowReactive", "Ref", "ShallowRef"}
+
+
+def _devalue(table: list, index: int, depth: int = 0):
+    """Entry `index` of a devalue table: objects and arrays hold indexes of other entries, ["Reactive", i]-style
+    wrappers stand for entry i, ["Set", ...] / ["Date", iso] for those types; negative indexes are special values."""
+    if index < 0 or depth > 60:
+        return None
+    v = table[index]
+    if isinstance(v, dict):
+        return {k: _devalue(table, i, depth + 1) for k, i in v.items()}
+    if isinstance(v, list):
+        if v and isinstance(v[0], str):
+            if v[0] in _NUXT_WRAPPERS:
+                return _devalue(table, v[1], depth + 1)
+            if v[0] in ("EmptyRef", "EmptyShallowRef"):
+                return None
+            if v[0] == "Set":
+                return [_devalue(table, i, depth + 1) for i in v[1:]]
+            if v[0] == "Date":
+                return v[1]
+        return [_devalue(table, i, depth + 1) for i in v]
+    return v
+
+
+def nuxt_data(page: str, key: str = "data"):
+    """`key` of a Nuxt payload (`<script id="__NUXT_DATA__">`, devalue format: one flat JSON array whose entries
+    refer to others by index), decoded. ValueError when the page has no payload."""
+    table = page_script_json(page, "__NUXT_DATA__")
+    if not table:
+        raise ValueError("no __NUXT_DATA__ in the page (bot wall or format change)")
+    root = table[0] if isinstance(table[0], dict) else table[table[0][1]]  # ["ShallowReactive", 1]
+    return _devalue(table, root[key])
+
+
+# markup
+
+
 def clean_spaces(s: str | None) -> str:
     return re.sub(r"\s+", " ", s or "").strip()
 
@@ -50,32 +101,54 @@ def html_field(pattern: str, markup: str) -> str:
     return html_text(m.group(1)) if m else ""
 
 
+# URLs
+
+
+def with_query(url: str, query: dict, **urlencode_args) -> str:
+    """`url?<query>`, or `url` alone when the query is empty (`urlencode_args`: e.g. `safe`, `quote_via`)."""
+    return url + ("?" + urllib.parse.urlencode(query, **urlencode_args) if query else "")
+
+
 def slug(text: str) -> str:
     """URL slug of a place or phrase: 'Kraków' -> 'krakow', 'Bielsko-Biała' -> 'bielsko-biala'."""
     return re.sub(r"[^a-z0-9]+", "-", fold(text)).strip("-")
 
 
-def epoch_or_iso_date(value) -> dt.date | None:
-    """A date from epoch milliseconds or an ISO string; None otherwise."""
-    if isinstance(value, (int, float)) and value > 0:
-        return dt.datetime.fromtimestamp(value / 1000, dt.timezone.utc).date()
-    if isinstance(value, str) and len(value) >= 10:
-        try:
-            return dt.date.fromisoformat(value[:10])
-        except ValueError:
-            return None
-    return None
+def nearest_radius(km, radii: tuple) -> int:
+    """The smallest of a board's accepted radii (ascending) covering `km`; the largest when `km` is larger."""
+    return next((r for r in radii if r >= (km or 0)), radii[-1])
 
 
-def feed_date(s: str | None) -> dt.date | None:
-    """A date from an ISO string ("2026-11-12T...") or an RFC 2822 one (RSS `pubDate`); None otherwise."""
-    if not s:
+# values
+
+
+def snippet(*parts: str, limit: int = 1000) -> str:
+    """Card text for `Offer.snippet`: the parts on one line, cut to `limit` characters."""
+    return clean_spaces(" ".join(parts))[:limit]
+
+
+def present(*values) -> list:
+    """The non-empty values, in order: `locations=present(o.get("city"))`."""
+    return [v for v in values if v]
+
+
+def places(values) -> list[str]:
+    """Distinct non-empty place names, sorted."""
+    return sorted({v for v in values or [] if v})
+
+
+def date_of(value) -> dt.date | None:
+    """A date from epoch milliseconds, an ISO string ("2026-11-12T...") or an RFC 2822 one (RSS `pubDate`);
+    None otherwise."""
+    if isinstance(value, (int, float)):
+        return dt.datetime.fromtimestamp(value / 1000, dt.timezone.utc).date() if value > 0 else None
+    if not isinstance(value, str) or not value:
         return None
     try:
-        return dt.date.fromisoformat(s[:10])
+        return dt.date.fromisoformat(value[:10])
     except ValueError:
         try:
-            return parsedate_to_datetime(s).date()
+            return parsedate_to_datetime(value).date()
         except (TypeError, ValueError):
             return None
 
@@ -92,9 +165,15 @@ def pay_range(kind: str, lo, hi, currency: str, unit: str, gross: bool = False) 
     return f"{kind}:{amount(lo)}-{amount(hi)} {currency}/{unit}{' gross' if gross else ''}"
 
 
-def nearest_radius(km, radii: tuple) -> int:
-    """The smallest of a board's accepted radii (ascending) covering `km`; the largest when `km` is larger."""
-    return next((r for r in radii if r >= (km or 0)), radii[-1])
+CURRENCY_SYMBOLS = {"zł": "PLN", "€": "EUR", "$": "USD", "£": "GBP"}
+
+
+def currency_code(symbol: str) -> str:
+    """'zł' -> 'PLN'; a code or an unknown symbol is upper-cased."""
+    return CURRENCY_SYMBOLS.get(symbol, symbol.upper())
+
+
+# board labels -> vocabulary
 
 
 def most_remote_mode(modes, remote: str, hybrid: str, onsite: str = r"(?s).") -> str:

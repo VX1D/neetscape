@@ -45,6 +45,13 @@ All of them follow the same rules.
    `country="any"` for boards serving every country (they receive the searched country in
    `r.params["country"]`, like `linkedin.py`), `country="intl"` for international remote-only boards
    (`feeds.py`). A worked example: [`neetscape/countries/de/boards/arbeitnow.py`](neetscape/countries/de/boards/arbeitnow.py).
+   Every adapter has the same layout (described in the template): the dated "verified live" docstring,
+   constants and the board's vocabulary tables, small functions per card field, then the class. Use the
+   shared helpers instead of writing your own: `neetscape/boards/pages.py` (dates `date_of`, pay text
+   `pay_range`, places, `with_query`, embedded JSON `script_json` / `page_script_json` / `json_at` /
+   `nuxt_data`, markup `html_field`, board labels -> vocabulary `most_remote_mode`, `labelled_contracts`,
+   `worktime_from_labels`, `prefix_level`, `lowest_level`) and `base.py` (`with_params`, `narrowed`).
+   A country's shared label tables and `LANGS` live in its `boards/vocab.py`.
    Optional parts, when the board needs them:
    - `Caps(whole_listing=True)`: one response is the request's whole listing (a feed, a whole-category
      download), so fetching it completes the request. Otherwise a request is complete only on an
@@ -62,10 +69,10 @@ All of them follow the same rules.
      fetches it again N times before treating it as the end;
    - `min_interval = {"host": seconds}`: a longer minimum gap for a board that throttles (the
      profile's `politeness.min_interval_s` still overrides it);
-   - `posting(page)`: posting fields from the source of an offer page; the default reads schema.org
-     `JobPosting` JSON-LD. Override it when the JSON-LD lacks the body or is missing, to read the
-     board's embedded data. Return only the posting body, never page chrome (menus, cookie banners,
-     similar offers);
+   - `posting_body(page)`: `posting(page)` reads the posting fields of an offer page from its schema.org
+     `JobPosting` JSON-LD. When the JSON-LD lacks the body or is missing, return the body from the
+     board's embedded data here (plain text; see `indeed.py`, `pracuj.py`). Return only the posting
+     body, never page chrome (menus, cookie banners, similar offers);
    - `posting_url(url)` / `posting_text(raw)`: a JSON posting API fetched over plain HTTP instead of
      the offer page;
    - `posting_selector`: a CSS selector of the posting body on the rendered offer page, used only when
