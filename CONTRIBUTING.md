@@ -111,7 +111,7 @@ All of them follow the same rules.
    Check a vocabulary change on a real database rather than with unit tests:
    `python tests/infer_audit.py COPY.db --dump-stored before.json`, change, then `--rederive before.json`
    lists every changed decision with sample titles.
-3. Add the country to the `country` enums in `neetscape/profile/schema.json` (a test compares them).
+3. Add the country to the `country` enum (`$defs/country`) in `neetscape/profile/schema.json` (a test compares it with the registry).
 4. Add at least two boards (see above) under `neetscape/countries/<cc>/boards/` (its `__init__.py`
    imports them and lists them in `__all__`), and presets under
    `neetscape/countries/<cc>/presets/` with amounts in the country's currency.

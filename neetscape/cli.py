@@ -160,7 +160,7 @@ def _ids(a, store: Store, profile, run_id: int) -> list[int]:
 
 def _marked_ids(store: Store, run_id: int) -> list[int]:
     """Marked offers (not rejected/ignored), of any run, whose posting is missing (never fetched or failed)."""
-    offers = (store.offer(m["url"]) for m in store.tracked(run_id, hidden=False))
+    offers = (store.offer(m["url"]) for m in store.tracked(run_id, include_hidden=False))
     return [o["id"] for o in offers if o and store.needs_posting(o["id"])]
 
 

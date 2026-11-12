@@ -57,7 +57,8 @@ class FetchError(Exception):
 
 def _http_get(url: str, accept: str, language: str = "en", headers: dict | None = None,
               body: str | None = None) -> tuple[int, str]:
-    """GET, or POST when `body` is given (its Content-Type comes from `headers`)."""
+    """GET, or POST when `body` is given (its Content-Type comes from `headers`). A timeout or a connection
+    failure is status 0: transient, retried like a browser fetch that failed."""
     req = urllib.request.Request(url, data=body.encode() if body is not None else None,
                                  headers={"User-Agent": UA, "Accept": accept, "Accept-Language": language, **(headers or {})})
     try:
@@ -65,6 +66,8 @@ def _http_get(url: str, accept: str, language: str = "en", headers: dict | None 
             return r.status, r.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as e:
         return e.code, ""
+    except OSError:  # URLError (DNS, refused, reset), timeouts
+        return 0, ""
 
 
 BACKOFF_429 = 15  # seconds a host is held after answering 429 (times the attempt number)

@@ -7,13 +7,20 @@ offline on recorded fixtures. Whatever is not pushed to the board is still check
 """
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass, field, replace
 from typing import ClassVar
 
 from ..model import Offer, Search, Where
 from ..posting import parse_posting
-from ..store import request_key
 
+
+
+def request_key(board: str, keyword: str | None, params: dict) -> str:
+    """Identity of a request across runs: a hash of its board, phrase and parameters."""
+    raw = json.dumps([board, keyword, sorted(params.items())], ensure_ascii=False)
+    return hashlib.sha1(raw.encode()).hexdigest()[:16]
 
 @dataclass(frozen=True)
 class Caps:

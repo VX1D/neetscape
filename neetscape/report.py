@@ -157,7 +157,7 @@ def _run_stats(store: Store, run_id: int) -> list[str]:
 
 
 def _tracked_section(store: Store, run_id: int) -> list[str]:
-    marked = store.tracked(run_id, hidden=False)
+    marked = store.tracked(run_id, include_hidden=False)
     if not marked:
         return []
     out = ["## Tracked offers", "", "| Status | Offer | Since | Still listed | Note |", "|---|---|---|---|---|"]

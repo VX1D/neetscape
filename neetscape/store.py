@@ -14,7 +14,6 @@ matched rules, tags), `rejections` (v3) the ones that fail it with their reasons
 from __future__ import annotations
 
 import datetime as dt
-import hashlib
 import json
 import re
 import sqlite3
@@ -22,6 +21,8 @@ from pathlib import Path
 
 from . import country as countries
 from . import infer
+from .boards import REGISTRY
+from .boards.base import request_key
 from .model import Offer, canonical_contract, norm, norm_company, parse_date
 
 MARK_STATUSES = ("shortlisted", "applied", "interview", "offer", "rejected", "ignored")
@@ -182,11 +183,6 @@ def now() -> str:
     return dt.datetime.now().isoformat(timespec="seconds")
 
 
-def request_key(board: str, keyword: str | None, params: dict) -> str:
-    """Identity of a request across runs: a hash of its board, phrase and parameters."""
-    raw = json.dumps([board, keyword, sorted(params.items())], ensure_ascii=False)
-    return hashlib.sha1(raw.encode()).hexdigest()[:16]
-
 
 class Store:
     """`readonly` opens an existing database for reading only; a database of an older schema is migrated
@@ -298,8 +294,10 @@ class Store:
                     return partners[0]["id"]
         else:
             hay = norm(o.snippet + " " + o.title)
-            # the first in key order (read from the unique index) of this title's companies named in the card
-            keys = self.q("SELECT dedup_key FROM clusters WHERE dedup_key LIKE ? ORDER BY dedup_key", title + "|%")
+            # the first in key order of this title's companies named in the card; a range on the unique index
+            # ("title|" <= key < "title}", "}" follows "|"), not a scan
+            keys = self.q("SELECT dedup_key FROM clusters WHERE dedup_key >= ? AND dedup_key < ? ORDER BY dedup_key",
+                          title + "|", title + "}")
             company = next((c for c in (r[0].partition("|")[2] for r in keys) if c and c in hay), "")
         key = f"{title}|{company}"
         row = self._one("SELECT id FROM clusters WHERE dedup_key=?", key)
@@ -352,7 +350,6 @@ class Store:
         """Derive the inferred fields (infer.derive) of some offers, or of all, again from their observations: the
         adapter's facts, the title and card text, the requests that found them and the fetched posting. Returns
         how many offers changed."""
-        from .boards import REGISTRY  # boards import the store
         if offer_ids is not None and not offer_ids:
             return 0
         home = self.run_country() or "pl"
@@ -515,11 +512,11 @@ class Store:
         self.db.commit()
         return self._one("SELECT * FROM tracked WHERE url=?", url)
 
-    def tracked(self, run_id: int | None = None, hidden: bool = True) -> list[sqlite3.Row]:
+    def tracked(self, run_id: int | None = None, include_hidden: bool = True) -> list[sqlite3.Row]:
         """Latest mark per URL with the offer's title and company; `listed` says whether it is in the current
         state as of `run_id` ("yes"), marked "gone", or "no longer seen" (its board's latest crawl did not find
-        it). `hidden=False` leaves out rejected/ignored marks."""
-        hide = "" if hidden else "WHERE t.status NOT IN (" + ",".join(f"'{s}'" for s in HIDDEN) + ")"
+        it). `include_hidden=False` leaves out rejected/ignored marks."""
+        hide = "" if include_hidden else "WHERE t.status NOT IN (" + ",".join(f"'{s}'" for s in HIDDEN) + ")"
         return self._with_current(f"""
             SELECT t.*, o.title, o.company,
                    CASE WHEN o.id IN (SELECT offer_id FROM cur) THEN 'yes' WHEN o.gone_at IS NOT NULL THEN 'gone'

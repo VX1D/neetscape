@@ -40,7 +40,7 @@ Adapters live in `neetscape/countries/<cc>/boards/` (one module per board) and, 
 (LinkedIn, international feeds), in `neetscape/boards/`, next to the code all adapters use (`base`, `fetch`,
 `pages`). A board declares `Caps`, turns a search into `Request`s,
 builds page URLs and parses raw pages into offers with a pure `parse()` function tested on
-recorded fixtures. A board may also read postings itself (`posting()`, e.g. from its embedded
+recorded fixtures. A board may also read the posting body itself (`posting_body()`, e.g. from its embedded
 data), point to a posting API, declare a CSS selector for the posting body, and declare a minimum
 interval between requests. [CONTRIBUTING.md](../CONTRIBUTING.md) explains how to add or fix one.
 
