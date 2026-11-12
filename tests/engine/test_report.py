@@ -68,3 +68,75 @@ def test_rejections_are_stored_with_reasons(tmp_path):
     assert [tuple(r) for r in rows] == [("2", "all", "mode onsite")]
     assert db.verdicts(rid, db.offer("https://justjoin/2")["id"]) == {"all": ["mode onsite"]}
     assert db.verdicts(rid, db.offer("https://justjoin/1")["id"])["all"] == []
+
+
+def test_html_report_embeds_data_and_review(tmp_path):
+    import json
+    import re
+    db = Store(tmp_path / "j.db")
+    rid = db.start_run({}, [])
+    _seen(db, rid, [_job("justjoin", "1", title="AI </script><b>x</b>"), _job("justjoin", "2", title="Helpdesk", company="Beta")])
+    ev.evaluate(db, PROFILE, rid)
+    db.mark("https://justjoin/2", "shortlisted", note="why: <fits>\nrisk: none")
+    report.write_reports(db, PROFILE, rid, tmp_path / "out")
+    page = (tmp_path / "out" / "REPORT.html").read_text()
+    data = json.loads(re.search(r'<script type="application/json" id=data>(.*?)</script>', page, re.S).group(1))
+    assert {d["title"] for d in data} == {"AI </script><b>x</b>", "Helpdesk"}    # JSON survives a hostile title
+    assert "why: &lt;fits&gt;" in page and "shortlisted (1)" in page               # the review, escaped
+    assert page.count("<script") == 2
+
+
+def test_html_report_data_cannot_reshape_its_script_block(tmp_path):
+    import json
+    import re
+    db = Store(tmp_path / "j.db")
+    rid = db.start_run({}, [])
+    hostile = "AI <!--<script> x"   # in script data, "<!--<script>" would make the next </script> not close the block
+    _seen(db, rid, [_job("justjoin", "1", title=hostile)])
+    ev.evaluate(db, PROFILE, rid)
+    report.write_reports(db, PROFILE, rid, tmp_path / "out")
+    page = (tmp_path / "out" / "REPORT.html").read_text()
+    block = re.search(r'<script type="application/json" id=data>(.*?)</script>', page, re.S).group(1)
+    assert "<" not in block and json.loads(block)[0]["title"] == hostile
+
+
+def test_html_review_says_why_a_marked_posting_is_missing(tmp_path):
+    db = Store(tmp_path / "j.db")
+    rid = db.start_run({}, [])
+    _seen(db, rid, [_job("justjoin", k, title=f"Job {k}", company=k) for k in "1234"])
+    ev.evaluate(db, PROFILE, rid)
+    db.save_detail(2, 200, "", {}, {})
+    db.save_detail(3, 0, "ERROR TimeoutError: slow", {}, {})
+    db.save_detail(4, 410, "", {}, {})
+    for k in "1234":
+        db.mark(f"https://justjoin/{k}", "shortlisted", note='a & b "quoted" <tag>')
+    db.mark("https://elsewhere.example/job?a=1&b=2", "applied")
+    report.write_reports(db, PROFILE, rid, tmp_path / "out")
+    page = (tmp_path / "out" / "REPORT.html").read_text()
+    assert all(f"posting {why}" in page for why in ("not fetched", "empty", "failed", "gone (HTTP 410)"))
+    assert 'a &amp; b &quot;quoted&quot; &lt;tag&gt;' in page and "job?a=1&amp;b=2" in page
+
+
+def test_markdown_tables_survive_pipes_and_line_breaks(tmp_path):
+    db = Store(tmp_path / "j.db")
+    rid = db.start_run({}, [])
+    _seen(db, rid, [_job("justjoin", "1", title="Support | Helpdesk")])
+    ev.evaluate(db, PROFILE, rid)
+    db.mark("https://justjoin/1", "shortlisted", note="fits | n8n\nrisk: German")
+    text = report.write_reports(db, PROFILE, rid, tmp_path / "out").read_text()
+    tracked = text[text.index("## Tracked offers"):].splitlines()[4]
+    assert tracked.count(" | ") == 4 and tracked.endswith("fits / n8n risk: German |")
+
+
+def test_html_report_links_only_web_urls(tmp_path):
+    import json
+    import re
+    db = Store(tmp_path / "j.db")
+    rid = db.start_run({}, [])
+    _seen(db, rid, [Offer(board="justjoin", key="1", url="javascript:alert(1)", title="Job", mode="remote")])
+    ev.evaluate(db, PROFILE, rid)
+    db.mark("javascript:alert(1)", "shortlisted")
+    report.write_reports(db, PROFILE, rid, tmp_path / "out")
+    page = (tmp_path / "out" / "REPORT.html").read_text()
+    data = json.loads(re.search(r'<script type="application/json" id=data>(.*?)</script>', page, re.S).group(1))
+    assert data[0]["url"] == "" and 'href="javascript' not in page

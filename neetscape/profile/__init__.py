@@ -57,6 +57,7 @@ class Profile:
     min_score: int = 0
     min_interval: dict = field(default_factory=dict)
     retries: int = 2
+    blacklist: dict = field(default_factory=dict)   # companies/urls/text: compiled regexes; action: drop|flag
     fx: dict = field(default_factory=lambda: dict(countries.get("pl").fx))
     country: Country = field(default_factory=lambda: countries.get("pl"))
 
@@ -209,10 +210,14 @@ def validate(raw: dict) -> Profile:
     if review.get("mode", "auto") not in ("auto", "listing"):
         raise ProfileError("review.mode must be 'auto' or 'listing'")
     pol = raw.get("politeness") or {}
+    bl = raw.get("blacklist") or {}
+    if bl.get("action", "drop") not in ("drop", "flag"):
+        raise ProfileError("blacklist.action must be 'drop' or 'flag'")
+    blacklist = {k: _rx(f"blacklist.{k}", bl.get(k)) for k in ("companies", "urls", "text")} | {"action": bl.get("action", "drop")}
     return Profile(raw=raw, searches=searches, boards=boards, rules=rules, tags=tags, sort=sort,
                    review_mode=review.get("mode", "auto" if rules else "listing"),
                    details_top=int(review.get("details_top", 60)), min_score=int(review.get("min_score", 0)),
-                   min_interval=pol.get("min_interval_s") or {}, retries=int(pol.get("retries", 2)),
+                   min_interval=pol.get("min_interval_s") or {}, retries=int(pol.get("retries", 2)), blacklist=blacklist,
                    fx={**home.fx, **(raw.get("fx") or {})}, country=home)
 
 
@@ -261,7 +266,7 @@ def combine(names: list[str], country: str = "pl") -> dict:
         p = preset(name, country)
         out.setdefault("label", p.get("label"))
         out["searches"] = out.get("searches", []) + p.get("searches", [])
-        for k in ("candidate", "boards", "defaults", "rank", "review", "politeness"):
+        for k in ("candidate", "boards", "defaults", "rank", "blacklist", "review", "politeness"):
             if k in p and k not in out:
                 out[k] = p[k]
     if len(names) > 1:

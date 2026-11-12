@@ -26,6 +26,17 @@ def _text(o, fields=_TEXT_FIELDS) -> str:
     return " ".join(str(o[k] or "") for k in fields)
 
 
+def _posting(o) -> str:
+    """The fetched posting text (`details`), "" until it is fetched and when the fetch failed (`ERROR ...`)."""
+    text = (o["posting"] if "posting" in o.keys() else "") or ""
+    return "" if text.startswith("ERROR") else text
+
+
+def _filter_text(o) -> str:
+    """What `text_exclude` and the blacklist's `text` read: the card fields, locations and the posting."""
+    return _text(o, (*_TEXT_FIELDS, "locations")) + " " + _posting(o)
+
+
 class _Verdict:
     """Collects failing reasons; `unknown` applies the search's policy for a field the offer lacks."""
 
@@ -120,8 +131,10 @@ def _check_patterns(o, s: Search, v: _Verdict) -> None:
         v.fail("title not included")
     if any(rx.search(title) for rx in s.title_exclude):
         v.fail("title excluded")
-    if any(rx.search(_text(o, (*_TEXT_FIELDS, "locations"))) for rx in s.text_exclude):
-        v.fail("text excluded")
+    if s.text_exclude:
+        text = _filter_text(o)
+        if any(rx.search(text) for rx in s.text_exclude):
+            v.fail("text excluded")
     if s.category_include and not any(rx.search(o["category"] or "") for rx in s.category_include):
         v.fail("category not included")
 
@@ -142,6 +155,23 @@ def check(o, s: Search, today: dt.date | None = None, hours_per_month: int = HOU
     return not v.reasons, v.reasons
 
 
+def blacklisted(o, profile: Profile) -> list[str]:
+    """Reasons the offer matches the profile's own blacklist (company, URL, or text incl. the fetched posting)."""
+    bl = profile.blacklist
+    if not bl:
+        return []
+    reasons = [f"blacklisted company /{rx.pattern}/" for rx in bl["companies"] if rx.search(o["company"] or "")]
+    reasons += [f"blacklisted url /{rx.pattern}/" for rx in bl["urls"] if rx.search(o["url"] or "")]
+    text = _filter_text(o)
+    return reasons + [f"blacklisted text /{rx.pattern}/" for rx in bl["text"] if rx.search(text)]
+
+
+def _blacklist_verdict(o, profile: Profile) -> tuple[list[str], bool]:
+    """(blacklist reasons, whether they drop the offer from every search) under the profile's `action`."""
+    black = blacklisted(o, profile)
+    return black, bool(black) and profile.blacklist.get("action", "drop") == "drop"
+
+
 def rank(o, profile: Profile, s: Search) -> tuple[int, list[str], list[str]]:
     """Score (rule weights plus the search's boost), the labels of matched rules, and tag ids."""
     title, text = o["title"] or "", _text(o)
@@ -156,10 +186,15 @@ def evaluate(store: Store, profile: Profile, run_id: int) -> dict[str, int]:
     passed, rejected, counts = [], [], {s.id: 0 for s in profile.searches}
     hours = profile.country.hours_per_month
     for o in store.run_offers(run_id):
+        black, drop = _blacklist_verdict(o, profile)
         for s in profile.searches:
             ok, reasons = check(o, s, hours_per_month=hours)
+            if drop:
+                ok, reasons = False, black + reasons
             if ok:
                 score, why, tags = rank(o, profile, s)
+                if black:  # action "flag": kept, but visible
+                    why, tags = why + black, tags + ["!blacklist"]
                 passed.append((o["id"], s.id, score, json.dumps({"why": why, "tags": tags}, ensure_ascii=False)))
                 counts[s.id] += 1
             else:
@@ -168,8 +203,26 @@ def evaluate(store: Store, profile: Profile, run_id: int) -> dict[str, int]:
     return counts
 
 
+def offer_row(store: Store, offer_id: int, run_id: int | None = None):
+    """An offer as `evaluate` reads it, with the keyword evidence of `run_id` (any run when the offer was not
+    sighted in it); None for an offer never sighted."""
+    rows = store.run_offers(run_id, offer_id) or store.run_offers(None, offer_id)
+    return rows[0] if rows else None
+
+
 def explain(store: Store, profile: Profile, offer_id: int, run_id: int | None = None) -> dict[str, list[str]]:
-    """Why an offer passes ([]) or fails each search under the current profile, with the keyword evidence
-    of `run_id` (any run when the offer was not sighted in it)."""
-    row = (store.run_offers(run_id, offer_id) or store.run_offers(None, offer_id))[0]
-    return {s.id: check(row, s, hours_per_month=profile.country.hours_per_month)[1] for s in profile.searches}
+    """Why an offer passes ([]) or fails each search under the current profile (see `offer_row`); {} for an
+    offer never sighted."""
+    row = offer_row(store, offer_id, run_id)
+    if row is None:
+        return {}
+    black, drop = _blacklist_verdict(row, profile)
+    black = black if drop else []
+    return {s.id: black + check(row, s, hours_per_month=profile.country.hours_per_month)[1] for s in profile.searches}
+
+
+def flagged(store: Store, profile: Profile, offer_id: int, run_id: int | None = None) -> list[str]:
+    """Blacklist reasons of an offer the profile keeps (`action: flag`)."""
+    row = offer_row(store, offer_id, run_id)
+    black, drop = _blacklist_verdict(row, profile) if row is not None else ([], False)
+    return [] if drop else black

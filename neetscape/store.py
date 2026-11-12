@@ -62,10 +62,16 @@ MIGRATIONS = [
     CREATE TABLE rejections(run_id INTEGER, offer_id INTEGER, search_id TEXT, reasons TEXT,
                             PRIMARY KEY(run_id, offer_id, search_id));
     """,
+    """
+    CREATE INDEX offers_url ON offers(url);  -- marks, reports and `--marked` look offers up by URL or key
+    CREATE INDEX offers_key ON offers(key);
+    """,
 ]
 
 MARK_STATUSES = ("shortlisted", "applied", "interview", "offer", "rejected", "ignored")
 HIDDEN = ("rejected", "ignored")
+GONE = (404, 410)  # HTTP statuses of a posting that mark its offer gone
+_POSTING_OK = "d.http_status = 200 AND d.text != ''"  # a stored posting with text (failures keep status 0 / 4xx)
 
 
 _EMPTY = (None, "", "unknown", "[]")  # stored values that mean "the board did not say"
@@ -233,9 +239,11 @@ class Store:
 
     def run_offers(self, run_id: int | None, offer_id: int | None = None) -> list[sqlite3.Row]:
         """Offers sighted in a run (any run when `run_id` is None), optionally one offer, with the keywords of
-        the requests that found them (`keywords`) and their cluster's first run (`cluster_first_run`)."""
+        the requests that found them (`keywords`), their cluster's first run (`cluster_first_run`) and the fetched
+        posting text (`posting`, NULL until `details`)."""
         return self.q(f"""
-            SELECT o.*, GROUP_CONCAT(DISTINCT r.keyword) AS keywords, c.first_seen_run AS cluster_first_run
+            SELECT o.*, GROUP_CONCAT(DISTINCT r.keyword) AS keywords, c.first_seen_run AS cluster_first_run,
+                   (SELECT d.text FROM details d WHERE d.offer_id = o.id) AS posting
             FROM offers o JOIN sightings s ON s.offer_id = o.id JOIN requests r ON r.id = s.request_id
             JOIN clusters c ON c.id = o.cluster_id
             WHERE (? IS NULL OR r.run_id = ?) {"AND o.id = ?" if offer_id else ""} GROUP BY o.id""",
@@ -263,9 +271,24 @@ class Store:
     def save_detail(self, offer_id: int, status: int, text: str, jsonld: dict, hints: dict) -> None:
         self.db.execute("INSERT OR REPLACE INTO details VALUES (?,?,?,?,?,?)",
                         (offer_id, now(), status, text, json.dumps(jsonld, ensure_ascii=False), json.dumps(hints, ensure_ascii=False)))
-        if status in (404, 410):
+        if status in GONE:
             self.db.execute("UPDATE offers SET gone_at=? WHERE id=? AND gone_at IS NULL", (now(), offer_id))
         self.db.commit()
+
+    def posted_clusters(self) -> set[int]:
+        """Clusters (jobs) of which some offer has a stored posting with text."""
+        return {r[0] for r in self.q(f"SELECT DISTINCT o.cluster_id FROM details d JOIN offers o ON o.id = d.offer_id WHERE {_POSTING_OK}")}
+
+    def needs_posting(self, offer_id: int) -> bool:
+        """No posting with text stored yet and the offer page was not found gone; a failed or blocked fetch may
+        be retried."""
+        return not self.q(f"SELECT 1 FROM details d WHERE d.offer_id = ? AND ({_POSTING_OK} OR d.http_status IN "
+                          f"({','.join(map(str, GONE))}))", offer_id)
+
+    def board_stats(self, run_id: int) -> list[sqlite3.Row]:
+        """Per board of a run: requests `n`, `pages`, `found`, `complete` and `errors` (requests that failed)."""
+        return self.q("""SELECT board, COUNT(*) n, SUM(pages) pages, SUM(found) found, SUM(complete) complete,
+                         SUM(error != '') errors FROM requests WHERE run_id=? GROUP BY board""", run_id)
 
     @staticmethod
     def _is_id(ref: str | int) -> bool:

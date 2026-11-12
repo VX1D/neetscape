@@ -40,3 +40,14 @@ def test_linkedin_country_location(cc, location):
     params = {"remote": True} | ({"country": cc} if cc else {})
     assert REGISTRY["linkedin"].page_url(Request("linkedin", "t", None, params), 1) == (
         linkedin.SEARCH + f"keywords=&location={location}&start=0")
+
+
+def test_linkedin_posting_is_the_description_block_only():
+    from neetscape.boards.linkedin import LinkedIn
+    page = (Path(__file__).parents[1] / "fixtures" / "shared" / "linkedin_posting.html").read_text()
+    meta = LinkedIn.posting_fields(page)
+    text = meta["description"]
+    assert meta["source"] == "api" and text.startswith("Location: Warsaw, Mazowieckie, Poland\nSeniority level: Associate")
+    assert "Employment type: Full-time" in text and len(text) > 2000
+    assert "Report this job" not in text and "Similar jobs" not in text   # page chrome around the block
+    assert LinkedIn.posting_fields("<html>login wall</html>")["description"] == ""

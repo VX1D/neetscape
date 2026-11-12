@@ -20,8 +20,13 @@ CV, writes the profile, runs the crawl, reads the postings and gives you a short
   tracked between runs.
 - **Countries as plug-ins**: Poland and Germany today, each with its own boards, currency,
   language and presets. Adding a country is adding a directory.
-- **Two-pass review**: skim thousands of offers as a listing, then open only the postings worth reading.
-- **Local and polite**: your data stays on your machine; public pages only, no logins, rate-limited.
+- **Postings only for matches**: listing cards are filtered first; full postings are fetched only
+  for matching offers (once per job), and then settle unknown work mode, hours and contracts.
+- **Your own blacklist**: companies, links or phrases to drop or flag.
+- **Review you can share**: decisions recorded with `neetscape mark` appear on top of `REPORT.html`,
+  above a filterable, sortable table of every match.
+- **Local and polite**: your data stays on your machine; public pages only, no logins, rate-limited
+  per host.
 
 ## Quick start
 
@@ -48,7 +53,7 @@ neetscape show 12                  # read one offer
 
 | Country | Boards |
 |---|---|
-| Poland | justjoin.it, rocketjobs.pl, pracuj.pl, nofluffjobs, theprotocol.it, bulldogjob, solid.jobs, Indeed, useme, OLX |
+| Poland | justjoin.it, rocketjobs.pl, pracuj.pl, nofluffjobs, theprotocol.it, bulldogjob, solid.jobs, Indeed, useme, OLX, gowork.pl, praca.pl |
 | Germany | Arbeitnow, Bundesagentur für Arbeit (Jobsuche) |
 | Any country | LinkedIn (public guest search) |
 | International, opt-in | remoteok, We Work Remotely |
@@ -62,7 +67,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 |---|---|
 | [Getting started](docs/getting-started.md) | installation, the full command set, presets |
 | [Search profile](docs/profile.md) | how to describe what you are looking for |
-| [How it works](docs/how-it-works.md) | architecture, crawling, de-duplication, the database and SQL recipes |
+| [How it works](docs/how-it-works.md) | architecture, crawling, postings as a second stage, de-duplication, reports, the database and SQL recipes |
 | [Boards and countries](docs/boards-and-countries.md) | supported boards, country packages, responsible use, limitations |
 | [Testing](docs/testing.md) | offline tests, affected-only runs, live checks |
 | [AGENTS.md](AGENTS.md) | the workflow a coding agent follows |

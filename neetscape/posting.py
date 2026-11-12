@@ -1,4 +1,4 @@
-"""Extract structured data from an offer page: schema.org JobPosting (JSON-LD) first, page text as fallback."""
+"""Read the posting of an offer page from its schema.org JobPosting (JSON-LD); HTML fragments to plain text."""
 from __future__ import annotations
 
 import html as htmllib

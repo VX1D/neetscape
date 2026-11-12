@@ -1,9 +1,16 @@
 """Polish."""
 
 VOCAB = {
+    "first": {
+        "mode": [
+            ("remote", r"100\s*% ?zdaln|w pełni zdaln|całkowicie zdaln|wyłącznie zdaln|tylko zdaln"),
+            ("remote", r"zdaln\w*\s*(?:/|,|lub|albo)\s*(?:praca\s+)?hybryd|hybryd\w*\s*(?:/|,|lub|albo)\s*(?:praca\s+)?zdaln"),  # a choice: remote is offered
+            ("remote", r"miejsce pracy:[^:]{0,80}?praca zdalna"),  # OLX lists the offered work places
+        ],
+    },
     "mode": {
-        "remote": [r"100% ?zdaln", r"w pełni zdaln", r"całkowicie zdaln", r"praca zdalna", r"\bzdalnie\b", r"z domu"],
-        "hybrid": [r"hybryd"],
+        "remote": [r"praca zdalna", r"\bzdalnie\b", r"z domu"],
+        "hybrid": [r"(?<!chmury )(?<!chmurze )hybryd(?!\w*\s+(?:chmur|aplikac|środowisk|infrastruktur))"],
         "onsite": [r"stacjonarn", r"w biurze"],
     },
     "worktime": {
@@ -12,8 +19,8 @@ VOCAB = {
         "full_time": [r"pełny etat", r"pelny etat", r"pełen etat"],
     },
     "contract": {
-        "employment": [r"umowa o pracę", r"\buop\b"],
-        "b2b": [r"\bb2b\b", r"samozatrudnienie", r"kontrakt"],
+        "employment": [r"umowa o pracę", r"\buop\b", r"umowa na okres próbny", r"umowa na czas określony", r"umowa na zastępstwo"],
+        "b2b": [r"\bb2b\b", r"samozatrudnienie", r"kontrakt", r"podwykonawstwo"],
         "mandate": [r"umowa zlecenie", r"\bzlec\.?\b", r"\buz\b"],
         "specific_task": [r"umowa o dzieło", r"\buod\b"],
         "internship": [r"staż", r"praktyk"],
@@ -38,10 +45,20 @@ VOCAB = {
 EXAMPLES = [
     ("Praca zdalna, pełny etat", "mode", "remote"),
     ("Hybrydowo, 2 dni w biurze", "mode", "hybrid"),
+    ("Praca hybrydowa, 2 dni zdalnie", "mode", "hybrid"),
+    ("Model hybrydowy (praca zdalnie 3 dni w tygodniu)", "mode", "hybrid"),
+    ("Praca zdalna lub hybrydowa", "mode", "remote"),
+    ("Miejsce pracy: Praca hybrydowa, Praca zdalna", "mode", "remote"),
+    ("Miejsce pracy: Praca hybrydowa, W siedzibie firmy, Praca zdalna", "mode", "remote"),
+    ("Miejsce pracy: Praca hybrydowa Odświeżono dnia 09 listopada", "mode", "hybrid"),
+    ("100% zdalnie, raz w kwartale spotkanie w biurze", "mode", "remote"),
+    ("Administrator chmury hybrydowej, praca zdalna", "mode", "remote"),
     ("Praca stacjonarna w Krakowie", "mode", "onsite"),
     ("Praca dodatkowa, pół etatu", "worktime", "part_time"),
     ("Umowa o pracę lub B2B", "contract", ["employment", "b2b"]),
     ("Umowa zlecenie", "contract", ["mandate"]),
+    ("Umowa na okres próbny", "contract", ["employment"]),
+    ("Umowa na czas określony", "contract", ["employment"]),
     ("Umowa o dzieło", "contract", ["specific_task"]),
     ("Młodszy specjalista ds. obsługi klienta", "level", "junior"),
     ("Kierownik sklepu", "level", "manager"),

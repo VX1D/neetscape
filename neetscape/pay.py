@@ -143,3 +143,13 @@ def parse_pay(text: str, fx: dict | None = None, base: str = "PLN", assume: str 
         if best is None or hi_m > best[1]:
             best = (lo_m, hi_m)
     return best
+
+
+def pay_label(d) -> str:
+    """A stored offer's pay as reports show it: "9.0–12.0k" per month, the text of a project budget, "—" if none."""
+    if d.get("pay_period") == "project":
+        return (d.get("pay_text") or "project")[:24]
+    lo, hi = d.get("pay_min"), d.get("pay_max")
+    if hi is None:
+        return "—"
+    return f"{lo / 1000:.1f}–{hi / 1000:.1f}k" if lo != hi else f"{hi / 1000:.1f}k"

@@ -14,7 +14,6 @@ Contract = Literal["employment", "b2b", "mandate", "specific_task", "internship"
                    "temp_agency", "other"]
 Level = Literal["intern", "junior", "mid", "senior", "lead", "manager", "unknown"]
 
-WORK_MODES = ("remote", "hybrid", "onsite", "unknown")
 WORKTIMES = ("full_time", "part_time", "flexible", "unknown")
 # one shared vocabulary for every country; local words map onto it (Country.contract_aliases)
 CONTRACTS = ("employment", "b2b", "mandate", "specific_task", "internship", "freelance", "mini_job", "working_student",
@@ -35,6 +34,18 @@ def parse_date(value) -> date | None:
         return date.fromisoformat(str(value)[:10]) if value else None
     except ValueError:
         return None
+
+
+def days_old(value, today: date | None = None) -> int | None:
+    """Days since a stored date (see `parse_date`), None when unknown."""
+    d = parse_date(value)
+    return ((today or date.today()) - d).days if d else None
+
+
+def age_label(value) -> str:
+    """A stored date as reports show it: "12d", "?" when unknown."""
+    n = days_old(value)
+    return "?" if n is None else f"{n}d"
 
 
 def fold(s: str) -> str:

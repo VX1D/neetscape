@@ -8,7 +8,7 @@ The diagram source is [`docs/flow.mmd`](flow.mmd) (rendered: [`docs/flow.png`](f
 flowchart TD
     CV["CV (PDF/TXT) + a few answers"] --> AG
     subgraph AG["Coding agent (Claude Code, Codex) — follows AGENTS.md"]
-        A1["read CV, ask what changes the search<br/>(country, remote/city, pay, contracts, hours)"] --> A2["neetscape init --country CC --preset …<br/>edit profile.json: searches = where · what · filters · boost"]
+        A1["read CV, ask what changes the search<br/>(country, remote/city, pay, contracts, hours)"] --> A2["neetscape init --country CC --preset …<br/>edit profile.json: searches = where · what · filters · boost<br/>optional blacklist (companies · urls · text)"]
     end
     A2 --> CHK["neetscape check · neetscape plan<br/>(validate, show requests per board, no network)"]
 
@@ -22,29 +22,35 @@ flowchart TD
     CHK --> PLAN["planner: search × board capabilities<br/>push supported conditions, dedupe identical requests"]
 
     PLAN --> CRAWL
-    subgraph CRAWL["neetscape run — crawler (per-host rate limiter, private browser on Xvfb)"]
+    subgraph CRAWL["stage 1: neetscape run — crawler (per-host rate limiter, board minimum intervals)"]
         direction LR
-        HT["http<br/>APIs · RSS · public guest API"]
-        BF["browser_fetch<br/>same-origin JSON"]
-        BR["browser_render<br/>result pages → cards"]
+        HT["http<br/>JSON APIs (GET/POST) · RSS ·<br/>server-rendered pages · guest API"]
+        BF["browser_fetch<br/>same-origin fetch in a private tab:<br/>embedded page data (__NEXT_DATA__, …)"]
     end
-    CRAWL -->|"store everything fetched<br/>stop: empty / no new / last page / known page"| DB[("SQLite runs/neetscape.db (one country)<br/>offers · clusters · sightings · requests<br/>evals · rejections · details · marks")]
+    CRAWL -->|"store every listing card<br/>stop: empty / short / 404 / no new / known page"| DB[("SQLite runs/neetscape.db (one country)<br/>offers · clusters · sightings · requests<br/>evals · rejections · details · marks")]
 
-    DB --> EVAL["eval: every condition re-checked locally<br/>pay → country currency/month · unknown keep/drop · rank rules<br/>pass → evals · fail → rejections (reasons)"]
+    DB --> EVAL["eval: every condition re-checked locally on the cards<br/>pay → country currency/month · unknown keep/drop · blacklist · rank rules<br/>pass → evals · fail → rejections (reasons)"]
     EVAL --> DB
-    DB --> OUT["runs/DATE-runN/<br/>REPORT.md · listing.tsv · offers.csv<br/>neetscape list [--group title] · neetscape sql (:run)"]
+    EVAL --> POST
+    subgraph POST["stage 2: postings, only for matches"]
+        P1["review.mode auto: top details_top matches<br/>whose job has no stored posting yet<br/>(on demand: details --pick / --top / --marked)"] --> P2["posting text: board API · posting() (JSON-LD / embedded data)<br/>· posting_selector · never the whole page"]
+        P2 --> P3["settle unknown mode / work time / contracts<br/>text_exclude + blacklist read the posting · eval again"]
+    end
+    P3 --> DB
+    DB --> OUT["runs/DATE-runN/<br/>REPORT.md · REPORT.html · listing.tsv · offers.csv<br/>neetscape list [--group title] · neetscape sql (:run)"]
 
     OUT --> REV
     subgraph REV["Coding agent — two-pass review"]
-        R1["pass 1: listing in chunks, list --group title,<br/>sql GROUP BY → candidate ids"] --> R2["neetscape details --pick ID,…<br/>(auto mode: top N opened by run)"]
+        R1["pass 1: listing in chunks, list --group title,<br/>sql GROUP BY → candidate ids"] --> R2["neetscape details --pick ID,…"]
         R2 --> R3["pass 2: neetscape show ID<br/>posting · pass/fail reasons per search<br/>verify remote · blockers · fit · pay"]
-        R3 --> R4["runs/shortlist.md<br/>apply now · side jobs · stretch · rejected"]
+        R3 --> R4["neetscape mark ID shortlisted --note 'why · risk'<br/>neetscape report → REPORT.html review"]
     end
-    R2 --> DB
+    R2 --> POST
+    R4 --> DB
     R4 --> USER(["You"])
     USER --> MARK["neetscape mark ID STATUS"]
     MARK --> DB
-    DB -.->|"next run: incremental crawl,<br/>only new clusters flagged, gone after complete requests"| CRAWL
+    DB -.->|"next run: incremental crawl, only new clusters flagged,<br/>postings opened only for new matches, gone after complete requests"| CRAWL
 ```
 
 1. **Plan.** Each board declares capabilities (keyword search, remote filter, city/radius,
@@ -52,29 +58,76 @@ flowchart TD
    into requests for every board, pushing only the conditions a board supports, and fetches
    identical requests once. A board that cannot serve a search (e.g. no city search, or a listing
    too large without keywords) is skipped with a warning shown by `neetscape plan`.
-2. **Crawl.** Boards run concurrently, requests within a board sequentially, all through a
-   per-host rate limiter. Transports: `http` (APIs, RSS), `browser_fetch` (same-origin requests
-   from a tab on the board) and `browser_render` (rendered result pages). The browser is a private
-   Chromium instance with its own profile on CDP port 9334, on `Xvfb` when available, otherwise
-   headless.
-3. **Store everything, filter on read.** Every fetched offer is stored. A pushed filter is used
-   as evidence (an offer from a remote-filtered request with no mode becomes `remote`), and then
-   every condition is re-checked locally, so capabilities affect crawl cost, never results, and a
-   profile change does not require a new crawl (`neetscape eval` + `neetscape report`).
+2. **Crawl the listings (stage 1).** Boards run concurrently, requests within a board sequentially,
+   all through a per-host rate limiter. Transports: `http` (JSON APIs over GET or POST, RSS feeds,
+   server-rendered result pages) and `browser_fetch` (a same-origin fetch from a tab on the board,
+   for boards that only serve a browser; the result is read from data embedded in the page, such
+   as `__NEXT_DATA__`). The browser is a private Chromium instance with its own profile on CDP port
+   9334, on `Xvfb` when available, otherwise headless.
+3. **Store everything, filter on read.** Every fetched listing card is stored. A pushed filter is
+   used as evidence (an offer from a remote-filtered request with no mode becomes `remote`), and
+   then every condition is re-checked locally, so capabilities affect crawl cost, never results, and
+   a profile change does not require a new crawl (`neetscape eval` + `neetscape report`).
 4. **Deduplicate.** The same job on several boards forms one cluster (normalised title and
    company); an offer is *new* when its cluster first appeared in this run.
-5. **Evaluate.** Every stored offer is checked against every search; passing offers go to `evals`
-   with a score, failing ones to `rejections` with the reasons (`mode onsite; title excluded`).
-6. **Review in two passes.** Pass 1 reads the listing (in chunks, grouped by title, sliced with SQL)
+5. **Evaluate.** Every stored offer is checked against every search and the profile's `blacklist`;
+   passing offers go to `evals` with a score, failing ones to `rejections` with the reasons
+   (`mode onsite; title excluded`).
+6. **Fetch postings for matches (stage 2).** See below.
+7. **Review in two passes.** Pass 1 reads the listing (in chunks, grouped by title, sliced with SQL)
    and picks candidate ids; `neetscape details --pick` fetches their postings. Pass 2 reads each
-   posting with `neetscape show ID` and decides. In `auto` mode `run` already opens the top
-   `details_top` postings; in `listing` mode it stops at `listing.tsv`.
+   posting with `neetscape show ID` and decides. Decisions are recorded with `neetscape mark`, and
+   `REPORT.html` shows them on top of the run's table.
+
+### Postings: the second stage
+
+Listing cards are cheap (dozens of offers per request) but thin: the work mode, work time and
+contract are often missing, and the card text is short. Postings are complete but cost one request
+each. neetscape therefore filters the cards first and fetches postings only for offers that
+already pass:
+
+- In `review.mode: "auto"`, `run` evaluates the cards, then fetches the postings of the top
+  `details_top` matches (by the listing order, `min_score` and above) whose job has no stored
+  posting yet, and evaluates again. A posting is fetched once per job across runs, so later runs
+  only open new matches. In `review.mode: "listing"` the run stops after the first evaluation.
+- On demand, `neetscape details` does the same for `--pick ID,...`, `--pick-file F`, `--top N` (the
+  top N matches without a stored posting) or `--marked` (offers marked with a status other than
+  `rejected`/`ignored` whose posting is not stored yet), then re-evaluates and rewrites the reports.
+
+What a posting changes:
+
+- It settles fields the card left unknown (never overwrites a known one): the work mode only from
+  strong signals (JSON-LD `jobLocationType: TELECOMMUTE`, explicit full-remote phrases, hybrid
+  words; a posting mentions "remote" for many reasons), the work time and the contract types.
+  Company and publication date are filled when the card had none.
+- `text_exclude` and the blacklist's `text` patterns also read the posting text.
+- So an offer can drop out once its posting is known: `details` logs how many offers no longer
+  pass, and `neetscape show ID` prints the reasons.
+
+Where the posting text comes from, first that applies (the source is stored with the posting):
+the text the listing already shipped (feeds); a board's JSON posting API or LinkedIn's guest
+posting endpoint, over plain HTTP; the offer page fetched in the private browser and read by the
+board's posting reader (schema.org `JobPosting` JSON-LD by default, or the board's embedded data);
+finally, only for boards that declare a CSS selector for the posting body, that element of the
+rendered page. The whole page is never used, so menus, cookie banners and "similar offers" never
+reach filters or hints. A 404/410 marks the offer gone; a 401/403/429 answer (a block or login wall) is
+stored with its status and the page is not rendered as a fallback.
+
+### Requests, completeness and politeness
 
 Incremental crawling: on boards sorted newest-first a request stops at a full page of offers
 already known from earlier runs (`--full` disables this). A request is *complete* when it ends on
-an empty, short or no-new-offers page; offers are marked gone only after a complete request with
-the same parameters no longer returns them, or when their posting returns 404/410. `run --resume`
-continues an interrupted run, skipping requests that already finished.
+an empty, short or no-new-offers page, when the board answers 404 for the page after the last one,
+or when the board's single response is its whole listing (feeds, whole-division downloads). Hitting
+the page cap (`max_pages`, `--limit-pages`) never counts as the end of a listing. Offers are marked
+gone only after a complete request with the same parameters no longer returns them, or when their
+posting returns 404/410. `run --resume` continues an interrupted run, skipping requests that
+already finished.
+
+Requests to one host are spaced by at least ~1.5 s with jitter, shared by crawling and posting
+fetches, with growing back-off on errors (longer on HTTP 429). A board that throttles harder
+declares its own minimum interval (theprotocol.it: 4 s); the profile's `politeness.min_interval_s`
+(`{"host": seconds}`) overrides both.
 
 ## Data
 
@@ -89,11 +142,17 @@ Everything lives in `runs/neetscape.db` (SQLite, schema versioned with `PRAGMA u
 | `sightings` | which request saw which offer on which page |
 | `evals` | offers that pass a search in a run, with score, matched rank rules and tags |
 | `rejections` | offers that fail a search in a run, with the reasons joined by `; ` (also shown by `neetscape show ID`) |
-| `details` | fetched posting text, JSON-LD and hints (remote, years, degree, languages) |
+| `details` | fetched posting text, HTTP status, posting fields with their `source`, and hints (fully remote, hybrid, years, degree, languages) |
 | `marks` | append-only decisions; view `tracked` holds the latest per URL |
 
 Each run also writes `runs/<date>-run<N>/` with `REPORT.md` (board stats, top offers per search,
-tracked offers, opened postings), `listing.tsv` and `offers.csv`.
+tracked offers, opened postings), `REPORT.html`, `listing.tsv` and `offers.csv`.
+
+`REPORT.html` is one self-contained page (no external assets). On top is the review: the latest
+mark per offer, grouped by status, with its note, key facts and the stored posting (collapsed), or
+a hint to run `neetscape details --marked` when the posting is not fetched. Below is a board table
+and every passing offer in a table that filters (text, search, mode, new only, hide marked) and
+sorts by any column in the browser. `neetscape report` rewrites it, e.g. after `neetscape mark`.
 
 `neetscape list` prints the same listing (one row per job, duplicates across boards merged) with
 filters: `--search ID`, `--new`, `--where "o.pay_max > 10000"` (an SQL condition on `offers o`),

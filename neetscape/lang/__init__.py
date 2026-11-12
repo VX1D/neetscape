@@ -15,15 +15,17 @@ Each module `<code>.py` (ISO 639-1) defines
 
 Patterns are case-insensitive. For one field, the patterns of all active languages are merged per value
 and values are tried in a fixed order (model order below), so adding a language never reorders another
-language's decisions. `first` exists for phrases a generic word of another language would misread
-(German "Homeoffice möglich" is hybrid although it contains "home office").
+language's decisions. `first` holds phrases that must win over the order: explicit full remote
+("100% zdalnie", "fully remote", "remote or hybrid" as a choice) and phrases a generic word of another
+language would misread (German "Homeoffice möglich" is hybrid although it contains "home office").
 """
 from __future__ import annotations
 
 import importlib
 
 ORDER = {
-    "mode": ("remote", "hybrid", "onsite"),
+    # hybrid before remote: "hybrid, 2 days remote" is hybrid; explicit full-remote phrases sit in `first`
+    "mode": ("hybrid", "remote", "onsite"),
     "worktime": ("part_time", "flexible", "full_time"),
     "contract": ("employment", "b2b", "mandate", "specific_task", "internship", "freelance", "mini_job",
                  "working_student", "temp_agency"),

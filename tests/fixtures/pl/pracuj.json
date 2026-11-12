@@ -1,16 +1,16 @@
 {
- "total": 45,
+ "total": 2460,
  "offers": [
   {
-   "jobTitle": "Digital Operations Assistant",
-   "companyName": "WebArk Group B.V.",
-   "lastPublicated": "2026-11-12T11:50:00Z",
-   "salaryDisplayText": "",
-   "jobDescription": "Your responsibilities, Organizing and updating digital information, records, and online resources, Working with Google Sheets, Google Docs, and other browser-ba",
+   "jobTitle": "System Analyst (ISO 20022)",
+   "companyName": "Connectis_",
+   "lastPublicated": "2026-11-12T14:36:59.653Z",
+   "initialPublicated": "2026-11-12T14:36:59.653Z",
+   "salaryDisplayText": "123–135 zł netto (+ VAT) / godz.",
+   "jobDescription": "Twój zakres obowiązków, Współpraca z zespołem developerskim podczas wytwarzania oprogramowania, w tym identyfikowanie problemów, porównywanie wariantów rozwiązań i rekomendowanie optymalnego podejścia",
    "isSuperOffer": false,
    "positionLevels": [
-    "Asystent / Asystentka",
-    "Młodszy specjalista / Młodsza specjalistka (junior)"
+    "Starszy specjalista / Starsza specjalistka (senior)"
    ],
    "typesOfContract": [
     "Kontrakt B2B"
@@ -23,80 +23,119 @@
    ],
    "offers": [
     {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-bialystok,oferta,1005203331",
-     "place": "Białystok"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-bydgoszcz,oferta,1005203321",
+     "url": "https://www.pracuj.pl/praca/system-analyst-iso-20022-bydgoszcz,oferta,1005216867",
      "place": "Bydgoszcz"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-gdansk,oferta,1005203325",
-     "place": "Gdańsk"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-katowice,oferta,1005203320",
-     "place": "Katowice"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-kielce,oferta,1005203333",
-     "place": "Kielce"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-krakow,oferta,1005203332",
-     "place": "Kraków"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-lublin,oferta,1005203324",
-     "place": "Lublin"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-lodz,oferta,1005203330",
-     "place": "Łódź"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-olsztyn,oferta,1005203323",
-     "place": "Olsztyn"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-opole,oferta,1005203322",
-     "place": "Opole"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-poznan,oferta,1005203326",
-     "place": "Poznań"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-rzeszow,oferta,1005203328",
-     "place": "Rzeszów"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-szczecin,oferta,1005203329",
-     "place": "Szczecin"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-warszawa,oferta,1005203318",
-     "place": "Warszawa"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-wroclaw,oferta,1005203319",
-     "place": "Wrocław"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/digital-operations-assistant-zielona-gora,oferta,1005203327",
-     "place": "Zielona Góra"
     }
    ]
   },
   {
-   "jobTitle": "Administrator z językiem niderlandzkim (m/k/x)",
-   "companyName": "UPS",
-   "lastPublicated": "2026-11-12T10:50:25.403Z",
-   "salaryDisplayText": "",
-   "jobDescription": "Twój zakres obowiązków, Znasz język niderlandzki i szukasz stabilnej pracy?, , Mamy dla Ciebie idealną ofertę — nawet jeśli nie masz jeszcze doświadczenia zawod",
-   "isSuperOffer": false,
+   "jobTitle": "Magento Tech Lead / Architect",
+   "companyName": "STRIX POLAND SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+   "lastPublicated": "2026-11-12T14:35:20.657Z",
+   "initialPublicated": "2026-10-16T13:35:20.657Z",
+   "salaryDisplayText": "22 000–28 000 zł netto (+ VAT) / mies.",
+   "jobDescription": "Twój zakres obowiązków, Prowadzenie i wspieranie zespołu deweloperskiego pracującego na co dzień z modelami AI (mentoring, code review, dbanie o rozwój samodzielności programistów), Odpowiedzialność z",
+   "isSuperOffer": true,
    "positionLevels": [
-    "Asystent / Asystentka"
+    "Kierownik / Kierowniczka - koordynator / Koordynatorka"
+   ],
+   "typesOfContract": [
+    "Kontrakt B2B"
+   ],
+   "workSchedules": [
+    "Pełny etat"
+   ],
+   "workModes": [
+    "Praca zdalna"
+   ],
+   "offers": [
+    {
+     "url": "https://www.pracuj.pl/praca/magento-tech-lead-architect-krakow,oferta,1005163954",
+     "place": "Kraków"
+    }
+   ]
+  },
+  {
+   "jobTitle": "Analityk Biznesowo-Systemowy / Tester – Płatności Kartowe",
+   "companyName": "UPVANTA SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+   "lastPublicated": "2026-11-12T14:34:58.787Z",
+   "initialPublicated": "2026-10-28T14:34:58.787Z",
+   "salaryDisplayText": "175 zł netto (+ VAT) / godz.",
+   "jobDescription": "Twój zakres obowiązków, Przygotowywanie i definiowanie warunków testowych dla dostawcy rozwijającego nowy system., Analiza istniejących procesów i workflowów związanych z obsługą transakcji kartowych.",
+   "isSuperOffer": true,
+   "positionLevels": [
+    "Specjalista / Specjalistka (mid / Regular)"
+   ],
+   "typesOfContract": [
+    "Kontrakt B2B"
+   ],
+   "workSchedules": [
+    "Pełny etat"
+   ],
+   "workModes": [
+    "Praca zdalna"
+   ],
+   "offers": [
+    {
+     "url": "https://www.pracuj.pl/praca/analityk-biznesowo-systemowy-tester-platnosci-kartowe-wroclaw-legnicka-70,oferta,1005186853",
+     "place": "Wrocław, Fabryczna"
+    }
+   ]
+  },
+  {
+   "jobTitle": "Specjalista/ka ds. oferty produktowej E-commerce",
+   "companyName": "MERINGER Sp. z o.o.",
+   "lastPublicated": "2026-11-12T14:34:30.343Z",
+   "initialPublicated": "2026-11-09T14:34:30.343Z",
+   "salaryDisplayText": "5 500–7 000 zł brutto / mies.",
+   "jobDescription": "Twój zakres obowiązków, Tworzenie i rozwijanie ofert produktowych w sklepie internetowym oraz dbanie o ich czytelną prezentację., Przygotowywanie i aktualizowanie opisów produktów z pomocą narzędzi AI",
+   "isSuperOffer": true,
+   "positionLevels": [
+    "Specjalista / Specjalistka (mid / Regular)"
+   ],
+   "typesOfContract": [
+    "Umowa o pracę"
+   ],
+   "workSchedules": [
+    "Pełny etat"
+   ],
+   "workModes": [
+    "Praca zdalna",
+    "Praca hybrydowa (2 dni w mies. stacjonarnie)"
+   ],
+   "offers": [
+    {
+     "url": "https://www.pracuj.pl/praca/specjalista-ka-ds-oferty-produktowej-e-commerce-kalisz-zachodnia-15a,oferta,1005210751",
+     "place": "Kalisz"
+    },
+    {
+     "url": "https://www.pracuj.pl/praca/specjalista-ka-ds-oferty-produktowej-e-commerce-lodz,oferta,1005210752",
+     "place": "Łódź"
+    },
+    {
+     "url": "https://www.pracuj.pl/praca/specjalista-ka-ds-oferty-produktowej-e-commerce-poznan,oferta,1005210753",
+     "place": "Poznań"
+    },
+    {
+     "url": "https://www.pracuj.pl/praca/specjalista-ka-ds-oferty-produktowej-e-commerce-warszawa,oferta,1005210755",
+     "place": "Warszawa"
+    },
+    {
+     "url": "https://www.pracuj.pl/praca/specjalista-ka-ds-oferty-produktowej-e-commerce-wroclaw,oferta,1005210754",
+     "place": "Wrocław"
+    }
+   ]
+  },
+  {
+   "jobTitle": "Finance Analyst (m/f)",
+   "companyName": "DRiV",
+   "lastPublicated": "2026-11-12T14:33:03.977Z",
+   "initialPublicated": "2026-11-12T14:33:03.977Z",
+   "salaryDisplayText": "",
+   "jobDescription": "Your responsibilities, Lead strategic, commercial, and business transformation projects across the EMEA region from concept through implementation and benefit realization., Drive execution discipline ",
+   "isSuperOffer": true,
+   "positionLevels": [
+    "Specjalista / Specjalistka (mid / Regular)"
    ],
    "typesOfContract": [
     "Umowa o pracę"
@@ -109,28 +148,143 @@
    ],
    "offers": [
     {
-     "url": "https://www.pracuj.pl/praca/administrator-z-jezykiem-niderlandzkim-m-k-x-lodz,oferta,1005215849",
-     "place": "Łódź"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/administrator-z-jezykiem-niderlandzkim-m-k-x-wroclaw,oferta,1005215848",
-     "place": "Wrocław"
+     "url": "https://www.pracuj.pl/praca/finance-analyst-m-f-gliwice-uslugowa-20,oferta,1005216849",
+     "place": "Gliwice"
     }
    ]
   },
   {
-   "jobTitle": "Contact Center Representative I with German",
-   "companyName": "Aon Sp. z o.o.",
-   "lastPublicated": "2026-11-12T08:29:58.633Z",
+   "jobTitle": "Senior AI Software Engineer",
+   "companyName": "Wavestone Poland Sp. z o.o.",
+   "lastPublicated": "2026-11-12T14:31:14.45Z",
+   "initialPublicated": "2026-10-28T14:31:14.45Z",
    "salaryDisplayText": "",
-   "jobDescription": "Your responsibilities, You will work with our global clients daily and as a first point of contact, you’ll be responsible for providing help and guidance regard",
+   "jobDescription": "Twój zakres obowiązków, Projektowanie i rozwój zaawansowanych rozwiązań AI, dopasowanych do konkretnych potrzeb biznesowych klientów, Praca z dużymi modelami językowymi (LLM) oraz innymi modelami ML i",
    "isSuperOffer": true,
    "positionLevels": [
-    "Asystent / Asystentka",
-    "Młodszy specjalista / Młodsza specjalistka (junior)"
+    "Starszy specjalista / Starsza specjalistka (senior)"
    ],
    "typesOfContract": [
-    "Umowa o pracę"
+    "Umowa o pracę",
+    "Kontrakt B2B"
+   ],
+   "workSchedules": [
+    "Pełny etat"
+   ],
+   "workModes": [
+    "Praca stacjonarna",
+    "Praca zdalna",
+    "Praca hybrydowa"
+   ],
+   "offers": [
+    {
+     "url": "https://www.pracuj.pl/praca/senior-ai-software-engineer-gliwice-bojkowska-37c,oferta,1005186845",
+     "place": "Gliwice"
+    }
+   ]
+  },
+  {
+   "jobTitle": "Fullstack Developer z j. niemieckim (Java, AWS, AI)",
+   "companyName": "Wavestone Poland Sp. z o.o.",
+   "lastPublicated": "2026-11-12T14:30:50.06Z",
+   "initialPublicated": "2026-10-28T14:30:50.06Z",
+   "salaryDisplayText": "",
+   "jobDescription": "Twój zakres obowiązków, Projektowanie i implementacja nowych funkcjonalności w oparciu o Javę oraz usługi AWS, Rozwijanie, modernizacja i utrzymanie istniejących aplikacji oraz usług, Projektowanie i ",
+   "isSuperOffer": true,
+   "positionLevels": [
+    "Specjalista / Specjalistka (mid / Regular)",
+    "Starszy specjalista / Starsza specjalistka (senior)"
+   ],
+   "typesOfContract": [
+    "Umowa o pracę",
+    "Kontrakt B2B"
+   ],
+   "workSchedules": [
+    "Pełny etat"
+   ],
+   "workModes": [
+    "Praca stacjonarna",
+    "Praca zdalna",
+    "Praca hybrydowa"
+   ],
+   "offers": [
+    {
+     "url": "https://www.pracuj.pl/praca/fullstack-developer-z-j-niemieckim-java-aws-ai-gliwice-bojkowska-37c,oferta,1005186844",
+     "place": "Gliwice"
+    }
+   ]
+  },
+  {
+   "jobTitle": "AI Software Engineer",
+   "companyName": "Wavestone Poland Sp. z o.o.",
+   "lastPublicated": "2026-11-12T14:30:22.06Z",
+   "initialPublicated": "2026-10-28T14:30:22.06Z",
+   "salaryDisplayText": "",
+   "jobDescription": "Twój zakres obowiązków, Projektowanie i rozwój zaawansowanych rozwiązań AI, dostosowanych do potrzeb biznesowych klienta, Praca nad integracją dużych modeli językowych (LLM) i innych modeli ML z syste",
+   "isSuperOffer": true,
+   "positionLevels": [
+    "Specjalista / Specjalistka (mid / Regular)",
+    "Starszy specjalista / Starsza specjalistka (senior)"
+   ],
+   "typesOfContract": [
+    "Umowa o pracę",
+    "Kontrakt B2B"
+   ],
+   "workSchedules": [
+    "Pełny etat"
+   ],
+   "workModes": [
+    "Praca stacjonarna",
+    "Praca zdalna",
+    "Praca hybrydowa"
+   ],
+   "offers": [
+    {
+     "url": "https://www.pracuj.pl/praca/ai-software-engineer-gliwice-bojkowska-37c,oferta,1005186838",
+     "place": "Gliwice"
+    }
+   ]
+  },
+  {
+   "jobTitle": "Ferryt Tester",
+   "companyName": "Scalo Sp. z o.o.",
+   "lastPublicated": "2026-11-12T14:29:05.107Z",
+   "initialPublicated": "2026-11-05T14:29:05.107Z",
+   "salaryDisplayText": "110 zł netto (+ VAT) / godz.",
+   "jobDescription": "Twój zakres obowiązków, Przygotowywanie, projektowanie i realizacja testów funkcjonalnych, integracyjnych, regresyjnych oraz UAT,, Analiza wymagań biznesowych i technicznych oraz tworzenie scenariuszy",
+   "isSuperOffer": true,
+   "positionLevels": [
+    "Specjalista / Specjalistka (mid / Regular)"
+   ],
+   "typesOfContract": [
+    "Kontrakt B2B"
+   ],
+   "workSchedules": [],
+   "workModes": [
+    "Praca zdalna"
+   ],
+   "offers": [
+    {
+     "url": "https://www.pracuj.pl/praca/ferryt-tester-warszawa,oferta,1005204160",
+     "place": "Warszawa"
+    }
+   ]
+  },
+  {
+   "jobTitle": "DevOps Engineer (Linux / Docker / Kubernetes / CI/CD)",
+   "companyName": "SOFTIQ sp. z o.o.",
+   "lastPublicated": "2026-11-12T14:27:22.78Z",
+   "initialPublicated": "2026-10-16T13:27:22.78Z",
+   "salaryDisplayText": "12 000–22 680 zł / mies. (zal. od umowy)",
+   "jobDescription": "Twój zakres obowiązków, Utrzymanie i administracja środowiskami Linux oraz usługami aplikacyjnymi,, Automatyzacja procesów   administracyjnych i wdrożeniowych,, Rozwijanie i automatyzacja procesów CI/",
+   "isSuperOffer": true,
+   "positionLevels": [
+    "Specjalista / Specjalistka (mid / Regular)",
+    "Starszy specjalista / Starsza specjalistka (senior)"
+   ],
+   "typesOfContract": [
+    "Umowa o pracę",
+    "Kontrakt B2B"
    ],
    "workSchedules": [
     "Pełny etat"
@@ -141,246 +295,28 @@
    ],
    "offers": [
     {
-     "url": "https://www.pracuj.pl/praca/contact-center-representative-i-with-german-krakow-powstancow-wielkopolskich-13,oferta,1005185177",
-     "place": "Kraków, Podgórze"
+     "url": "https://www.pracuj.pl/praca/devops-engineer-linux-docker-kubernetes-ci-cd-gliwice-chorzowska-50,oferta,1005163903",
+     "place": "Gliwice"
     }
    ]
   },
   {
-   "jobTitle": "Asystent Projektanta Drogowego (k/m)",
-   "companyName": "SYSTRA S.A. Oddział w Polsce",
-   "lastPublicated": "2026-11-09T14:26:32.54Z",
-   "salaryDisplayText": "",
-   "jobDescription": "Twój zakres obowiązków, Udział w opracowaniach projektów budowlanych i wykonawczych infrastruktury dróg klejowych w zakresie branży drogowej oraz bieżąca współp",
-   "isSuperOffer": true,
-   "positionLevels": [
-    "Asystent / Asystentka"
-   ],
-   "typesOfContract": [
-    "Umowa o pracę"
-   ],
-   "workSchedules": [
-    "Pełny etat"
-   ],
-   "workModes": [
-    "Praca stacjonarna",
-    "Praca zdalna"
-   ],
-   "offers": [
-    {
-     "url": "https://www.pracuj.pl/praca/asystent-projektanta-drogowego-k-m-wroclaw-komandorska-12,oferta,1005137855",
-     "place": "Wrocław, Stare Miasto"
-    }
-   ]
-  },
-  {
-   "jobTitle": "Telefoniczny konsultant / konsultantka obsługi klienta",
-   "companyName": "Better Service sp. z o.o.",
-   "lastPublicated": "2026-11-11T13:30:05.717Z",
-   "salaryDisplayText": "5 000–6 000 zł / mies. (zal. od umowy)",
-   "jobDescription": "Twój zakres obowiązków, odbieranie telefonów od Klientów - infolinia przychodząca,, planowanie zleceń dla specjalistów - niezbędny lekki dryg logistyczny,, rzet",
+   "jobTitle": "Remote Content Analyst with Spanish​​",
+   "companyName": "TP Polska sp. z o.o.",
+   "lastPublicated": "2026-11-12T14:26:47.477Z",
+   "initialPublicated": "2026-11-10T14:26:47.477Z",
+   "salaryDisplayText": "40–42 zł brutto / godz.",
+   "jobDescription": "Your responsibilities, Hola 😊, , Are you looking for your first professional experience or want to further develop your skills in the back office?, , This role provides you with the opportunity to wor",
    "isSuperOffer": false,
    "positionLevels": [
-    "Asystent / Asystentka"
-   ],
-   "typesOfContract": [
-    "Umowa zlecenie",
-    "Kontrakt B2B"
-   ],
-   "workSchedules": [
-    "Pełny etat"
-   ],
-   "workModes": [
-    "Praca zdalna"
-   ],
-   "offers": [
-    {
-     "url": "https://www.pracuj.pl/praca/telefoniczny-konsultant-konsultantka-obslugi-klienta-sosnowiec,oferta,1005184074",
-     "place": "Sosnowiec"
-    }
-   ]
-  },
-  {
-   "jobTitle": "Konsultant / Konsultantka ds. Obsługi Klienta - zmiany popołudniowe/nocne",
-   "companyName": "PHOTOAID S.A.",
-   "lastPublicated": "2026-11-10T09:54:47.293Z",
-   "salaryDisplayText": "5 000–6 000 zł brutto / mies.",
-   "jobDescription": "Twój zakres obowiązków, Weryfikujesz zdjęcia biometryczne i przygotowujesz je zgodnie z międzynarodowymi standardami., Obsługujesz zgłoszenia mailowe i połączen",
-   "isSuperOffer": false,
-   "positionLevels": [
-    "Asystent / Asystentka",
-    "Młodszy specjalista / Młodsza specjalistka (junior)"
+    "Młodszy specjalista / Młodsza specjalistka (junior)",
+    "Specjalista / Specjalistka (mid / Regular)"
    ],
    "typesOfContract": [
     "Umowa zlecenie"
    ],
    "workSchedules": [
-    "Pełny etat"
-   ],
-   "workModes": [
-    "Praca zdalna"
-   ],
-   "offers": [
-    {
-     "url": "https://www.pracuj.pl/praca/konsultant-konsultantka-ds-obslugi-klienta-zmiany-popoludniowe-nocne-warszawa-zawrat-2a,oferta,1005212074",
-     "place": "Warszawa, Mokotów"
-    }
-   ]
-  },
-  {
-   "jobTitle": "Asystent Architekta",
-   "companyName": "CZERNIK ARCHITEKCI sp. z o.o.",
-   "lastPublicated": "2026-11-10T07:35:15.247Z",
-   "salaryDisplayText": "40–60 zł netto (+ VAT) / godz.",
-   "jobDescription": "Twój zakres obowiązków, Opracowywanie dokumentacji architektonicznej, technicznej i wykonawczej., Modelowanie 3D oraz przygotowywanie rysunków w Revit i/lub Arc",
-   "isSuperOffer": false,
-   "positionLevels": [
-    "Asystent / Asystentka"
-   ],
-   "typesOfContract": [
-    "Kontrakt B2B"
-   ],
-   "workSchedules": [
-    "Dodatkowa / tymczasowa"
-   ],
-   "workModes": [
-    "Praca zdalna"
-   ],
-   "offers": [
-    {
-     "url": "https://www.pracuj.pl/praca/asystent-architekta-szczecin,oferta,1005211462",
-     "place": "Szczecin"
-    }
-   ]
-  },
-  {
-   "jobTitle": "Asystent / Asystentka doradcy ubezpieczeniowego",
-   "companyName": "Aleksandra Jajczak",
-   "lastPublicated": "2026-11-10T07:02:18.603Z",
-   "salaryDisplayText": "100–1 200 zł brutto / godz.",
-   "jobDescription": "Twój zakres obowiązków, Szukasz dodatkowego źródła dochodu?, , Nawiążę współpracę z osobami, które chcą w prosty sposób podreperować domowy budżet przy nawet ni",
-   "isSuperOffer": false,
-   "positionLevels": [
-    "Asystent / Asystentka"
-   ],
-   "typesOfContract": [
-    "Umowa o dzieło"
-   ],
-   "workSchedules": [
-    "Dodatkowa / tymczasowa"
-   ],
-   "workModes": [
-    "Praca zdalna"
-   ],
-   "offers": [
-    {
-     "url": "https://www.pracuj.pl/praca/asystent-asystentka-doradcy-ubezpieczeniowego-krakow-wielicka-28,oferta,1005211311",
-     "place": "Kraków, Podgórze"
-    }
-   ]
-  },
-  {
-   "jobTitle": "Asystent/ka ds. Księgowości",
-   "companyName": "FINKER",
-   "lastPublicated": "2026-11-12T12:43:34.523Z",
-   "salaryDisplayText": "",
-   "jobDescription": "Twój zakres obowiązków, wprowadzanie danych do systemu finansowo-księgowego (w większości pracujemy na kombinacji systemów enova365 i SaldeoSMART, ale w niektór",
-   "isSuperOffer": false,
-   "positionLevels": [
-    "Asystent / Asystentka"
-   ],
-   "typesOfContract": [
-    "Umowa o pracę",
-    "Umowa zlecenie",
-    "Kontrakt B2B"
-   ],
-   "workSchedules": [
-    "Pełny etat"
-   ],
-   "workModes": [
-    "Praca stacjonarna",
-    "Praca zdalna",
-    "Praca hybrydowa (do uzgodnienia)"
-   ],
-   "offers": [
-    {
-     "url": "https://www.pracuj.pl/praca/asystent-ka-ds-ksiegowosci-warszawa-wilcza-71,oferta,1005216321",
-     "place": "Warszawa, Śródmieście"
-    }
-   ]
-  },
-  {
-   "jobTitle": "Administrator z językiem niderlandzkim (m/k/x) – zmiana wieczorna (18:00 – 2:00)",
-   "companyName": "UPS",
-   "lastPublicated": "2026-11-12T10:45:04.743Z",
-   "salaryDisplayText": "",
-   "jobDescription": "Twój zakres obowiązków, Znasz język niderlandzki i szukasz stabilnej pracy?, , Mamy dla Ciebie idealną ofertę — nawet jeśli nie masz jeszcze doświadczenia zawod",
-   "isSuperOffer": false,
-   "positionLevels": [
-    "Asystent / Asystentka"
-   ],
-   "typesOfContract": [
-    "Umowa o pracę"
-   ],
-   "workSchedules": [
-    "Pełny etat"
-   ],
-   "workModes": [
-    "Praca zdalna"
-   ],
-   "offers": [
-    {
-     "url": "https://www.pracuj.pl/praca/administrator-z-jezykiem-niderlandzkim-m-k-x-zmiana-wieczorna-18-00-2-00-lodz,oferta,1005215820",
-     "place": "Łódź"
-    },
-    {
-     "url": "https://www.pracuj.pl/praca/administrator-z-jezykiem-niderlandzkim-m-k-x-zmiana-wieczorna-18-00-2-00-wroclaw,oferta,1005215819",
-     "place": "Wrocław"
-    }
-   ]
-  },
-  {
-   "jobTitle": "Asystent/ka ds. Rekrutacji z j. niemieckim",
-   "companyName": "Grupa ATERIMA",
-   "lastPublicated": "2026-11-10T15:44:18.033Z",
-   "salaryDisplayText": "",
-   "jobDescription": "Twój zakres obowiązków, prowadzenie rozmów telefonicznych z kandydatami do pracy na stanowisko Opiekuna osób starszych w Niemczech;, poznawanie potrzeb kandydat",
-   "isSuperOffer": false,
-   "positionLevels": [
-    "Asystent / Asystentka"
-   ],
-   "typesOfContract": [
-    "Umowa o pracę"
-   ],
-   "workSchedules": [
-    "Pełny etat"
-   ],
-   "workModes": [
-    "Praca zdalna",
-    "Praca hybrydowa (do uzgodnienia)"
-   ],
-   "offers": [
-    {
-     "url": "https://www.pracuj.pl/praca/asystent-ka-ds-rekrutacji-z-j-niemieckim-krakow-puszkarska-7m,oferta,1005214118",
-     "place": "Kraków, Podgórze Duchackie"
-    }
-   ]
-  },
-  {
-   "jobTitle": "Asystent działu technicznego (K/M)",
-   "companyName": "YATRE PZN Sp. z. o.o.",
-   "lastPublicated": "2026-11-10T14:28:00Z",
-   "salaryDisplayText": "",
-   "jobDescription": "Twój zakres obowiązków, Wsparcie kierownika w planowaniu, organizacji i koordynacji prac serwisowych, Pomoc w obsłudze zgłoszeń serwisowych i koordynowanie real",
-   "isSuperOffer": false,
-   "positionLevels": [
-    "Asystent / Asystentka",
-    "Młodszy specjalista / Młodsza specjalistka (junior)"
-   ],
-   "typesOfContract": [
-    "Umowa o pracę"
-   ],
-   "workSchedules": [
+    "Pełny etat",
     "Część etatu"
    ],
    "workModes": [
@@ -388,8 +324,118 @@
    ],
    "offers": [
     {
-     "url": "https://www.pracuj.pl/praca/asystent-dzialu-technicznego-k-m-lublin,oferta,1005198648",
-     "place": "Lublin"
+     "url": "https://www.pracuj.pl/praca/remote-content-analyst-with-spanish-krakow,oferta,1005213756",
+     "place": "Kraków"
+    }
+   ]
+  },
+  {
+   "jobTitle": "UX/UI Designer - E-commerce",
+   "companyName": "NEXA SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+   "lastPublicated": "2026-11-12T14:21:10.577Z",
+   "initialPublicated": "2026-11-12T14:21:10.577Z",
+   "salaryDisplayText": "",
+   "jobDescription": "Your responsibilities, Projektowanie intuicyjnych i atrakcyjnych doświadczeń użytkowników dla aplikacji mobilnych (iOS/Android), desktopowych oraz responsywnych stron internetowych., Tworzenie rozwiąz",
+   "isSuperOffer": true,
+   "positionLevels": [
+    "Specjalista / Specjalistka (mid / Regular)"
+   ],
+   "typesOfContract": [
+    "Kontrakt B2B"
+   ],
+   "workSchedules": [
+    "Pełny etat"
+   ],
+   "workModes": [
+    "Praca zdalna"
+   ],
+   "offers": [
+    {
+     "url": "https://www.pracuj.pl/praca/ux-ui-designer-e-commerce-warszawa,oferta,1005216779",
+     "place": "Warszawa"
+    }
+   ]
+  },
+  {
+   "jobTitle": "AI Engineer (Agent & Solution Engineering)",
+   "companyName": "UNIQA",
+   "lastPublicated": "2026-11-12T14:19:56.863Z",
+   "initialPublicated": "2026-10-23T13:19:56.863Z",
+   "salaryDisplayText": "",
+   "jobDescription": "Twój zakres obowiązków, Projektowanie rozwiązań AI:, - Projektowanie i implementacja architektury agentów AI oraz aplikacji opartych o modele generatywne, - Dobór i implementacja wzorców agentowych, p",
+   "isSuperOffer": true,
+   "positionLevels": [
+    "Specjalista / Specjalistka (mid / Regular)"
+   ],
+   "typesOfContract": [
+    "Umowa o pracę",
+    "Kontrakt B2B"
+   ],
+   "workSchedules": [
+    "Pełny etat"
+   ],
+   "workModes": [
+    "Praca zdalna",
+    "Praca hybrydowa"
+   ],
+   "offers": [
+    {
+     "url": "https://www.pracuj.pl/praca/ai-engineer-agent-solution-engineering-warszawa-chlodna-51,oferta,1005177840",
+     "place": "Warszawa, Wola"
+    }
+   ]
+  },
+  {
+   "jobTitle": "AI Engineer",
+   "companyName": "Connectis_",
+   "lastPublicated": "2026-11-12T14:17:58.623Z",
+   "initialPublicated": "2026-11-12T14:17:58.623Z",
+   "salaryDisplayText": "",
+   "jobDescription": "Twój zakres obowiązków, Zaprojektowanie i implementacja rozwiązań AI/ML (PyTorch, TensorFlow) gotowych do działania w środowisku produkcyjnym aplikacji ubezpieczeniowych., Dostarczenie modeli ML wraz ",
+   "isSuperOffer": false,
+   "positionLevels": [
+    "Specjalista / Specjalistka (mid / Regular)"
+   ],
+   "typesOfContract": [
+    "Kontrakt B2B"
+   ],
+   "workSchedules": [
+    "Pełny etat"
+   ],
+   "workModes": [
+    "Praca zdalna"
+   ],
+   "offers": [
+    {
+     "url": "https://www.pracuj.pl/praca/ai-engineer-warszawa-chmielna-71,oferta,1005216742",
+     "place": "Warszawa, Wola"
+    }
+   ]
+  },
+  {
+   "jobTitle": "Przedstawiciel / Przedstawicielka ds. sprzedaży",
+   "companyName": "WIENKRA sp. z o.o.",
+   "lastPublicated": "2026-11-12T14:13:08.36Z",
+   "initialPublicated": "2026-10-23T13:13:08.36Z",
+   "salaryDisplayText": "6 200–10 000 zł brutto / mies.",
+   "jobDescription": "Twój zakres obowiązków, Pozyskiwanie nowych klientów, Budowanie i utrzymywanie długotrwałych relacji biznesowych, Aktywna sprzedaż produktów z naszej oferty, Prowadzenie negocjacji i rozmów handlowych",
+   "isSuperOffer": false,
+   "positionLevels": [
+    "Specjalista / Specjalistka (mid / Regular)"
+   ],
+   "typesOfContract": [
+    "Umowa o pracę"
+   ],
+   "workSchedules": [
+    "Pełny etat"
+   ],
+   "workModes": [
+    "Praca zdalna"
+   ],
+   "offers": [
+    {
+     "url": "https://www.pracuj.pl/praca/przedstawiciel-przedstawicielka-ds-sprzedazy-gdansk-dluga-22,oferta,1005177807",
+     "place": "Gdańsk"
     }
    ]
   }

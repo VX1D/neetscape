@@ -79,7 +79,7 @@ it passes any search. `defaults` are merged into every search. Full schema:
 | `max_age_days` | ignore older postings, e.g. `30` |
 | `title_include` | regexes; at least one must match the title: `["support\|helpdesk\|automat"]` |
 | `title_exclude` | regexes that drop by title: `["senior\|\\blead\\b\|architect"]` |
-| `text_exclude` | regexes on title, company, category, skills, pay text, card text |
+| `text_exclude` | regexes on title, company, category, skills, pay text, card text and, once fetched, the posting |
 | `category_include` | regexes on the board's own category string |
 | `unknown` | `keep` (default) or `drop` when a filtered field (mode, pay, work time, date, location) is unknown |
 | `boost` | score added to offers passing this search (e.g. favour side jobs or a city) |
@@ -88,7 +88,21 @@ Other keys: `country` (`pl` default, `de`), `boards` (the country's boards by de
 or `["de"]`; add `"intl"` for remoteok / We Work Remotely, or list board names), `candidate` (your notes: summary, strengths, constraints; ignored by the tool, used in
 your review), `rank.rules` (`{pattern, weight, field: title|any, label}`, additive score, never
 drops), `rank.tags`, `rank.sort` (`score`, `new`, `pay`, `published`), `review` (`mode`
-`auto`/`listing`, `details_top`, `min_score`), `politeness.min_interval_s` (per-host seconds).
+`auto`/`listing`, `details_top`, `min_score`), `politeness.min_interval_s` (per-host seconds; overrides
+a board's own minimum), `blacklist` (below).
+
+`blacklist` is the person's own list of employers, links and phrases to avoid (agencies, scams,
+companies they ruled out); neetscape ships none, so fill it only from what the person tells you:
+
+```json
+"blacklist": {"companies": ["acme staffing"], "urls": ["example-agency\\.pl"],
+              "text": ["mlm|network marketing"], "action": "drop"}
+```
+
+`companies` match the company name, `urls` the offer URL, `text` the title, company, card text and
+the fetched posting (case-insensitive regexes). `action: "drop"` (default) rejects a match in every
+search with the reason `blacklisted ...`; `"flag"` keeps it, tagged `!blacklist`, with the reason
+among the matched rules (also printed by `neetscape show ID`).
 
 Rules of thumb:
 - Derive phrases from what the person can do today (tools, tasks, domains), not from job titles
@@ -118,8 +132,13 @@ too large without phrases). `or_remote` in a city search crawls both the city li
 one country (its own plus LinkedIn).
 
 LinkedIn's public search ignores its remote, job-type, distance and sort filters, so LinkedIn
-offers arrive with an unknown work mode: with `unknown: keep` they stay in remote searches until you
-open them (`details --pick`) and read the posting; with `unknown: drop` they are left out.
+offers arrive with an unknown work mode: with `unknown: keep` they stay in remote searches until
+their posting is fetched (stage 2, below) and settles the mode; with `unknown: drop` they are left out.
+
+Board quirks worth knowing when reading results: Indeed shows only one public page (15 offers) per
+request, and its "Zdalnie" tag is often hybrid in the posting; gowork lists only its own postings
+(copies of other sites' ads are skipped); useme is freelance projects with a budget per project
+(closed projects skipped); solid.jobs is downloaded whole (every division) and filtered locally.
 
 ## 3. Run
 
@@ -150,6 +169,21 @@ person wants that; otherwise report which boards were missing.
 
 After changing only filters or rank rules, do not crawl again: `neetscape eval` then
 `neetscape report` re-evaluate the stored offers.
+
+### Two stages: cards, then postings
+
+A run works in two stages. Stage 1 crawls listing cards and filters them cheaply. Stage 2 fetches
+full postings only for offers that already pass:
+- in `review.mode: "auto"`, `run` fetches the postings of the top `details_top` matches whose job
+  has no stored posting yet and evaluates again. Each job's posting is fetched once across runs,
+  so later runs open only new matches;
+- in `review.mode: "listing"`, nothing is fetched; you choose with `details` (below).
+
+A posting fills fields the card left unknown (work mode only from strong signals such as "fully
+remote", JSON-LD telecommute or hybrid words; work time; contract types), and `text_exclude` and the
+blacklist also read it. So offers can drop out after their posting is known; `details` logs how many,
+and `show ID` gives the reasons. The posting text is only the posting body (from a board API, the
+page's JSON-LD or embedded data, or a declared posting element), never the whole page.
 
 ## 4. Review (your main job)
 
@@ -200,8 +234,9 @@ Pick candidate ids from what the person can do and wants, then fetch their posti
 neetscape details --pick 12,40,311          # or --pick-file ids.txt (id at the start of each line)
 ```
 
-In `auto` review mode `run` has already opened the top `details_top` offers; `details --top N`
-opens more.
+`details` fetches the postings, re-evaluates and rewrites the reports. In `auto` review mode `run`
+has already opened the top `details_top` matches; `details --top N` opens the next N matches without
+a stored posting, and `details --marked` the marked offers whose posting is missing.
 
 ### Pass 2: the postings
 
@@ -222,19 +257,29 @@ Hints are regex matches, not decisions. For every candidate verify against the p
 
 ### Shortlist
 
-Write `runs/shortlist.md` for the person:
-- **Apply now**: 5–10 offers, each with link, pay, one line on why it fits and one on the biggest risk;
-- **Side jobs**: the same for part-time and freelance work, if they wanted it;
-- **Stretch**: good fits with one blocker;
-- **Rejected**: notable offers that looked good but fail a hard requirement, with the reason.
+Record the review in the database, one mark per decision, with a note of why it fits and the
+biggest risk, then rewrite the reports:
 
-Be concrete and honest; do not inflate fit. Mention boards that failed in this run.
+```
+neetscape mark 12 shortlisted --note "n8n + helpdesk, fully remote · asks for 2 years of B2B"
+neetscape mark 40 rejected --note "requires German C1"
+neetscape report
+```
+
+`REPORT.html` in the run directory then shows the review on top: marks grouped by status with
+their notes, key facts and the stored posting, above the filterable, sortable table of every
+passing offer. That page is the shortlist the person reads. Aim for:
+- **Apply now** (`shortlisted`): 5–10 offers;
+- **Side jobs**: the same for part-time and freelance work, if they wanted it (say so in the note);
+- **Stretch**: good fits with one blocker (`shortlisted`, the blocker in the note);
+- **Rejected** (`rejected`): notable offers that looked good but fail a hard requirement, with the reason.
+
+Be concrete and honest; do not inflate fit. Tell the person which boards failed in this run. A
+written `runs/shortlist.md` with the same groups is optional, e.g. when the person wants a text file.
 
 ### Record decisions
 
 ```
-neetscape mark 12 shortlisted
-neetscape mark 40 rejected --note "requires German"
 neetscape mark https://example.com/offer/123 applied --note "sent 2026-11-12"
 neetscape tracked
 ```
@@ -247,6 +292,6 @@ whether they are still listed.
 
 Re-run `neetscape run` with the same profile. Crawling is incremental (newest-first boards stop at
 pages already seen), offers are flagged new only when the job was not seen in any earlier run,
-and offers are marked gone when a complete request no longer returns them. Review with
-`neetscape list --new`. Update the profile when the person's situation changes, and tighten it when
+offers are marked gone when a complete request no longer returns them, and in `auto` mode only
+postings of new matches are fetched. Review with `neetscape list --new`. Update the profile when the person's situation changes, and tighten it when
 the review keeps rejecting the same kind of offer. Keep runs infrequent (once or twice a week).

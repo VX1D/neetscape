@@ -219,7 +219,8 @@
                 "description": "Case-insensitive Python regular expression"
               }
             }
-          ]
+          ],
+          "description": "regexes on title, company, category, skills, pay text, card text, locations and, once fetched, the posting"
         },
         "category_include": {
           "oneOf": [
@@ -437,7 +438,8 @@
                   "description": "Case-insensitive Python regular expression"
                 }
               }
-            ]
+            ],
+            "description": "regexes on title, company, category, skills, pay text, card text, locations and, once fetched, the posting"
           },
           "category_include": {
             "oneOf": [
@@ -534,20 +536,59 @@
         }
       }
     },
+    "blacklist": {
+      "type": "object",
+      "description": "your own list of employers, links and phrases to avoid (scams, agencies, companies you ruled out); neetscape ships none. Regexes, case-insensitive",
+      "properties": {
+        "companies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "regexes on the company name"
+        },
+        "urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "regexes on the offer URL (e.g. a domain)"
+        },
+        "text": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "regexes on title, company, category, skills, pay text, card text, locations and the fetched posting"
+        },
+        "action": {
+          "enum": [
+            "drop",
+            "flag"
+          ],
+          "description": "drop (default): reject in every search; flag: keep, tag '!blacklist' and show the reason"
+        }
+      },
+      "additionalProperties": false
+    },
     "review": {
       "type": "object",
+      "description": "stage 2 of a run: fetching full postings of offers that already pass (the postings may settle unknown fields and feed text_exclude and the blacklist)",
       "properties": {
         "mode": {
           "enum": [
             "auto",
             "listing"
-          ]
+          ],
+          "description": "auto: `run` fetches the postings of the top details_top matches and evaluates again; listing: `run` fetches none, pick them with `neetscape details`. Default: auto when rank.rules are set, else listing"
         },
         "details_top": {
-          "type": "integer"
+          "type": "integer",
+          "description": "auto mode and `details` without --pick: how many of the best matches to open; jobs whose posting is already stored (any run) are skipped. Default 60"
         },
         "min_score": {
-          "type": "integer"
+          "type": "integer",
+          "description": "auto mode and `details --top`: open only matches scoring at least this. Default 0"
         }
       }
     },
@@ -558,7 +599,8 @@
           "type": "object",
           "additionalProperties": {
             "type": "number"
-          }
+          },
+          "description": "per host: seconds between requests, e.g. {\"justjoin.it\": 3}; overrides the board's own minimum"
         },
         "retries": {
           "type": "integer",

@@ -45,10 +45,10 @@ RULES: list[tuple[str, list[str]]] = [  # path regex -> test paths (first match 
 
 
 def board_names(path: str) -> list[str]:
-    """Boards defined in a board module (its `name = "..."` lines); the file name when it is gone."""
+    """Boards defined in a board module (its `name = "..."` lines; none for a helper module such as `vocab.py`);
+    the file name when it is gone."""
     f = ROOT / path
-    names = re.findall(r'^\s+name = "(\w+)"', f.read_text(), re.M) if f.exists() else []
-    return names or [Path(path).stem]
+    return re.findall(r'^\s+name = "(\w+)"', f.read_text(), re.M) if f.exists() else [Path(path).stem]
 
 
 def board_tests(cc: str | None) -> list[str]:
@@ -60,7 +60,8 @@ def board_tests(cc: str | None) -> list[str]:
 
 
 def board_change(p: str) -> tuple[list[str], list[str]] | None:
-    """(tests, board names) when `p` belongs to one board: its module or one of its recorded fixtures."""
+    """(tests, board names) when `p` belongs to one board: its module or one of its recorded fixtures. A helper
+    module of a country's boards (no board names) gives that country's board tests, not narrowed."""
     m = re.match(r"^neetscape/countries/(\w+)/boards/(\w+)\.py$", p)
     if m and m.group(2) != "__init__":
         return board_tests(m.group(1)), board_names(p)
@@ -91,6 +92,7 @@ def select(paths: list[str]) -> tuple[list[str], list[str]] | None:
         if hit:
             tests.update(hit[0])
             boards.update(hit[1])
+            only_boards = only_boards and bool(hit[1])
             # a fixture read by name outside the board tests (e.g. a posting page in tests/core) runs those tests whole
             if p.startswith("tests/fixtures/"):
                 users = [str(t.relative_to(ROOT)) for t in (ROOT / "tests").rglob("test_*.py")
@@ -114,13 +116,13 @@ def main() -> int:
     paths = changed(args[0] if args else "HEAD")
     sel = select(paths)
     if sel is None:
-        cmd = ["pytest", "-q"]
+        cmd = [sys.executable, "-m", "pytest", "-q"]
     else:
         tests, boards = sel
         if not tests:
             print("no tests affected by:", ", ".join(paths) or "(no changes)")
             return 0
-        cmd = ["pytest", "-q", *tests]
+        cmd = [sys.executable, "-m", "pytest", "-q", *tests]
         if boards:  # board-only change: narrow the selected tests to those boards
             cmd += ["-k", " or ".join(boards)]
     print("$", " ".join(cmd))

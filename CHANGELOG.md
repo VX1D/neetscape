@@ -2,6 +2,39 @@
 
 All notable changes to neetscape are listed here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+- Postings as a second stage: listing cards are filtered first and postings are fetched only for
+  matches. In `review.mode: "auto"`, `run` fetches the top `details_top` matches whose job has no stored
+  posting yet (once per job across runs) and re-evaluates; `details` re-evaluates too and logs how many
+  offers no longer pass. New `details --marked`; `--top` skips jobs whose posting is already stored.
+- A fetched posting fills unknown work mode (strong signals only: JSON-LD `TELECOMMUTE`, explicit full
+  remote, hybrid words), work time and contracts; `text_exclude` and the blacklist also read it.
+- Posting text is only the posting body: from a board API (nofluffjobs, LinkedIn guest posting), the
+  board's `posting()` (JSON-LD by default, embedded data for pracuj.pl and Indeed) or its
+  `posting_selector`, never the whole rendered page. The source is stored. 401/403/429 answers are
+  stored as blocked and not rendered.
+- Profile `blacklist`: your own `companies` / `urls` / `text` regexes, `action` `drop` (default) or `flag`
+  (kept, tagged `!blacklist`). No built-in list.
+- `REPORT.html` next to `REPORT.md`: the review (marks, notes, postings) on top, then a filterable,
+  sortable table of every passing offer.
+- Mode inference: hybrid wording beats a generic "remote"; explicit full remote and "remote or hybrid"
+  choices read as remote; "hybrid cloud" and similar no longer read as hybrid. More Polish contract words.
+- Politeness: boards can declare a minimum interval per host (theprotocol.it: 4 s); the profile's
+  `politeness.min_interval_s` overrides it.
+- Crawler: single-response listings (`whole_listing`: feeds, solid.jobs) complete their request; a 404
+  after the last page ends a request as complete; reaching the page cap never does. HTTP boards can POST
+  (`post_body`). A stuck browser navigation is retried once instead of stalling a board.
+- Boards (Poland): new **gowork.pl** (own postings only; imported copies of other sites' ads skipped) and
+  **praca.pl**; nofluffjobs moved to its public search API (HTTP POST); theprotocol.it supports keywords;
+  bulldogjob moved to its GraphQL API (publication dates, work modes); solid.jobs reads every division,
+  not only IT; Indeed reads the embedded JSON (one public page; "Zdalnie" with a place read as hybrid);
+  useme over plain HTTP, closed projects skipped, budgets parsed; OLX reads the embedded state and uses
+  its server-side remote filter. LinkedIn postings read only the description block and job criteria.
+- No board reads rendered result cards any more: Indeed, useme and OLX moved from `browser_render` to
+  their embedded data or plain HTTP.
+- Docs: boards deliberately not supported (praca.gov.pl / CBOP) and the terms check in CONTRIBUTING.
+
 ## 0.1.0 — first release
 
 - `neetscape` CLI: `init` (presets, `--country`), `check`, `plan` (no network), `boards [--country CC]`,
