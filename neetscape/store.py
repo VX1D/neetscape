@@ -100,7 +100,11 @@ _CURRENT_CTE = """
 
 
 # Columns of `run_offers` / `current_offers` beside the offer's own (offers `o`, clusters `c`).
-_CLUSTER_AND_POSTING = "c.first_seen_run AS cluster_first_run, (SELECT d.text FROM details d WHERE d.offer_id = o.id) AS posting"
+_CLUSTER_AND_POSTING = ("c.first_seen_run AS cluster_first_run, (SELECT d.text FROM details d WHERE d.offer_id = o.id) AS posting, "
+                        # areas: "board|city|radius_km,..." of the requests that found the offer with the board's city filter
+                        "(SELECT GROUP_CONCAT(DISTINCT r.board || '|' || json_extract(r.params_json, '$.city') || '|' || "
+                        "IFNULL(json_extract(r.params_json, '$.radius_km'), 0)) FROM sightings s2 JOIN requests r ON r.id = s2.request_id "
+                        "WHERE s2.offer_id = o.id AND instr(r.pushed, 'city') > 0) AS areas")
 
 
 def has_verdict(offer: str) -> str:

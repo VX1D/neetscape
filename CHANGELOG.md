@@ -4,6 +4,9 @@ All notable changes to neetscape are listed here. Versions follow [Semantic Vers
 
 ## Unreleased
 
+- City searches: an offer a board with a verified radius filter found with it (same city, no larger radius) is
+  within the area even when its location names another town (e.g. Bielsko-Biała in a 30 km search around
+  Andrychów); before, only the city's name counted and such offers were rejected as "not in <city>".
 - The listing (`list`, listing.tsv, offers.csv, REPORT.md/html, `details --top`) is the current state of every
   board, not only the offers sighted in the run: offers its board's latest crawl saw, or that a request
   stopped early (incremental, page limit, error) did not reach, not marked gone. `eval` judges that whole
