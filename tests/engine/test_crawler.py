@@ -255,7 +255,7 @@ def test_end_probe_is_counted_in_the_progress(fake, monkeypatch, tmp_path):
     counted = []
     real_add = logmod.Progress.add
     monkeypatch.setattr(logmod.Progress, "add", lambda self, **c: counted.append(c) or real_add(self, **c))
-    windowed(monkeypatch, fake, {"@": 27}, [])
+    windowed(monkeypatch, fake, {"@": 25}, [])
     db = Store(tmp_path / "j.db")
     run_crawl(db, db.start_run({}, []), fake, [ALL_REMOTE])
     assert sum(c.get("pages", 0) for c in counted) == 10                # pages 1-9 and the (empty) probe
@@ -265,13 +265,21 @@ def test_end_probe_empty_means_under_the_cap(fake, monkeypatch, tmp_path):
     fake.caps = PROBED
     fake.split = lambda raw, r, seen=(): pytest.fail("split() asked under the cap")
     calls = []
-    windowed(monkeypatch, fake, {"@": 27}, calls)                       # 9 full pages: page 10 is the real end
+    windowed(monkeypatch, fake, {"@": 25}, calls)                       # the listing ends on a short page 9
     db = Store(tmp_path / "j.db")
     rid = db.start_run({}, [])
     run_crawl(db, rid, fake, [ALL_REMOTE])
     req = requests_by(db, rid)[""]
-    assert calls == ["@/1", "@/10"] + [f"@/{p}" for p in range(2, 10)]  # page 10 is not fetched again
-    assert (req["pages"], req["found"], req["complete"], req["stop_reason"]) == (10, 27, 1, "empty page")
+    assert calls == ["@/1", "@/10"] + [f"@/{p}" for p in range(2, 10)]
+    assert (req["pages"], req["found"], req["complete"], req["stop_reason"]) == (10, 25, 1, "last page")
+
+    calls.clear()                                                       # 9 full pages: page 10 is the real end,
+    windowed(monkeypatch, fake, {"@": 27}, calls)                       # confirmed by fetching it again
+    rid = db.start_run({}, [])
+    run_crawl(db, rid, fake, [ALL_REMOTE], incremental=False)
+    req = requests_by(db, rid)[""]
+    assert calls == ["@/1", "@/10"] + [f"@/{p}" for p in range(2, 11)]
+    assert (req["pages"], req["complete"], req["stop_reason"]) == (11, 1, "empty page")
 
 
 def test_end_probe_retries_an_empty_answer_before_trusting_it(fake, monkeypatch, tmp_path):
@@ -398,3 +406,18 @@ def test_limiter_pause_holds_the_host(monkeypatch):
     asyncio.run(REAL_WAIT(lim, "https://www.linkedin.com/b"))
     asyncio.run(REAL_WAIT(lim, "https://other.example/b"))
     assert slept == [15.0]                                              # the paused host only
+
+
+def test_empty_probe_contradicted_by_full_pages_is_fetched_again(fake, monkeypatch, tmp_path):
+    """An empty end probe can be a flaky empty body: when every page before the probed one is full, the probed
+    page is fetched again instead of taking its old empty answer as the end (a complete request marks gone)."""
+    fake.caps = PROBED
+    fake.split = lambda raw, r, seen=(): pytest.fail("the probe saw no cards")
+    calls = []
+    windowed(monkeypatch, fake, {"@": None}, calls, empty={"@/10": 1})   # only the probe's answer is empty
+    db = Store(tmp_path / "j.db")
+    rid = db.start_run({}, [])
+    run_crawl(db, rid, fake, [ALL_REMOTE])
+    req = requests_by(db, rid)[""]
+    assert calls == ["@/1", "@/10"] + [f"@/{p}" for p in range(2, 11)]  # page 10 fetched again at its turn
+    assert (req["complete"], req["found"], req["stop_reason"]) == (0, 30, "page limit")

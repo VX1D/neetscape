@@ -37,15 +37,16 @@ from .model import Offer, Search
 from .store import PAGE_LIMIT, PAGE_LIMIT_ASKED, Store
 
 
-def transport_for(board, port: int, limiter: Limiter, retries: int):
+def transport_for(board, port: int, limiter: Limiter):
+    """The board's transport, without retries of its own: the crawl retries pages itself (`_fetch_page`)."""
     caps = board.caps
     if caps.transport == "http":
         headers = {**(getattr(board, "headers", None) or {}),
                    **({"Content-Type": board.content_type} if getattr(board, "content_type", "") else {})}
-        return Http(limiter, getattr(board, "accept", "*/*"), retries, headers=headers or None,
+        return Http(limiter, getattr(board, "accept", "*/*"), 0, headers=headers or None,
                     language=accept_language(board))
     if caps.transport == "browser_fetch":
-        return BrowserFetch(port, caps.origin, limiter, board.fetch_js(), retries)
+        return BrowserFetch(port, caps.origin, limiter, board.fetch_js(), 0)
     raise ValueError(f"{board.name}: unknown transport {caps.transport!r}")
 
 
@@ -111,6 +112,18 @@ def probe_page(board, total: int | None, max_pages: int) -> int:
     return last if 1 < last <= max_pages else 0
 
 
+def _probe_shows_cap(caps, last: int, listed: int) -> bool:
+    """Whether the end probe of page `last`, listing `listed` offers, shows the cap: a full page, or any offers on the
+    board's last page (nothing beyond it can be fetched, so the listing may go on: LinkedIn's start=990). A short
+    page below the board's last is the listing's own end within the cap."""
+    return listed > 0 and (last == caps.max_pages or listed >= (caps.page_size or 1))
+
+
+def _label(r: Request) -> tuple:
+    """How log lines name a request."""
+    return r.board, r.search_id, repr(r.keyword or "*")
+
+
 def _transient(e: Exception, parsed_before: bool) -> bool:
     """Failures worth a retry after a pause: connection errors and timeouts, HTTP 5xx and 429, and a page that
     does not parse although pages of the same request or board parsed before (a bot wall such as pracuj's page
@@ -127,21 +140,19 @@ def _short(e: Exception) -> str:
 
 
 async def _fetch_page(board, fetcher, r: Request, page: int, url: str, parsed_before: bool,
-                      keep_raw=None, pauses: tuple | None = None) -> tuple[str, list[Offer]]:
-    """Fetch and parse one page, retrying transient failures after each of `pauses` (default `RETRY_PAUSES`) and,
+                      keep_raw, pauses: tuple) -> tuple[str, list[Offer]]:
+    """Fetch and parse one page, retrying transient failures after each of `pauses` and,
     on boards with `empty_retries`, an empty page after `EMPTY_PAUSE`; each retry is logged. The crawl's transport
-    has no retries of its own (`crawl`), so a failing page gets 1 + len(pauses) attempts. `keep_raw(raw)` sees
+    has no retries of its own (`transport_for`), so a failing page gets 1 + len(pauses) attempts. `keep_raw(raw)` sees
     every response."""
-    pauses = RETRY_PAUSES if pauses is None else pauses
     body = board.post_body(r, page)
-    label = (r.board, r.search_id, repr(r.keyword or "*"), f"p{page}:")
+    label = (*_label(r), f"p{page}:")
     empties = 0
     for attempt in range(len(pauses) + 1):
         try:
             while True:
                 raw = await (fetcher.get(url, body) if body is not None else fetcher.get(url))
-                if keep_raw:
-                    keep_raw(raw)
+                keep_raw(raw)
                 offers = board.parse(raw, r)
                 if offers or empties >= board.caps.empty_retries:
                     return raw, offers
@@ -160,7 +171,7 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
                        limit_pages: int | None, incremental: bool, record: Path | None, base: str = "PLN",
                        hours: int | None = None, days: int | None = None, save_fixture: Path | None = None,
                        max_age: float = math.inf, progress: Progress | None = None, depth: int = 0,
-                       parsed: set | None = None, pauses: tuple | None = None, window: str = "") -> None:
+                       parsed: set, pauses: tuple, window: str = "") -> None:
     """Fetch one request page by page.
 
     Result cap: a request reaches the board's `result_cap` when page 1's `total()` says so or, on a board without a
@@ -175,7 +186,6 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
     children: list[Request] = []
     child_window = ""
     capped = 0
-    parsed = set() if parsed is None else parsed
     req_id = store.start_request(run_id, r.board, r.search_id, r.keyword, r.params, r.pushed)
     pages = found = 0
     total: int | None = None
@@ -229,14 +239,14 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
 
     try:
         for page in range(1, max_pages + 1):
-            if page == probed:  # fetched by the end probe already: its stop rule applies now
-                if not probe_listed:
-                    complete, reason = True, "empty page"
-                elif probe_listed < (board.caps.page_size or math.inf) and page < board.caps.max_pages:
-                    complete, reason = True, "last page"
-                else:
+            if page == probed and probe_listed:  # fetched by the end probe already: its stop rule applies now
+                if _probe_shows_cap(board.caps, page, probe_listed):
                     reason = "page limit"
+                else:
+                    complete, reason = True, "last page"
                 break
+            # an empty probe reached here is contradicted by the full pages before it (LinkedIn's flaky empty
+            # body): the page is fetched again like any other
             url = board.page_url(r, page)
             if url is None:
                 complete, reason = True, "end"
@@ -262,12 +272,10 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
                 if reason:
                     break
             if page == 1 and (last := probe_page(board, total, max_pages)) and (end := board.page_url(r, last)):
-                # the end probe: a board without a total shows its cap by offers on the cap's last page; a short page
-                # there is the listing's own end within the cap, unless it is the board's last page (nothing beyond
-                # it can be fetched, so the listing may go on: LinkedIn's start=990)
+                # the end probe: a board without a total shows its cap by offers on the cap's last page
                 _, end_offers, _, _ = await fetch(last, end)
                 probed, probe_listed = last, len(end_offers)
-                if end_offers and (last == board.caps.max_pages or probe_listed >= (board.caps.page_size or 1)):
+                if _probe_shows_cap(board.caps, last, probe_listed):
                     if reason := narrow(raw, tuple(offers) + tuple(end_offers), cap):
                         break
                     capped = cap
@@ -288,7 +296,7 @@ async def _run_request(board, fetcher, r: Request, search: Search, store: Store,
     if window:  # offers outside the window may still be listed: never complete, so none is marked gone
         complete, reason = False, f"newest {window} (cap {cap})" + (f": {reason}" if reason else "")
     store.finish_request(req_id, pages, found, complete, reason, error)
-    log(r.board, r.search_id, repr(r.keyword or "*"), f"{pages}p +{found}", reason or "", ("ERROR " + error) if error else "")
+    log(*_label(r), f"{pages}p +{found}", reason or "", ("ERROR " + error) if error else "")
     if children:
         if progress:
             progress.total += len(children)
@@ -323,7 +331,7 @@ async def crawl(requests: list[Request], searches: dict[str, Search], store: Sto
         if uses_browser:
             await tabs.acquire()
         try:
-            async with transport_for(board, port, limiter, 0) as fetcher:
+            async with transport_for(board, port, limiter) as fetcher:
                 for r in reqs:
                     await _run_request(board, fetcher, r, searches[r.search_id], store, run_id, fx=fx,
                                        limit_pages=limit_pages, incremental=incremental, record=record, base=base,
