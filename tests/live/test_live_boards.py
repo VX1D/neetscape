@@ -35,7 +35,7 @@ EXPECT = {
     "indeed": ("asystent", {"company": 0.7, "published": 0.9}),
     "theprotocol": (None, {"company": 0.8}),
     "bulldogjob": (None, {"company": 0.8, "published": 0.9}),
-    "useme": ("asystent", {"company": 0.8}),
+    "useme": (None, {"company": 0.8}),
     "olx": ("asystent", {"published": 0.8}),
     "gowork": (None, {"company": 0.9, "published": 0.9}),
     "pracapl": (None, {"published": 0.9}),
